@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Inventory Audit | Store Ops</title>
+<style>
+:root{--bg:#f4f6fa;--panel:#fff;--ink:#172033;--muted:#69758b;--line:#e3e8f0;--navy:#17243b;--accent:#5867e8;--accent2:#e9ebff;--green:#16866b;--amber:#a66b10;--red:#c34242;--shadow:0 12px 35px rgba(29,43,69,.07);--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:11px;padding:11px 15px;font-weight:650;transition:.15s}button:active{transform:scale(.98)}.primary{background:var(--accent);color:white}.secondary{background:#edf0f6;color:var(--ink)}.outline{background:transparent;border:1px solid var(--line);color:var(--ink)}.danger{background:#fff0f0;color:var(--red)}.app{display:flex;min-height:100vh}.sidebar{width:245px;background:var(--navy);color:#fff;padding:26px 16px;display:flex;flex-direction:column;gap:25px}.brand{display:flex;align-items:center;gap:11px;padding:0 8px}.brand-mark{width:38px;height:38px;border-radius:12px;background:#6976f0;display:grid;place-items:center;font-weight:900}.brand strong{display:block;font-size:15px;letter-spacing:.02em}.brand small{color:#aab5cb}.nav{display:grid;gap:7px}.nav button{display:flex;align-items:center;gap:12px;text-align:left;background:transparent;color:#b9c4d8;padding:12px 14px}.nav button.active,.nav button:hover{background:#293751;color:white}.nav .ico{width:21px;text-align:center;font-size:17px}.side-note{margin-top:auto;padding:15px;border:1px solid #394761;border-radius:14px;color:#aeb9cc;font-size:12px}.side-note b{display:block;color:#fff;font-size:13px;margin-bottom:4px}.main{flex:1;min-width:0;padding:28px clamp(16px,3vw,42px) 50px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:26px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:11px;color:var(--muted);font-weight:800}.topbar h1{font-size:clamp(25px,3vw,34px);letter-spacing:-.04em;margin:5px 0 0}.top-actions{display:flex;gap:9px;align-items:center}.avatar{width:38px;height:38px;border-radius:50%;background:#e4e8ff;color:#4d59d5;display:grid;place-items:center;font-weight:800}.view{display:none}.view.active{display:block}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:23px}.stat,.panel,.audit-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.stat{padding:19px}.stat-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px}.stat-icon{width:32px;height:32px;border-radius:10px;background:#f0f2ff;color:var(--accent);display:grid;place-items:center}.stat-value{font-size:30px;font-weight:800;letter-spacing:-.04em;margin:10px 0 2px}.stat-sub{font-size:12px;color:var(--muted)}.section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:26px 0 13px}.section-head h2{margin:0;font-size:18px;letter-spacing:-.025em}.section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.panel{padding:20px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.search{flex:1;min-width:180px;position:relative}.search input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:#fff}.audit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.audit-card{padding:18px;box-shadow:none}.audit-card-top{display:flex;justify-content:space-between;gap:12px}.audit-card h3{margin:0 0 4px;font-size:17px}.audit-card p{margin:0;color:var(--muted);font-size:13px}.tag{font-size:11px;font-weight:800;border-radius:20px;padding:5px 9px;background:#eef1f6;color:#68758a;white-space:nowrap;height:max-content}.tag.progress{background:#fff4dc;color:var(--amber)}.tag.done{background:#e0f6ee;color:var(--green)}.progressline{height:7px;background:#edf0f5;border-radius:9px;overflow:hidden;margin:18px 0 9px}.progressline span{display:block;height:100%;background:var(--accent);border-radius:9px}.audit-meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}.audit-actions{display:flex;gap:8px;margin-top:15px}.audit-actions button{flex:1}.empty{padding:34px 16px;text-align:center;color:var(--muted)}.empty b{display:block;color:var(--ink);margin-bottom:4px}.upload-box{border:1.5px dashed #c7cede;border-radius:16px;padding:24px;text-align:center;background:#fafbfe}.upload-box .upload-icon{font-size:30px;margin-bottom:8px}.upload-box h3{margin:0 0 5px}.upload-box p{margin:0 auto 14px;max-width:460px;color:var(--muted);font-size:13px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:750;color:#536078}.field input,.field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--ink)}.hint{font-size:12px;color:var(--muted)}.category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:15px}.category-option{border:1px solid var(--line);border-radius:13px;padding:13px;background:#fff;text-align:left}.category-option.selected{border-color:var(--accent);background:#f2f3ff;box-shadow:0 0 0 2px #e5e7ff}.category-option b{display:block;font-size:14px;overflow-wrap:anywhere}.category-option small{color:var(--muted)}.audit-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px}.audit-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.audit-title h2{margin:0;font-size:22px}.audit-title p{margin:4px 0 0;color:var(--muted);font-size:13px}.scan-bar{display:grid;grid-template-columns:1fr 180px auto;gap:9px;margin:18px 0}.scan-bar input,.scan-bar select{min-width:0;border:1px solid var(--line);border-radius:11px;padding:12px;background:#fff}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px;background:white}table{width:100%;border-collapse:collapse;min-width:720px;font-size:13px}th{background:#f7f8fb;color:#657187;text-align:left;text-transform:uppercase;letter-spacing:.06em;font-size:10px;padding:12px 13px;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:12px 13px;border-bottom:1px solid #edf0f5;vertical-align:middle}tr:last-child td{border-bottom:0}.status{display:inline-flex;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:750}.status.match{background:#e0f6ee;color:var(--green)}.status.missing{background:#fff0f0;color:var(--red)}.status.unknown{background:#fff4dc;color:var(--amber)}.side-panel{display:grid;gap:14px;align-content:start}.side-panel .panel{box-shadow:none}.side-panel h3{font-size:14px;margin:0 0 12px}.big-number{font-size:29px;font-weight:850;letter-spacing:-.04em}.mini-stat{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #edf0f5;font-size:12px}.mini-stat:last-child{border:0}.mini-stat span{color:var(--muted)}.location-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.location-chip{padding:5px 8px;background:#f0f2f7;border-radius:8px;font-size:11px;color:#58647a}.settings-list{display:grid;gap:8px;margin-top:12px}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}.setting-row button{padding:6px 9px;font-size:12px}.notice{padding:12px 14px;border-radius:11px;background:#f1f3ff;color:#505ed0;font-size:12px;margin-top:12px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#17243b;color:white;padding:12px 17px;border-radius:12px;box-shadow:var(--shadow);z-index:20;display:none;max-width:calc(100% - 24px);font-size:13px}.toast.show{display:block}.mobile-nav{display:none}.small-label{font-size:11px;color:var(--muted)}.muted{color:var(--muted)}.right{margin-left:auto}
+@media(max-width:1000px){.sidebar{width:210px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.audit-layout{grid-template-columns:1fr}.side-panel{grid-template-columns:repeat(2,minmax(0,1fr))}.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.app{display:block}.sidebar{display:none}.main{padding:18px 14px 90px}.topbar{align-items:flex-start;margin-bottom:20px}.topbar h1{font-size:27px}.top-actions .desktop-btn{display:none}.stats{gap:9px}.stat{padding:14px}.stat-value{font-size:25px}.stat-top{font-size:11px}.stat-icon{width:28px;height:28px}.stat-sub{font-size:11px}.section-head{align-items:flex-start}.audit-grid{grid-template-columns:1fr}.panel{padding:15px}.form-grid{grid-template-columns:1fr}.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.scan-bar{grid-template-columns:1fr 1fr}.scan-bar input:first-child{grid-column:1/-1}.scan-bar button{grid-column:1/-1}.side-panel{grid-template-columns:1fr 1fr}.top-actions{gap:6px}.top-actions button{padding:9px 11px}.mobile-nav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--line);padding:7px 5px calc(7px + env(safe-area-inset-bottom));z-index:10}.mobile-nav button{background:transparent;color:#738097;font-size:10px;padding:6px 2px;display:grid;gap:3px;justify-items:center}.mobile-nav button span{font-size:18px}.mobile-nav button.active{color:var(--accent)}.audit-title{display:block}.audit-title button{margin-top:12px}.upload-box{padding:20px 14px}}
+@media(max-width:420px){.side-panel{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.category-grid{grid-template-columns:1fr 1fr}.audit-meta{gap:8px}.audit-actions button{padding:10px 8px;font-size:12px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="brand-mark">IA</div><div><strong>INVENTORY AUDIT</strong><small>Store operations</small></div></div>
+  <nav class="nav">
+    <button class="active" data-view="dashboard"><span class="ico">▦</span>Dashboard</button>
+    <button data-view="new-audit"><span class="ico">＋</span>Build an audit</button>
+    <button data-view="audit-workspace"><span class="ico">▤</span>Audit workspace</button>
+    <button data-view="settings"><span class="ico">⚙</span>Settings</button>
+  </nav>
+  <div class="side-note"><b>iPad-ready workflow</b>Import a store inventory workbook, select a case category, scan by location, then export the audit workbook.</div>
+</aside>
+<main class="main">
+<header class="topbar"><div><div class="eyebrow">Store operations / inventory control</div><h1 id="page-title">Audit dashboard</h1></div><div class="top-actions"><button class="secondary desktop-btn" id="top-import">↑ Import inventory</button><button class="primary" id="top-new">＋ New audit</button><div class="avatar">IA</div></div></header>
+
+<section class="view active" id="view-dashboard">
+  <div class="stats">
+    <div class="stat"><div class="stat-top">Audits completed <span class="stat-icon">✓</span></div><div class="stat-value" id="stat-completed">0</div><div class="stat-sub">Finished and ready to export</div></div>
+    <div class="stat"><div class="stat-top">In progress <span class="stat-icon">◷</span></div><div class="stat-value" id="stat-progress">0</div><div class="stat-sub">Audits currently underway</div></div>
+    <div class="stat"><div class="stat-top">Reference SKUs <span class="stat-icon">▤</span></div><div class="stat-value" id="stat-skus">0</div><div class="stat-sub">Loaded from inventory workbook</div></div>
+    <div class="stat"><div class="stat-top">Scans recorded <span class="stat-icon">⌁</span></div><div class="stat-value" id="stat-scans">0</div><div class="stat-sub">Across all audit sessions</div></div>
+  </div>
+  <div class="section-head"><div><h2>Recent audits</h2><p>Pick up where you left off or review completed work.</p></div><button class="outline" id="dashboard-build">＋ Build audit</button></div>
+  <div class="toolbar" style="margin-bottom:14px"><div class="search"><input id="audit-search" placeholder="Search audits by category or status…" /></div><select id="audit-filter" class="field" style="width:auto;border:1px solid var(--line);border-radius:11px;padding:10px;background:white"><option value="all">All audits</option><option value="in-progress">In progress</option><option value="completed">Completed</option></select></div>
+  <div class="audit-grid" id="audit-grid"></div>
+  <div class="section-head"><div><h2>Inventory source</h2><p>Upload the workbook generated by your separate store-inventory system.</p></div></div>
+  <div class="panel"><div class="upload-box"><div class="upload-icon">▧</div><h3 id="source-title">Import an Excel workbook</h3><p>Column headings are used to map SKU, description, style, quantity, case code/category, and optional location fields. You can review the mapping after import.</p><input id="file-input" type="file" accept=".xlsx,.xls,.csv" hidden /><button class="primary" id="choose-file">Choose workbook</button><div class="hint" style="margin-top:10px">Supports .xlsx, .xls and .csv. Excel processing uses SheetJS from a CDN.</div></div><div id="import-summary" class="notice" style="display:none"></div></div>
+</section>
+
+<section class="view" id="view-new-audit">
+  <div class="section-head" style="margin-top:0"><div><h2>Build an audit</h2><p>Choose a category from the imported inventory, including blank case codes.</p></div></div>
+  <div class="panel">
+    <div class="upload-box" id="builder-upload"><div class="upload-icon">▧</div><h3>No workbook loaded yet</h3><p>Import your store inventory workbook to automatically group items by case code or category.</p><button class="primary" id="builder-import">Import workbook</button></div>
+    <div id="builder-content" style="display:none">
+      <div class="form-grid">
+        <div class="field"><label for="audit-name">Audit name</label><input id="audit-name" placeholder="e.g. GIBS – October audit" /></div>
+        <div class="field"><label for="category-search">Filter categories</label><input id="category-search" placeholder="Search case code/category…" /></div>
+      </div>
+      <div class="notice">“(BLANK)” is a dedicated category. Rows with an empty case code/category are grouped together so they can be quickly reviewed.</div>
+      <div class="category-grid" id="category-grid"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap"><div class="hint" id="selection-summary">Select a category to continue.</div><button class="primary" id="create-audit" disabled>Start audit →</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="view-audit-workspace">
+  <div class="panel">
+    <div class="audit-title"><div><div class="eyebrow">Active workspace</div><h2 id="workspace-title">No audit selected</h2><p id="workspace-subtitle">Start an audit from the dashboard to begin scanning.</p></div><div class="toolbar"><button class="outline" id="export-btn">↓ Export Excel</button><button class="secondary" id="complete-audit-btn">Complete audit</button></div></div>
+    <div class="audit-layout" style="margin-top:20px">
+      <div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr">
+          <div class="field"><label for="location-select">Current location</label><select id="location-select"><option value="">Select a location…</option></select></div>
+          <div class="field"><label for="location-manual">Or enter / scan location</label><input id="location-manual" placeholder="Scan location barcode…" /></div>
+        </div>
+        <div class="scan-bar"><input id="sku-input" placeholder="Scan or type SKU, then press Enter…" autocomplete="off" /><select id="scan-mode"><option value="one">Scan 1 unit / entry</option><option value="qty">Enter quantity</option></select><button class="primary" id="scan-btn">＋ Add SKU</button></div>
+        <div class="toolbar" style="justify-content:space-between;margin:0 0 12px"><span class="hint" id="current-location-label">Choose a location before scanning.</span><button class="secondary" id="complete-section-btn">Complete section</button></div>
+        <div class="table-wrap"><table><thead><tr><th>SKU</th><th>Description</th><th>Style</th><th>Expected qty</th><th>Scanned qty</th><th>Location</th><th>Result</th><th></th></tr></thead><tbody id="scan-table-body"><tr><td colspan="8" class="empty">Your scanned items will appear here.</td></tr></tbody></table></div>
+      </div>
+      <aside class="side-panel">
+        <div class="panel"><h3>Section summary</h3><div class="small-label">Current location scanned quantity</div><div class="big-number" id="section-qty">0</div><div class="mini-stat"><span>Unique SKUs scanned</span><b id="section-skus">0</b></div><div class="mini-stat"><span>Not in audit</span><b id="section-unknown">0</b></div><button class="primary" id="section-confirm" style="width:100%;margin-top:13px">Confirm section</button></div>
+        <div class="panel"><h3>Audit progress</h3><div class="big-number" id="workspace-progress">0%</div><div class="progressline"><span id="workspace-progress-bar" style="width:0%"></span></div><div class="mini-stat"><span>Reference SKUs</span><b id="workspace-reference">0</b></div><div class="mini-stat"><span>SKUs checked</span><b id="workspace-checked">0</b></div><div class="mini-stat"><span>Locations completed</span><b id="workspace-locations">0</b></div></div>
+        <div class="panel"><h3>Locations completed</h3><div class="location-list" id="completed-locations"><span class="hint">None yet</span></div></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="view-settings">
+  <div class="section-head" style="margin-top:0"><div><h2>Settings</h2><p>Manage location dropdowns and inventory column mapping.</p></div></div>
+  <div class="panel" style="margin-bottom:16px"><h3 style="margin:0 0 5px">Audit locations</h3><p class="hint">These locations appear in the audit workspace. You can add, rename, or remove options for your store.</p>
+    <div class="form-grid" style="grid-template-columns:1fr auto;margin-top:15px"><div class="field"><label for="new-location">Add location</label><input id="new-location" placeholder="Enter a location or bin name" /></div><div style="display:flex;align-items:end"><button class="primary" id="add-location">Add location</button></div></div>
+    <div class="settings-list" id="settings-locations"></div>
+  </div>
+  <div class="panel"><h3 style="margin:0 0 5px">Inventory column mapping</h3><p class="hint">After import, verify which spreadsheet columns correspond to each field. Automatic matching uses common heading names.</p>
+    <div id="mapping-form" class="form-grid" style="margin-top:15px"></div>
+    <div class="toolbar" style="margin-top:16px"><button class="primary" id="save-mapping">Save mapping & regroup inventory</button><span class="hint" id="mapping-status"></span></div>
+  </div>
+  <div class="notice">Prototype note: data is stored in this browser session only. Connect a secure backend and authentication before using it for live store audits or multiple iPads.</div>
+</section>
+</main>
+</div>
+<nav class="mobile-nav"><button class="active" data-view="dashboard"><span>▦</span>Dashboard</button><button data-view="new-audit"><span>＋</span>Build</button><button data-view="audit-workspace"><span>▤</span>Workspace</button><button data-view="settings"><span>⚙</span>Settings</button></nav>
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const defaultLocations = [
+ ...Array.from({length:7},(_,i)=>String(100+i)),
+ ...Array.from({length:9},(_,i)=>String(200+i)),
+ ...Array.from({length:18},(_,i)=>String(300+i)),
+ ...Array.from({length:10},(_,i)=>String(400+i)),
+ ...Array.from({length:10},(_,i)=>String(500+i)),
+ ...Array.from({length:12},(_,i)=>`Understock ${i+1}`),
+ 'Vault Holds','Vault ICM Bin','Vault Retags','Vault',
+ ...['Adam','Mandy','Jose','Roman','Donovan','Saima','Larkin','Virginia','Dennis','Roberto','Sunita','Christopher'].map(n=>`BA bin: ${n}`)
+];
+const fieldAliases={
+ sku:['sku','item number','item #','item no','product code','barcode','upc','scan upc','plu','stock number','inventory number'],
+ description:['description','item description','product description','product name','name'],
+ style:['style','style number','style #','model','model number','design','clu'],
+ quantity:['quantity','qty','on hand','on-hand','on hand qty','count','total qty','inventory qty'],
+price:['sale price','sell price','price','retail price'],
+salesFloor:['sales floor','ats','available to sell'],
+ category:['case code','casecode','case category','category','case','audit category','location category','group']
+};
+let locations=[...defaultLocations], inventory=[], columns=[], mapping={sku:-1,description:-1,style:-1,quantity:-1,price:-1,salesFloor:-1,category:-1}, audits=[], activeAuditId=null, selectedCategory=null, rawRows=[];
+const $=id=>document.getElementById(id);
+const norm=s=>String(s??'').trim().toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
+function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(window._toastTimer);window._toastTimer=setTimeout(()=>el.classList.remove('show'),2600)}
+function showView(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${name}`));document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));const titles={dashboard:'Audit dashboard','new-audit':'Build an audit','audit-workspace':'Audit workspace',settings:'Settings'};$('page-title').textContent=titles[name]||'Inventory audit';if(name==='new-audit')renderBuilder();if(name==='settings')renderSettings();if(name==='audit-workspace')renderWorkspace();window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+$('top-new').onclick=$('dashboard-build').onclick=()=>showView('new-audit');
+$('top-import').onclick=$('choose-file').onclick=$('builder-import').onclick=()=>$('file-input').click();
+$('file-input').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{let rows;if(file.name.toLowerCase().endsWith('.csv')){const txt=await file.text();rows=parseCSV(txt)}else{if(!window.XLSX)throw new Error('Excel library did not load. Check your internet connection and try again.');const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});const sheet=wb.Sheets[wb.SheetNames.includes('Report')?'Report':wb.SheetNames[0]];rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+ // DY Inventory by Location uses a two-row heading: the store/location is on row 1 and On Hand/ATS are on row 2.
+ if(file.name.toLowerCase().includes('dy inventory') && rows.length>1){
+   const top=rows[0]||[], sub=rows[1]||[];
+   const combined=top.map((v,i)=>String(sub[i]||v||`Column ${i+1}`).trim());
+   rows=[combined,...rows.slice(2)];
+ }}if(!rows.length)throw new Error('The selected workbook appears to be empty.');let dataStart=1;
+if(rows.length>1 && rows[1].some(v=>['on hand','ats','sales floor'].includes(norm(v)))) {
+  columns=rows[0].map((v,i)=>String(v||'').trim());
+  rows[1].forEach((v,i)=>{if(String(v??'').trim()){const nv=norm(v);if(['on hand','ats','sales floor'].includes(nv)) columns[i]=String(v).trim();}});
+  dataStart=2;
+} else columns=rows[0].map((v,i)=>String(v||`Column ${i+1}`).trim());
+columns=columns.map((v,i)=>v||`Column ${i+1}`);
+rawRows=rows.slice(dataStart).filter(r=>r.some(v=>String(v??'').trim()!==''));mapping=autoMap(columns);inventory=normalizeRows(rawRows);$('source-title').textContent=file.name;$('import-summary').style.display='block';$('import-summary').textContent=`Loaded ${inventory.length.toLocaleString()} rows from “${file.name}”. Verify the column mapping in Settings before starting an audit.`;toast(`Imported ${inventory.length} inventory rows`);renderDashboard();renderBuilder();renderMapping();}catch(err){toast(err.message||'Could not import workbook');}e.target.value='';});
+function parseCSV(text){const rows=[];let row=[],field='',q=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'&&q&&text[i+1]==='"'){field+='"';i++}else if(c==='"')q=!q;else if(c===','&&!q){row.push(field);field=''}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(field);rows.push(row);row=[];field=''}else field+=c}if(field.length||row.length){row.push(field);rows.push(row)}return rows}
+function autoMap(cols){const out={};for(const f in fieldAliases){out[f]=cols.findIndex(c=>fieldAliases[f].some(a=>norm(c)===norm(a)||norm(c).includes(a)));}return out}
+function normalizeRows(rows){return rows.map((r,i)=>({id:`row-${i}`,sku:String(r[mapping.sku]??'').trim(),description:String(r[mapping.description]??'').trim(),style:String(r[mapping.style]??'').trim(),quantity:Number(String(r[mapping.quantity]??0).replace(/,/g,''))||0,price:Number(String(r[mapping.price]??0).replace(/[$,]/g,''))||0,salesFloor:Number(String(r[mapping.salesFloor]??r[mapping.quantity]??0).replace(/[$,]/g,''))||0,category:String(r[mapping.category]??'').trim(),raw:r})).filter(x=>x.sku)}
+function rebuildInventory(){inventory=normalizeRows(rawRows);renderDashboard();renderBuilder();renderWorkspace()}
+function renderMapping(){const host=$('mapping-form');if(!columns.length){host.innerHTML='<div class="hint">Import a workbook to configure column mapping.</div>';return}const labels={sku:'UPC / scan code',description:'Description',style:'Style number / CLU',category:'Case code / category',price:'Sale price',quantity:'On Hand quantity',salesFloor:'Sales Floor quantity / ATS'};host.innerHTML=Object.entries(labels).map(([f,label])=>`<div class="field"><label for="map-${f}">${label}</label><select id="map-${f}"><option value="-1">— Not mapped —</option>${columns.map((c,i)=>`<option value="${i}" ${mapping[f]===i?'selected':''}>${esc(c)}</option>`).join('')}</select></div>`).join('');}
+$('save-mapping').onclick=()=>{if(!columns.length)return toast('Import a workbook first');Object.keys(mapping).forEach(f=>mapping[f]=Number($(`map-${f}`).value));rebuildInventory();$('mapping-status').textContent='Mapping saved for this session.';toast('Inventory regrouped using selected columns')};
+function categories(){const map=new Map();inventory.forEach(item=>{const k=item.category.trim()||'(BLANK)';if(!map.has(k))map.set(k,[]);map.get(k).push(item)});return [...map.entries()].sort((a,b)=>a[0]==='(BLANK)'?-1:b[0]==='(BLANK)'?1:a[0].localeCompare(b[0],undefined,{numeric:true}) )}
+function renderBuilder(){const has=inventory.length>0;$('builder-upload').style.display=has?'none':'block';$('builder-content').style.display=has?'block':'none';if(!has)return;const search=norm($('category-search').value);const cats=categories().filter(([name])=>norm(name).includes(search));$('category-grid').innerHTML=cats.map(([name,items])=>`<button class="category-option ${selectedCategory===name?'selected':''}" data-category="${escAttr(name)}"><b>${esc(name)}</b><small>${items.length} inventory row${items.length===1?'':'s'} · ${items.reduce((s,x)=>s+x.quantity,0)} units</small></button>`).join('')||'<div class="empty">No matching categories.</div>';document.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{selectedCategory=b.dataset.category;renderBuilder()});const count=selectedCategory?inventory.filter(x=>(x.category.trim()||'(BLANK)')===selectedCategory).length:0;$('selection-summary').textContent=selectedCategory?`${selectedCategory} selected · ${count} reference SKUs`:'Select a category to continue.';$('create-audit').disabled=!selectedCategory;$('audit-name').placeholder=selectedCategory?`${selectedCategory} audit`:'e.g. GIBS – October audit'}
+$('category-search').addEventListener('input',renderBuilder);
+$('create-audit').onclick=()=>{if(!selectedCategory)return;const items=inventory.filter(x=>(x.category.trim()||'(BLANK)')===selectedCategory).map(x=>({...x}));if(!items.length)return toast('No items in this category');const id=`audit-${Date.now()}`;const name=$('audit-name').value.trim()||`${selectedCategory} audit`;audits.unshift({id,name,category:selectedCategory,items,scans:[],completedLocations:[],status:'in-progress',createdAt:new Date().toISOString(),completedAt:null,workedBy:'',auditNotes:''});activeAuditId=id;renderDashboard();showView('audit-workspace');toast('Audit started');};
+function activeAudit(){return audits.find(a=>a.id===activeAuditId)}
+function auditProgress(a){if(!a||!a.items.length)return 0;const expected=new Set(a.items.map(x=>x.sku));const checked=new Set(a.scans.filter(s=>expected.has(s.sku)).map(s=>s.sku));return Math.min(100,Math.round(checked.size/expected.size*100))}
+function renderDashboard(){const completed=audits.filter(a=>a.status==='completed').length,progress=audits.length-completed;$('stat-completed').textContent=completed;$('stat-progress').textContent=progress;$('stat-skus').textContent=inventory.length.toLocaleString();$('stat-scans').textContent=audits.reduce((n,a)=>n+a.scans.length,0).toLocaleString();const q=norm($('audit-search').value),f=$('audit-filter').value;const list=audits.filter(a=>(!q||norm(a.name+' '+a.category+' '+a.status).includes(q))&&(f==='all'||a.status===f));$('audit-grid').innerHTML=list.map(a=>{const p=auditProgress(a);return `<article class="audit-card"><div class="audit-card-top"><div><h3>${esc(a.name)}</h3><p>${esc(a.category)} · ${a.items.length} reference SKUs</p></div><span class="tag ${a.status==='completed'?'done':'progress'}">${a.status==='completed'?'Completed':'In progress'}</span></div><div class="progressline"><span style="width:${p}%"></span></div><div class="audit-meta"><span>${p}% checked · ${a.scans.length} scan entries</span><span>${a.completedLocations.length} locations</span></div><div class="audit-actions"><button class="primary" data-open="${a.id}">${a.status==='completed'?'Review audit':'Continue audit'} →</button><button class="outline" data-export="${a.id}">Export</button></div></article>`}).join('')||'<div class="panel empty" style="grid-column:1/-1"><b>No audits yet</b>Import inventory, then build your first audit.</div>';document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{activeAuditId=b.dataset.open;showView('audit-workspace')});document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>exportAudit(b.dataset.export));}
+$('audit-search').addEventListener('input',renderDashboard);$('audit-filter').addEventListener('change',renderDashboard);
+function fillLocations(){const sel=$('location-select'),old=sel.value;sel.innerHTML='<option value="">Select a location…</option>'+locations.map(l=>`<option value="${escAttr(l)}">${esc(l)}</option>`).join('');if(locations.includes(old))sel.value=old}
+function currentLocation(){return $('location-manual').value.trim()||$('location-select').value}
+$('location-select').onchange=()=>{$('location-manual').value='';updateLocationLabel()};
+$('location-manual').addEventListener('input',()=>{if($('location-manual').value.trim())$('location-select').value='';updateLocationLabel()});
+$('location-manual').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('sku-input').focus()}});
+function updateLocationLabel(){$('current-location-label').textContent=currentLocation()?`Scanning into location: ${currentLocation()}`:'Choose a location before scanning.'}
+function renderWorkspace(){const a=activeAudit();fillLocations();if(!a){$('workspace-title').textContent='No audit selected';$('workspace-subtitle').textContent='Start an audit from the dashboard to begin scanning.';$('scan-table-body').innerHTML='<tr><td colspan="8" class="empty">Your scanned items will appear here.</td></tr>';return} $('workspace-title').textContent=a.name;$('workspace-subtitle').textContent=`${a.category} · ${a.items.length} reference SKUs · ${a.status==='completed'?'Completed':'In progress'}`;const scans=a.scans;const rows=scans.slice().reverse();$('scan-table-body').innerHTML=rows.map((s,revIndex)=>{const i=scans.length-1-revIndex;return `<tr><td><b>${esc(s.sku)}</b></td><td>${esc(s.description||'—')}</td><td>${esc(s.style||'—')}</td><td>${s.expected===null?'—':s.expected}</td><td>${s.qty}</td><td>${esc(s.location)}</td><td><span class="status ${s.result==='Match'?'match':s.result==='Not in audit'?'missing':'unknown'}">${esc(s.result)}</span></td><td><button class="danger" style="padding:5px 8px" data-delete-scan="${i}" aria-label="Remove scan">×</button></td></tr>`}).join('')||'<tr><td colspan="8" class="empty">No scans yet. Select a location and scan your first SKU.</td></tr>';document.querySelectorAll('[data-delete-scan]').forEach(b=>b.onclick=()=>{a.scans.splice(Number(b.dataset.deleteScan),1);renderWorkspace();renderDashboard()});const loc=currentLocation();const locScans=scans.filter(s=>s.location===loc);$('section-qty').textContent=locScans.reduce((n,s)=>n+s.qty,0);$('section-skus').textContent=new Set(locScans.map(s=>s.sku)).size;$('section-unknown').textContent=locScans.filter(s=>s.result==='Not in audit').length;const p=auditProgress(a);$('workspace-progress').textContent=p+'%';$('workspace-progress-bar').style.width=p+'%';$('workspace-reference').textContent=a.items.length;$('workspace-checked').textContent=new Set(scans.filter(s=>a.items.some(i=>i.sku===s.sku)).map(s=>s.sku)).size;$('workspace-locations').textContent=a.completedLocations.length;$('completed-locations').innerHTML=a.completedLocations.map(l=>`<span class="location-chip">✓ ${esc(l)}</span>`).join('')||'<span class="hint">None yet</span>';updateLocationLabel();$('complete-audit-btn').textContent=a.status==='completed'?'Reopen audit':'Complete audit';}
+function addScan(){const a=activeAudit();if(!a)return toast('Start or select an audit first');if(a.status==='completed')return toast('Reopen this audit before scanning');const loc=currentLocation();if(!loc)return toast('Choose or scan a location first');const sku=$('sku-input').value.trim();if(!sku)return toast('Scan or enter a SKU');const ref=a.items.find(x=>x.sku.toLowerCase()===sku.toLowerCase());let qty=1;if($('scan-mode').value==='qty'){const val=prompt('Enter scanned quantity for '+sku,'1');if(val===null)return;qty=Number(val);if(!Number.isFinite(qty)||qty<=0)return toast('Enter a quantity greater than zero')}const existing=a.scans.find(s=>s.sku.toLowerCase()===sku.toLowerCase()&&s.location===loc&&s.result===(ref?'Match':'Not in audit'));if(existing){existing.qty+=qty}else a.scans.push({sku,description:ref?.description||'',style:ref?.style||'',expected:ref?ref.quantity:null,qty,location:loc,result:ref?'Match':'Not in audit',timestamp:new Date().toISOString()});$('sku-input').value='';renderWorkspace();renderDashboard();$('sku-input').focus();toast(ref?'SKU added to audit':'SKU recorded: not in audit')}
+$('scan-btn').onclick=addScan;$('sku-input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addScan()}});
+function completeSection(){const a=activeAudit();if(!a)return toast('No active audit');const loc=currentLocation();if(!loc)return toast('Choose a location first');if(!a.completedLocations.includes(loc))a.completedLocations.push(loc);const total=a.scans.filter(s=>s.location===loc).reduce((n,s)=>n+s.qty,0);renderWorkspace();renderDashboard();toast(`${loc} completed · ${total} total units scanned`)}
+$('complete-section-btn').onclick=$('section-confirm').onclick=completeSection;
+$('complete-audit-btn').onclick=()=>{const a=activeAudit();if(!a)return toast('No audit selected');if(a.status==='completed'){a.status='in-progress';a.completedAt=null;toast('Audit reopened')}else{if(!confirm('Mark this audit complete? You can still export and review it.'))return;a.status='completed';a.completedAt=new Date().toISOString();toast('Audit marked complete')}renderWorkspace();renderDashboard()};
+function exportAudit(id){
+ const a=audits.find(x=>x.id===id);if(!a)return toast('Audit not found');
+ if(!window.XLSX)return toast('Excel export requires an internet connection to load the workbook library');
+ const wb=XLSX.utils.book_new();
+ const exportedAt=new Date();
+ // Capture the audit handoff details once and retain them for subsequent exports.
+ if(a.workedBy===undefined)a.workedBy='';
+ if(a.auditNotes===undefined)a.auditNotes='';
+ const workedBy=prompt('Who worked on this audit? (Names or initials)',a.workedBy||'');
+ if(workedBy===null)return;
+ a.workedBy=workedBy.trim();
+ const auditNotes=prompt('Audit notes (issues, exceptions, recounts, context)',a.auditNotes||'');
+ if(auditNotes===null)return;
+ a.auditNotes=auditNotes.trim();
+ const appBanner=`BUILT BY INVENTORY AUDIT APP  |  ${a.category}  |  EXPORTED ${exportedAt.toLocaleDateString('en-US')}`;
+ const scanRows=[[appBanner],['Scan UPC','Not in TWC','Qty Scanned/On Hand','Style Number','Price','Description','Location']];
+ a.scans.forEach(s=>{
+   const excelSku=/^\d+$/.test(s.sku)?Number(s.sku):s.sku;
+   // Expand quantity entries into individual UPC rows so COUNTIF-based formulas match the reference workbook.
+   for(let unit=0;unit<Math.max(1,Math.floor(Number(s.qty)||1));unit++){
+     const r=scanRows.length+1;
+     scanRows.push([excelSku,
+      {f:`IF(COUNTIF(Audit!$B:$B,$A${r})>0,"-","Not in TWC")`},
+      {f:`IF($A${r}="","",COUNTIF($A$3:$A${r},$A${r})&"/"&IFERROR(VLOOKUP(VALUE($A${r}),Audit!$B:$G,6,FALSE),0))`},
+      {f:`IFERROR(INDEX(Audit!$D:$D,MATCH(VALUE(A${r}),Audit!$B:$B,0)),"Not Found")`},
+      {f:`IFERROR(INDEX(Audit!$F:$F,MATCH(VALUE(A${r}),Audit!$B:$B,0)),"-")`},
+      {f:`IFERROR(INDEX(Audit!$C:$C,MATCH(VALUE(A${r}),Audit!$B:$B,0)),"-")`},
+      s.location
+     ]);
+   }
+ });
+ const scanWs=XLSX.utils.aoa_to_sheet(scanRows);
+ scanWs['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}}];
+ scanWs['!autofilter']={ref:`A2:G${Math.max(2,scanRows.length)}`};
+ scanWs['!freeze']={xSplit:0,ySplit:2};
+ scanWs['!cols']=[{wch:18},{wch:16},{wch:25},{wch:22},{wch:12},{wch:62},{wch:20}];
+ XLSX.utils.book_append_sheet(wb,scanWs,'Scan');
+ const auditRows=[[appBanner],['','UPC','Description','Style Number','Case Code','Sale Price','On Hand','Sales Floor','Scan Qty','Variance','Phy Qty','UPC Lookup']];
+ a.items.forEach((x,i)=>{
+   const r=i+3;
+   const excelSku=/^\d+$/.test(x.sku)?Number(x.sku):x.sku;
+   auditRows.push(['',excelSku,x.description,x.style,x.category||'(BLANK)',x.price||0,x.quantity,x.salesFloor,
+    {f:`IF(B${r}="","",COUNTIF(Scan!$A:$A,B${r}))`},
+    {f:`IF(B${r}="","",I${r}-G${r})`},
+    null,
+    {f:`IFERROR(VALUE(B${r}),"")`}
+   ]);
+ });
+ const auditWs=XLSX.utils.aoa_to_sheet(auditRows);
+ auditWs['!merges']=[{s:{r:0,c:0},e:{r:0,c:11}}];
+ auditWs['!autofilter']={ref:`B2:K${Math.max(2,auditRows.length)}`};
+ auditWs['!freeze']={xSplit:0,ySplit:2};
+ auditWs['!cols']=[{wch:3},{wch:17},{wch:62},{wch:22},{wch:31},{wch:14},{wch:10},{wch:12},{wch:10},{wch:10},{wch:10},{wch:18}];
+ XLSX.utils.book_append_sheet(wb,auditWs,'Audit');
+ // Summary worksheet documents the baseline, the final observed counts, and the handoff notes.
+ const totalOnHand=a.items.reduce((n,x)=>n+(Number(x.quantity)||0),0);
+ const totalSalesFloor=a.items.reduce((n,x)=>n+(Number(x.salesFloor)||0),0);
+ const totalScanUnits=a.scans.reduce((n,x)=>n+(Number(x.qty)||0),0);
+ const matchedScans=a.scans.filter(x=>x.result!=='Not in audit').reduce((n,x)=>n+(Number(x.qty)||0),0);
+ const unrecognizedScans=a.scans.filter(x=>x.result==='Not in audit').reduce((n,x)=>n+(Number(x.qty)||0),0);
+ const uniqueScannedSkus=new Set(a.scans.map(x=>String(x.sku).toLowerCase())).size;
+ const matchedUniqueSkus=new Set(a.scans.filter(x=>x.result!=='Not in audit').map(x=>String(x.sku).toLowerCase())).size;
+ const baselineDate=new Date(a.createdAt||exportedAt).toLocaleString('en-US');
+ const completionDate=a.completedAt?new Date(a.completedAt).toLocaleString('en-US'):(a.status==='completed'?exportedAt.toLocaleString('en-US'):'Not marked complete');
+ const summaryRows=[
+  ['BUILT BY INVENTORY AUDIT APP  |  AUDIT SUMMARY'],
+  ['Audit name',a.name],
+  ['Category / case code',a.category],
+  ['Audit status',a.status==='completed'?'Completed':'In progress'],
+  ['Audit started',baselineDate],
+  ['Audit completed',completionDate],
+  ['Exported at',exportedAt.toLocaleString('en-US')],
+  ['Worked on by',a.workedBy||'Not provided'],
+  ['Locations completed',a.completedLocations.length],
+  ['Completed locations',a.completedLocations.join(', ')||'None'],
+  [],
+  ['BASELINE AT START OF AUDIT'],
+  ['Reference SKUs at start',a.items.length],
+  ['Expected on-hand units at start',totalOnHand],
+  ['Sales-floor units from source',totalSalesFloor],
+  ['Inventory source / note','Baseline values are imported from the source inventory workbook. See Audit worksheet for item-level starting quantities.'],
+  [],
+  ['FINAL AUDIT COUNTS AT EXPORT'],
+  ['Total units recorded in scan log',totalScanUnits],
+  ['Units matching reference inventory',matchedScans],
+  ['Units marked Not in audit',unrecognizedScans],
+  ['Unique SKUs scanned',uniqueScannedSkus],
+  ['Unique recognized SKUs scanned',matchedUniqueSkus],
+  ['Reference SKUs not yet scanned',Math.max(0,a.items.length-matchedUniqueSkus)],
+  ['Audit progress',auditProgress(a)+'%'],
+  ['Completed locations count',a.completedLocations.length],
+  [],
+  ['AUDIT NOTES'],
+  [a.auditNotes||'No notes provided.'],
+  [],
+  ['COUNTING GUIDANCE'],
+  ['Starting on-hand and sales-floor values are the imported baseline, not a claim that every item was physically counted. Final scan totals reflect entries recorded by this app at export time. Review Scan and Audit for item-level detail and variance calculations.']
+ ];
+ const summaryWs=XLSX.utils.aoa_to_sheet(summaryRows);
+ summaryWs['!merges']=[{s:{r:0,c:0},e:{r:0,c:1}},{s:{r:11,c:0},e:{r:11,c:1}},{s:{r:17,c:0},e:{r:17,c:1}},{s:{r:27,c:0},e:{r:27,c:1}},{s:{r:28,c:0},e:{r:28,c:1}},{s:{r:30,c:0},e:{r:30,c:1}},{s:{r:31,c:0},e:{r:31,c:1}}];
+ summaryWs['!cols']=[{wch:36},{wch:100}];
+ XLSX.utils.book_append_sheet(wb,summaryWs,'Audit Summary');
+ wb.SheetNames.unshift(wb.SheetNames.pop());
+ const filename=`${a.category.replace(/[^a-z0-9]+/gi,'')||'Audit'} - ${new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'}).replaceAll('/','.')} - AO.xlsx`;
+ XLSX.writeFile(wb,filename);
+ toast('Audit exported with Audit Summary, Scan, and Audit worksheets');
+}
+$('export-btn').onclick=()=>{if(!activeAudit())return toast('Select an audit first');exportAudit(activeAuditId)};
+function renderSettings(){fillLocations();$('settings-locations').innerHTML=locations.map((l,i)=>`<div class="setting-row"><span>${esc(l)}</span><div class="toolbar"><button class="outline" data-rename="${i}">Rename</button><button class="danger" data-remove="${i}">Remove</button></div></div>`).join('');document.querySelectorAll('[data-rename]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.rename),v=prompt('Rename location',locations[i]);if(v&&v.trim()){locations[i]=v.trim();renderSettings();fillLocations();toast('Location renamed')}});document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.remove);if(confirm(`Remove location “${locations[i]}” from the dropdown? Existing scan history will be preserved.`)){locations.splice(i,1);renderSettings();fillLocations()}});renderMapping()}
+$('add-location').onclick=()=>{const v=$('new-location').value.trim();if(!v)return toast('Enter a location name');if(locations.some(l=>l.toLowerCase()===v.toLowerCase()))return toast('That location already exists');locations.push(v);$('new-location').value='';renderSettings();fillLocations();toast('Location added')};
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function escAttr(s){return esc(s)}
+renderDashboard();fillLocations();renderMapping();
+</script>
+</body>
+</html>

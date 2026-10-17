@@ -6,13 +6,200 @@
 <title>Inventory Audit | Store Ops</title>
 <style>
 :root{--bg:#f4f6fa;--panel:#fff;--ink:#172033;--muted:#69758b;--line:#e3e8f0;--navy:#17243b;--accent:#5867e8;--accent2:#e9ebff;--green:#16866b;--amber:#a66b10;--red:#c34242;--shadow:0 12px 35px rgba(29,43,69,.07);--radius:18px}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:11px;padding:11px 15px;font-weight:650;transition:.15s}button:active{transform:scale(.98)}.primary{background:var(--accent);color:white}.secondary{background:#edf0f6;color:var(--ink)}.outline{background:transparent;border:1px solid var(--line);color:var(--ink)}.danger{background:#fff0f0;color:var(--red)}.app{display:flex;min-height:100vh}.sidebar{width:245px;background:var(--navy);color:#fff;padding:26px 16px;display:flex;flex-direction:column;gap:25px}.brand{display:flex;align-items:center;gap:11px;padding:0 8px}.brand-mark{width:38px;height:38px;border-radius:12px;background:#6976f0;display:grid;place-items:center;font-weight:900}.brand strong{display:block;font-size:15px;letter-spacing:.02em}.brand small{color:#aab5cb}.nav{display:grid;gap:7px}.nav button{display:flex;align-items:center;gap:12px;text-align:left;background:transparent;color:#b9c4d8;padding:12px 14px}.nav button.active,.nav button:hover{background:#293751;color:white}.nav .ico{width:21px;text-align:center;font-size:17px}.side-note{margin-top:auto;padding:15px;border:1px solid #394761;border-radius:14px;color:#aeb9cc;font-size:12px}.side-note b{display:block;color:#fff;font-size:13px;margin-bottom:4px}.main{flex:1;min-width:0;padding:28px clamp(16px,3vw,42px) 50px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:26px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:11px;color:var(--muted);font-weight:800}.topbar h1{font-size:clamp(25px,3vw,34px);letter-spacing:-.04em;margin:5px 0 0}.top-actions{display:flex;gap:9px;align-items:center}.avatar{width:38px;height:38px;border-radius:50%;background:#e4e8ff;color:#4d59d5;display:grid;place-items:center;font-weight:800}.view{display:none}.view.active{display:block}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:23px}.stat,.panel,.audit-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.stat{padding:19px}.stat-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px}.stat-icon{width:32px;height:32px;border-radius:10px;background:#f0f2ff;color:var(--accent);display:grid;place-items:center}.stat-value{font-size:30px;font-weight:800;letter-spacing:-.04em;margin:10px 0 2px}.stat-sub{font-size:12px;color:var(--muted)}.section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:26px 0 13px}.section-head h2{margin:0;font-size:18px;letter-spacing:-.025em}.section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.panel{padding:20px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.search{flex:1;min-width:180px;position:relative}.search input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:#fff}.audit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.audit-card{padding:18px;box-shadow:none}.audit-card-top{display:flex;justify-content:space-between;gap:12px}.audit-card h3{margin:0 0 4px;font-size:17px}.audit-card p{margin:0;color:var(--muted);font-size:13px}.tag{font-size:11px;font-weight:800;border-radius:20px;padding:5px 9px;background:#eef1f6;color:#68758a;white-space:nowrap;height:max-content}.tag.progress{background:#fff4dc;color:var(--amber)}.tag.done{background:#e0f6ee;color:var(--green)}.progressline{height:7px;background:#edf0f5;border-radius:9px;overflow:hidden;margin:18px 0 9px}.progressline span{display:block;height:100%;background:var(--accent);border-radius:9px}.audit-meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}.audit-actions{display:flex;gap:8px;margin-top:15px}.audit-actions button{flex:1}.empty{padding:34px 16px;text-align:center;color:var(--muted)}.empty b{display:block;color:var(--ink);margin-bottom:4px}.upload-box{border:1.5px dashed #c7cede;border-radius:16px;padding:24px;text-align:center;background:#fafbfe}.upload-box .upload-icon{font-size:30px;margin-bottom:8px}.upload-box h3{margin:0 0 5px}.upload-box p{margin:0 auto 14px;max-width:460px;color:var(--muted);font-size:13px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:750;color:#536078}.field input,.field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--ink)}.hint{font-size:12px;color:var(--muted)}.category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:15px}.category-option{border:1px solid var(--line);border-radius:13px;padding:13px;background:#fff;text-align:left}.category-option.selected{border-color:var(--accent);background:#f2f3ff;box-shadow:0 0 0 2px #e5e7ff}.category-option b{display:block;font-size:14px;overflow-wrap:anywhere}.category-option small{color:var(--muted)}.audit-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px}.audit-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.audit-title h2{margin:0;font-size:22px}.audit-title p{margin:4px 0 0;color:var(--muted);font-size:13px}.scan-bar{display:grid;grid-template-columns:1fr 180px auto;gap:9px;margin:18px 0}.scan-bar input,.scan-bar select{min-width:0;border:1px solid var(--line);border-radius:11px;padding:12px;background:#fff}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px;background:white}table{width:100%;border-collapse:collapse;min-width:720px;font-size:13px}th{background:#f7f8fb;color:#657187;text-align:left;text-transform:uppercase;letter-spacing:.06em;font-size:10px;padding:12px 13px;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:12px 13px;border-bottom:1px solid #edf0f5;vertical-align:middle}tr:last-child td{border-bottom:0}.status{display:inline-flex;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:750}.status.match{background:#e0f6ee;color:var(--green)}.status.missing{background:#fff0f0;color:var(--red)}.status.unknown{background:#fff4dc;color:var(--amber)}.side-panel{display:grid;gap:14px;align-content:start}.side-panel .panel{box-shadow:none}.side-panel h3{font-size:14px;margin:0 0 12px}.big-number{font-size:29px;font-weight:850;letter-spacing:-.04em}.mini-stat{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #edf0f5;font-size:12px}.mini-stat:last-child{border:0}.mini-stat span{color:var(--muted)}.location-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.location-chip{padding:5px 8px;background:#f0f2f7;border-radius:8px;font-size:11px;color:#58647a}.settings-list{display:grid;gap:8px;margin-top:12px}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}.setting-row button{padding:6px 9px;font-size:12px}.notice{padding:12px 14px;border-radius:11px;background:#f1f3ff;color:#505ed0;font-size:12px;margin-top:12px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#17243b;color:white;padding:12px 17px;border-radius:12px;box-shadow:var(--shadow);z-index:20;display:none;max-width:calc(100% - 24px);font-size:13px}.toast.show{display:block}.mobile-nav{display:none}.small-label{font-size:11px;color:var(--muted)}.muted{color:var(--muted)}.right{margin-left:auto}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:11px;padding:11px 15px;font-weight:650;transition:.15s}button:active{transform:scale(.98)}.primary{background:var(--accent);color:white}.secondary{background:#edf0f6;color:var(--ink)}.outline{background:transparent;border:1px solid var(--line);color:var(--ink)}.danger{background:#fff0f0;color:var(--red)}.app{display:flex;min-height:100vh}.sidebar{width:245px;background:var(--navy);color:#fff;padding:26px 16px;display:flex;flex-direction:column;gap:25px}.brand{display:flex;align-items:center;gap:11px;padding:0 8px}.brand-mark{width:38px;height:38px;border-radius:12px;background:#6976f0;display:grid;place-items:center;font-weight:900}.brand strong{display:block;font-size:15px;letter-spacing:.02em}.brand small{color:#aab5cb}.nav{display:grid;gap:7px}.nav button{display:flex;align-items:center;gap:12px;text-align:left;background:transparent;color:#b9c4d8;padding:12px 14px}.nav button.active,.nav button:hover{background:#293751;color:white}.nav .ico{width:21px;text-align:center;font-size:17px}.side-note{margin-top:auto;padding:15px;border:1px solid #394761;border-radius:14px;color:#aeb9cc;font-size:12px}.side-note b{display:block;color:#fff;font-size:13px;margin-bottom:4px}.main{flex:1;min-width:0;padding:28px clamp(16px,3vw,42px) 50px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:26px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:11px;color:var(--muted);font-weight:800}.topbar h1{font-size:clamp(25px,3vw,34px);letter-spacing:-.04em;margin:5px 0 0}.top-actions{display:flex;gap:9px;align-items:center}.avatar{width:38px;height:38px;border-radius:50%;background:#e4e8ff;color:#4d59d5;display:grid;place-items:center;font-weight:800}.view{display:none}.view.active{display:block}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:23px}.stat,.panel,.audit-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.stat{padding:19px}.stat-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px}.stat-icon{width:32px;height:32px;border-radius:10px;background:#f0f2ff;color:var(--accent);display:grid;place-items:center}.stat-value{font-size:30px;font-weight:800;letter-spacing:-.04em;margin:10px 0 2px}.stat-sub{font-size:12px;color:var(--muted)}.section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:26px 0 13px}.section-head h2{margin:0;font-size:18px;letter-spacing:-.025em}.section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.panel{padding:20px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.search{flex:1;min-width:180px;position:relative}.search input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:#fff}.audit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.audit-card{padding:18px;box-shadow:none}.audit-card-top{display:flex;justify-content:space-between;gap:12px}.audit-card h3{margin:0 0 4px;font-size:17px}.audit-card p{margin:0;color:var(--muted);font-size:13px}.tag{font-size:11px;font-weight:800;border-radius:20px;padding:5px 9px;background:#eef1f6;color:#68758a;white-space:nowrap;height:max-content}.tag.progress{background:#fff4dc;color:var(--amber)}.tag.done{background:#e0f6ee;color:var(--green)}.progressline{height:7px;background:#edf0f5;border-radius:9px;overflow:hidden;margin:18px 0 9px}.progressline span{display:block;height:100%;background:var(--accent);border-radius:9px}.audit-meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}.audit-actions{display:flex;gap:8px;margin-top:15px}.audit-actions button{flex:1}.empty{padding:34px 16px;text-align:center;color:var(--muted)}.empty b{display:block;color:var(--ink);margin-bottom:4px}.upload-box{border:1.5px dashed #c7cede;border-radius:16px;padding:24px;text-align:center;background:#fafbfe}.upload-box .upload-icon{font-size:30px;margin-bottom:8px}.upload-box h3{margin:0 0 5px}.upload-box p{margin:0 auto 14px;max-width:460px;color:var(--muted);font-size:13px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:750;color:#536078}.field input,.field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--ink)}.hint{font-size:12px;color:var(--muted)}.category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:15px}.category-option{border:1px solid var(--line);border-radius:13px;padding:13px;background:#fff;text-align:left}.category-option.selected{border-color:var(--accent);background:#f2f3ff;box-shadow:0 0 0 2px #e5e7ff}.category-option b{display:block;font-size:14px;overflow-wrap:anywhere}.category-option small{color:var(--muted)}.audit-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px}.audit-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.audit-title h2{margin:0;font-size:22px}.audit-title p{margin:4px 0 0;color:var(--muted);font-size:13px}.scan-bar{display:grid;grid-template-columns:1fr 180px auto;gap:9px;margin:18px 0}.scan-bar input,.scan-bar select{min-width:0;border:1px solid var(--line);border-radius:11px;padding:12px;background:#fff}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px;background:white}table{width:100%;border-collapse:collapse;min-width:720px;font-size:13px}th{background:#f7f8fb;color:#657187;text-align:left;text-transform:uppercase;letter-spacing:.06em;font-size:10px;padding:12px 13px;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:12px 13px;border-bottom:1px solid #edf0f5;vertical-align:middle}tr:last-child td{border-bottom:0}.status{display:inline-flex;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:750}.status.match{background:#e0f6ee;color:var(--green)}.status.missing{background:#fff0f0;color:var(--red)}.status.unknown{background:#fff4dc;color:var(--amber)}.side-panel{display:grid;gap:14px;align-content:start}.side-panel .panel{box-shadow:none}.side-panel h3{font-size:14px;margin:0 0 12px}.big-number{font-size:29px;font-weight:850;letter-spacing:-.04em}.mini-stat{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #edf0f5;font-size:12px}.mini-stat:last-child{border:0}.mini-stat span{color:var(--muted)}.location-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.location-chip{padding:5px 8px;background:#f0f2f7;border-radius:8px;font-size:11px;color:#58647a}.settings-list{display:grid;gap:8px;margin-top:12px}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}.setting-row button{padding:6px 9px;font-size:12px}.notice{padding:12px 14px;border-radius:11px;background:#f1f3ff;color:#505ed0;font-size:12px;margin-top:12px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#17243b;color:white;padding:12px 17px;border-radius:12px;box-shadow:var(--shadow);z-index:20;display:none;max-width:calc(100% - 24px);font-size:13px}.toast.show{display:block}.mobile-nav{display:none}.mobile-menu-trigger{display:none}.mobile-menu-backdrop{display:none}.small-label{font-size:11px;color:var(--muted)}.muted{color:var(--muted)}.right{margin-left:auto}
 @media(max-width:1000px){.sidebar{width:210px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.audit-layout{grid-template-columns:1fr}.side-panel{grid-template-columns:repeat(2,minmax(0,1fr))}.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.app{display:block}.sidebar{display:none}.main{padding:18px 14px 90px}.topbar{align-items:flex-start;margin-bottom:20px}.topbar h1{font-size:27px}.top-actions .desktop-btn{display:none}.stats{gap:9px}.stat{padding:14px}.stat-value{font-size:25px}.stat-top{font-size:11px}.stat-icon{width:28px;height:28px}.stat-sub{font-size:11px}.section-head{align-items:flex-start}.audit-grid{grid-template-columns:1fr}.panel{padding:15px}.form-grid{grid-template-columns:1fr}.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.scan-bar{grid-template-columns:1fr 1fr}.scan-bar input:first-child{grid-column:1/-1}.scan-bar button{grid-column:1/-1}.side-panel{grid-template-columns:1fr 1fr}.top-actions{gap:6px}.top-actions button{padding:9px 11px}.mobile-nav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--line);padding:7px 5px calc(7px + env(safe-area-inset-bottom));z-index:10}.mobile-nav button{background:transparent;color:#738097;font-size:10px;padding:6px 2px;display:grid;gap:3px;justify-items:center}.mobile-nav button span{font-size:18px}.mobile-nav button.active{color:var(--accent)}.audit-title{display:block}.audit-title button{margin-top:12px}.upload-box{padding:20px 14px}}
 @media(max-width:420px){.side-panel{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.category-grid{grid-template-columns:1fr 1fr}.audit-meta{gap:8px}.audit-actions button{padding:10px 8px;font-size:12px}}
+
+/* Active audit focus: subtle indigo aura keeps the active task visually prominent. */
+#view-audit-workspace.active .panel:first-child{position:relative;box-shadow:0 0 0 1px rgba(88,103,232,.22),0 0 28px rgba(88,103,232,.18),0 12px 35px rgba(29,43,69,.07);animation:auditAura 3s ease-in-out infinite}
+@keyframes auditAura{0%,100%{box-shadow:0 0 0 1px rgba(88,103,232,.2),0 0 18px rgba(88,103,232,.12),0 12px 35px rgba(29,43,69,.07)}50%{box-shadow:0 0 0 2px rgba(88,103,232,.42),0 0 32px rgba(88,103,232,.24),0 12px 35px rgba(29,43,69,.07)}}
+.audit-handoff{display:grid;grid-template-columns:minmax(150px,.65fr) minmax(220px,1.35fr);gap:12px;padding:16px;margin-top:16px;border:1px solid #dfe3ff;border-radius:14px;background:linear-gradient(120deg,#f5f6ff,#fff)}
+.audit-handoff .field{margin:0}
+.audit-lock-note{display:flex;gap:9px;align-items:center;padding:10px 13px;margin-top:12px;border-radius:10px;background:#f0f1ff;color:#414db7;font-size:13px}
+@media(max-width:680px){.audit-handoff{grid-template-columns:1fr}}
+/* Dedicated full-screen audit mode: no app navigation while the audit is active. */
+.app.audit-fullscreen{display:block;min-height:100dvh;background:#f4f6fa}
+.app.audit-fullscreen .sidebar,.app.audit-fullscreen .topbar,.app.audit-fullscreen~.mobile-nav{display:none!important}
+.app.audit-fullscreen .main{width:100%;min-height:100dvh;padding:clamp(12px,2vw,28px);}
+.app.audit-fullscreen #view-audit-workspace.active{min-height:calc(100dvh - 24px)}
+.app.audit-fullscreen #view-audit-workspace>.panel{min-height:calc(100dvh - 48px);padding:clamp(14px,2vw,26px);border-color:#d8dcff;box-shadow:0 0 0 2px rgba(88,103,232,.16),0 0 34px rgba(88,103,232,.18),0 16px 48px rgba(29,43,69,.08);animation:auditAura 3s ease-in-out infinite}
+.app.audit-fullscreen .audit-layout{grid-template-columns:minmax(0,1fr) 270px}
+.app.audit-fullscreen .audit-title{align-items:center}
+.app.audit-fullscreen .audit-focus-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:#edf0ff;color:#4b59d0;font-size:11px;font-weight:850;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+.app.audit-fullscreen .audit-focus-pill i{width:7px;height:7px;border-radius:50%;background:#5867e8;box-shadow:0 0 0 4px rgba(88,103,232,.14);animation:focusPulse 1.8s ease-in-out infinite}
+@keyframes focusPulse{50%{box-shadow:0 0 0 7px rgba(88,103,232,.04)}}
+.audit-loading{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 35%,#202e51 0%,#111b31 52%,#0a1222 100%);color:#fff}
+.audit-loading.show{display:flex}
+.audit-loading-card{width:min(440px,100%);text-align:center}
+.loading-mark{width:64px;height:64px;margin:0 auto 26px;border:1px solid rgba(151,163,255,.38);border-radius:20px;display:grid;place-items:center;background:rgba(88,103,232,.16);color:#c7ccff;font-size:28px;box-shadow:0 0 45px rgba(88,103,232,.22)}
+.loading-orbit{width:42px;height:42px;margin:0 auto 25px;border:3px solid rgba(255,255,255,.13);border-top-color:#aeb6ff;border-right-color:#7d8aff;border-radius:50%;animation:loadingSpin .85s linear infinite}
+@keyframes loadingSpin{to{transform:rotate(360deg)}}
+.audit-loading h2{font-size:25px;letter-spacing:-.04em;margin:0 0 7px}.audit-loading p{color:#b6c0d5;margin:0;font-size:14px}.loading-steps{display:grid;gap:10px;text-align:left;margin:28px auto 0;max-width:280px}.loading-step{display:flex;align-items:center;gap:10px;color:#8491aa;font-size:13px;transition:color .2s}.loading-step .step-dot{width:8px;height:8px;border-radius:50%;background:#46516b}.loading-step.active{color:#fff}.loading-step.active .step-dot{background:#9da8ff;box-shadow:0 0 0 5px rgba(124,137,255,.13)}.loading-step.done{color:#9ba9bd}.loading-step.done .step-dot{background:#55c8a6}
+@media(max-width:900px){.app.audit-fullscreen .audit-layout{grid-template-columns:1fr}.app.audit-fullscreen .side-panel{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.app.audit-fullscreen .main{padding:10px 9px calc(10px + env(safe-area-inset-bottom))}.app.audit-fullscreen #view-audit-workspace>.panel{min-height:calc(100dvh - 20px);padding:13px 10px}.app.audit-fullscreen .audit-title{display:flex;align-items:flex-start;flex-wrap:wrap}.app.audit-fullscreen .audit-title h2{font-size:21px}.app.audit-fullscreen .audit-title .toolbar{width:100%}.app.audit-fullscreen .audit-title .toolbar button{flex:1;margin-top:0}.app.audit-fullscreen .side-panel{grid-template-columns:1fr}.app.audit-fullscreen .audit-handoff{grid-template-columns:1fr}.app.audit-fullscreen .scan-bar{grid-template-columns:1fr 1fr}.app.audit-fullscreen .scan-bar input:first-child,.app.audit-fullscreen .scan-bar button{grid-column:1/-1}.app.audit-fullscreen .table-wrap table{min-width:850px}}
+
+/* Compact, split-screen-friendly audit workspace */
+.mobile-scan-list{display:none;gap:9px;}
+.scan-item-card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0;box-shadow:0 2px 8px rgba(29,43,69,.035)}
+.scan-item-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;min-width:0}
+.scan-item-head>div{min-width:0;overflow-wrap:anywhere}.scan-item-head>b,.scan-item-head b{font-size:14px}.scan-item-description{font-size:12px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
+.scan-item-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:11px}
+.scan-item-details span{display:grid;gap:2px;background:#f7f8fc;border-radius:9px;padding:7px;min-width:0}.scan-item-details small{font-size:10px;color:var(--muted)}.scan-item-details b{font-size:12px;overflow-wrap:anywhere}
+.scan-item-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;font-size:11px;color:var(--muted)}.scan-item-meta button{padding:6px 9px;font-size:11px;flex-shrink:0}.scan-item-note{margin:8px 0 0;padding:8px 9px;background:#fff9e9;border-radius:8px;font-size:12px;overflow-wrap:anywhere}.scan-empty{background:#fff;border:1px dashed var(--line);border-radius:12px}
+@media(max-width:760px), (max-height:650px) and (max-width:1000px){
+ .app.audit-fullscreen .main{padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+ .app.audit-fullscreen #view-audit-workspace.active{min-height:100dvh}
+ .app.audit-fullscreen #view-audit-workspace>.panel{min-height:calc(100dvh - 16px);padding:11px 9px;border-radius:15px}
+ .app.audit-fullscreen .audit-title{gap:7px}
+ .app.audit-fullscreen .audit-title h2{font-size:19px;line-height:1.2;overflow-wrap:anywhere}
+ .app.audit-fullscreen .audit-title p{font-size:11px}
+ .app.audit-fullscreen .audit-title .toolbar{gap:6px}
+ .app.audit-fullscreen .audit-title .toolbar button{font-size:11px;padding:8px 9px}
+ .app.audit-fullscreen .audit-focus-pill{font-size:9px;padding:6px 8px}
+ .app.audit-fullscreen .audit-handoff{grid-template-columns: minmax(80px,.65fr) minmax(0,1.35fr);gap:8px;margin-top:10px}
+ .app.audit-fullscreen .audit-handoff .field input{padding:9px;font-size:13px}
+ .app.audit-fullscreen .audit-lock-note{font-size:10px;padding:7px 9px;margin-top:8px}
+ .app.audit-fullscreen .audit-layout{grid-template-columns:minmax(0,1fr);gap:9px;margin-top:10px!important}
+ .app.audit-fullscreen .audit-layout>div{min-width:0}
+ .app.audit-fullscreen #location-select{padding:9px;font-size:13px}
+ .app.audit-fullscreen .audit-layout .field label{font-size:11px}
+ .app.audit-fullscreen .audit-layout .field .hint{font-size:10px}
+ .app.audit-fullscreen .scan-bar{grid-template-columns:minmax(0,1fr) 112px;gap:7px;margin:10px 0}
+ .app.audit-fullscreen .scan-bar input{grid-column:1/-1;padding:11px;font-size:14px}
+ .app.audit-fullscreen .scan-bar select{padding:9px;font-size:11px}
+ .app.audit-fullscreen .scan-bar button{grid-column:auto;padding:9px;font-size:12px}
+ .app.audit-fullscreen .table-wrap{display:none}
+ .app.audit-fullscreen .mobile-scan-list{display:grid;max-height:34dvh;overflow:auto;overscroll-behavior:contain;padding:1px}
+ .app.audit-fullscreen .side-panel{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ .app.audit-fullscreen .side-panel .panel{padding:9px;border-radius:11px;min-width:0}
+ .app.audit-fullscreen .side-panel h3{font-size:11px;margin-bottom:5px}
+ .app.audit-fullscreen .side-panel .small-label{font-size:9px}
+ .app.audit-fullscreen .side-panel .big-number{font-size:21px}
+ .app.audit-fullscreen .side-panel .mini-stat{font-size:10px;padding:5px 0;gap:4px}
+ .app.audit-fullscreen .side-panel .location-list{gap:3px;margin-top:5px}
+ .app.audit-fullscreen .side-panel .location-chip{font-size:9px;padding:4px 5px}
+ .app.audit-fullscreen #section-confirm{font-size:10px;padding:7px 4px;margin-top:7px!important}
+}
+@media(max-width:430px){
+ .app.audit-fullscreen .audit-handoff{grid-template-columns:1fr 1fr}
+ .app.audit-fullscreen .side-panel{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .app.audit-fullscreen .side-panel .panel:last-child{grid-column:1/-1}
+ .app.audit-fullscreen .mobile-scan-list{max-height:31dvh}
+ .scan-item-details{gap:5px}.scan-item-details span{padding:6px}
+}
+@media(max-width:350px){.app.audit-fullscreen .audit-handoff{grid-template-columns:1fr}.app.audit-fullscreen .audit-title .toolbar button{flex:1}.app.audit-fullscreen .scan-bar{grid-template-columns:1fr}.app.audit-fullscreen .scan-bar select,.app.audit-fullscreen .scan-bar button{grid-column:1/-1}}
+
+
+/* Whole-app responsive pass: dashboard, builder, settings and audit workspace */
+@media (max-width: 760px), (max-height: 650px) and (max-width: 1024px) {
+  .app:not(.audit-fullscreen){display:block;min-height:100dvh;width:100%;overflow-x:clip}
+  .app:not(.audit-fullscreen) .sidebar{display:none!important}
+  .app:not(.audit-fullscreen) .main{width:100%;min-width:0;padding:clamp(12px,2.4vw,20px) clamp(10px,2.5vw,18px) calc(82px + env(safe-area-inset-bottom))}
+  .app:not(.audit-fullscreen) .topbar{align-items:center;gap:10px;margin-bottom:18px}
+  .app:not(.audit-fullscreen) .topbar h1{font-size:clamp(22px,4.2vw,29px);line-height:1.15}
+  .app:not(.audit-fullscreen) .eyebrow{font-size:9px;letter-spacing:.1em}
+  .app:not(.audit-fullscreen) .top-actions{gap:6px;flex-shrink:0}
+  .app:not(.audit-fullscreen) .top-actions .desktop-btn{display:none!important}
+  .app:not(.audit-fullscreen) .top-actions #top-new{font-size:12px;padding:9px 10px;white-space:nowrap}
+  .app:not(.audit-fullscreen) .avatar{width:32px;height:32px;font-size:12px}
+  .app:not(.audit-fullscreen) .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:20px}
+  .app:not(.audit-fullscreen) .stat{padding:12px;border-radius:14px;min-width:0}
+  .app:not(.audit-fullscreen) .stat-top{font-size:10px;gap:5px;align-items:flex-start}
+  .app:not(.audit-fullscreen) .stat-icon{width:25px;height:25px;min-width:25px;border-radius:8px;font-size:12px}
+  .app:not(.audit-fullscreen) .stat-value{font-size:clamp(22px,4.5vw,28px);margin:8px 0 1px}
+  .app:not(.audit-fullscreen) .stat-sub{font-size:10px;line-height:1.3}
+  .app:not(.audit-fullscreen) .section-head{margin:20px 0 11px;align-items:flex-start;gap:8px}
+  .app:not(.audit-fullscreen) .section-head h2{font-size:16px}
+  .app:not(.audit-fullscreen) .section-head p{font-size:11px;line-height:1.35}
+  .app:not(.audit-fullscreen) .section-head>button{font-size:11px;padding:8px 9px;white-space:nowrap}
+  .app:not(.audit-fullscreen) .toolbar{gap:7px}
+  .app:not(.audit-fullscreen) .toolbar button{font-size:12px;padding:9px 10px}
+  .app:not(.audit-fullscreen) .search{min-width:0;width:100%;flex-basis:100%}
+  .app:not(.audit-fullscreen) #view-dashboard>.toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  .app:not(.audit-fullscreen) #audit-filter{max-width:130px;font-size:12px}
+  .app:not(.audit-fullscreen) .audit-grid{grid-template-columns:1fr;gap:10px}
+  .app:not(.audit-fullscreen) .audit-card{padding:14px;border-radius:14px;min-width:0}
+  .app:not(.audit-fullscreen) .audit-card h3{font-size:15px;overflow-wrap:anywhere}
+  .app:not(.audit-fullscreen) .audit-card p{font-size:12px;overflow-wrap:anywhere}
+  .app:not(.audit-fullscreen) .audit-card-top{gap:8px}
+  .app:not(.audit-fullscreen) .audit-meta{font-size:11px;gap:8px;flex-wrap:wrap}
+  .app:not(.audit-fullscreen) .audit-actions{gap:7px}
+  .app:not(.audit-fullscreen) .audit-actions button{font-size:11px;padding:9px 7px;min-width:0}
+  .app:not(.audit-fullscreen) .panel{padding:13px;border-radius:15px;min-width:0}
+  .app:not(.audit-fullscreen) .upload-box{padding:19px 12px;border-radius:13px}
+  .app:not(.audit-fullscreen) .upload-box h3{font-size:16px}
+  .app:not(.audit-fullscreen) .upload-box p{font-size:12px;line-height:1.45}
+  .app:not(.audit-fullscreen) .upload-box button{font-size:12px;padding:10px 12px}
+  .app:not(.audit-fullscreen) .hint,.app:not(.audit-fullscreen) .notice{font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+  .app:not(.audit-fullscreen) .form-grid{grid-template-columns:1fr;gap:11px}
+  .app:not(.audit-fullscreen) .field input,.app:not(.audit-fullscreen) .field select{min-width:0;font-size:14px;padding:11px}
+  .app:not(.audit-fullscreen) .category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .app:not(.audit-fullscreen) .category-option{padding:10px;border-radius:11px;min-width:0}
+  .app:not(.audit-fullscreen) .category-option b{font-size:12px}
+  .app:not(.audit-fullscreen) .category-option small{font-size:10px}
+  .app:not(.audit-fullscreen) #builder-content>div:last-child{align-items:flex-start!important}
+  .app:not(.audit-fullscreen) #create-audit{white-space:nowrap}
+  .app:not(.audit-fullscreen) #view-settings .setting-row{padding:9px;gap:8px;align-items:flex-start}
+  .app:not(.audit-fullscreen) #view-settings .setting-row>*{min-width:0;overflow-wrap:anywhere}
+  .app:not(.audit-fullscreen) #view-settings .setting-row button{flex-shrink:0}
+  .app:not(.audit-fullscreen) #mapping-form{grid-template-columns:1fr!important}
+  .app:not(.audit-fullscreen) .mobile-nav{position:fixed;bottom:0;left:0;right:0;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:6px 5px calc(6px + env(safe-area-inset-bottom));z-index:50;backdrop-filter:blur(14px)}
+  .app:not(.audit-fullscreen)~.mobile-nav{display:none!important}
+  body>.mobile-nav{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:6px 5px calc(6px + env(safe-area-inset-bottom));z-index:50;backdrop-filter:blur(14px)}
+  body>.mobile-nav button{min-width:0;background:transparent;color:#738097;font-size:10px;padding:6px 2px;display:grid;gap:3px;justify-items:center;line-height:1.1}
+  body>.mobile-nav button span{font-size:17px}
+  body>.mobile-nav button.active{color:var(--accent);background:#f2f3ff;border-radius:10px}
+  .app.audit-fullscreen~body>.mobile-nav,body:has(.app.audit-fullscreen)>.mobile-nav{display:none!important}
+}
+@media (max-width: 430px) {
+  .app:not(.audit-fullscreen) .topbar{align-items:flex-start}
+  .app:not(.audit-fullscreen) .top-actions{flex-wrap:wrap;justify-content:flex-end}
+  .app:not(.audit-fullscreen) .top-actions #top-new{max-width:125px;white-space:normal;line-height:1.15}
+  .app:not(.audit-fullscreen) .avatar{display:none}
+  .app:not(.audit-fullscreen) .category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .app:not(.audit-fullscreen) #view-dashboard>.toolbar{grid-template-columns:minmax(0,1fr)}
+  .app:not(.audit-fullscreen) #audit-filter{max-width:none;width:100%!important}
+  .app:not(.audit-fullscreen) .audit-card-top{align-items:flex-start}
+  .app:not(.audit-fullscreen) .tag{font-size:9px;padding:4px 7px}
+  .app:not(.audit-fullscreen) .audit-actions button{font-size:10px}
+}
+
+
+/* Mobile hamburger navigation drawer */
+.topbar-heading{display:flex;align-items:center;gap:11px;min-width:0}
+.mobile-menu-trigger{display:none;flex:0 0 auto;width:42px;height:42px;padding:0;font-size:21px;align-items:center;justify-content:center;border-radius:12px;background:#fff}
+.mobile-menu-backdrop{position:fixed;inset:0;z-index:200;display:flex;visibility:hidden;opacity:0;pointer-events:none;background:rgba(13,22,40,.42);backdrop-filter:blur(3px);transition:opacity .18s ease,visibility .18s ease}
+.mobile-menu-backdrop.open{visibility:visible;opacity:1;pointer-events:auto}
+.mobile-menu-sheet{width:min(340px,88vw);height:100%;background:#fff;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));box-shadow:18px 0 55px rgba(13,22,40,.2);transform:translateX(-16px);transition:transform .2s ease;display:flex;flex-direction:column;gap:14px}
+.mobile-menu-backdrop.open .mobile-menu-sheet{transform:translateX(0)}
+.mobile-menu-head{display:flex;align-items:center;gap:11px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.mobile-menu-brand{flex:1;min-width:0}.mobile-menu-brand strong{display:block;font-size:13px;letter-spacing:.02em}.mobile-menu-brand small{display:block;color:var(--muted);font-size:12px}
+.mobile-menu-close{width:36px;height:36px;padding:0;font-size:25px;line-height:1}
+.mobile-menu-caption{font-size:10px;font-weight:850;letter-spacing:.14em;color:#8a95a8;margin:8px 4px 0}
+.mobile-menu-links{display:grid;gap:7px}.mobile-menu-links button{display:grid;grid-template-columns:34px minmax(0,1fr) 16px;align-items:center;gap:10px;text-align:left;background:transparent;padding:12px;border:1px solid transparent;border-radius:13px;color:var(--ink)}
+.mobile-menu-links button>span:first-child{width:34px;height:34px;border-radius:10px;background:#f0f2ff;color:var(--accent);display:grid;place-items:center;font-size:18px}
+.mobile-menu-links button>span:nth-child(2){display:grid;gap:2px}.mobile-menu-links b{font-size:14px}.mobile-menu-links small{font-size:11px;color:var(--muted);font-weight:450}.mobile-menu-links i{font-style:normal;font-size:22px;color:#9aa4b5}.mobile-menu-links button.active{background:#f3f4ff;border-color:#e0e3ff}.mobile-menu-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}.mobile-menu-foot span{padding:0 5px;color:var(--accent)}
+@media(max-width:700px){.topbar-heading{align-items:flex-start}.mobile-menu-trigger{display:flex;margin-top:2px}.topbar h1{font-size:clamp(22px,5vw,27px)}.topbar .eyebrow{font-size:9px;letter-spacing:.09em}.mobile-nav{display:none!important}.main{padding-bottom:28px}}
+@media(min-width:701px){.mobile-menu-backdrop{display:none!important}}
+/* Prevent iOS Safari from auto-zooming when form controls receive focus. */
+@media (max-width: 760px){
+  input, select, textarea,
+  .app input, .app select, .app textarea,
+  .mobile-menu-sheet input, .mobile-menu-sheet select, .mobile-menu-sheet textarea{
+    font-size:16px !important;
+  }
+}
 </style>
 </head>
 <body>
+<div class="audit-loading" id="audit-loading" role="status" aria-live="polite" aria-label="Setting up audit">
+  <div class="audit-loading-card">
+    <div class="loading-mark">IA</div><div class="loading-orbit"></div>
+    <h2 id="loading-title">Setting up audit</h2><p id="loading-subtitle">Preparing your audit workspace…</p>
+    <div class="loading-steps"><div class="loading-step active" id="loading-step-1"><span class="step-dot"></span><span>Setting up audit</span></div><div class="loading-step" id="loading-step-2"><span class="step-dot"></span><span>Loading inventory and locations</span></div><div class="loading-step" id="loading-step-3"><span class="step-dot"></span><span>Opening focused audit mode</span></div></div>
+  </div>
+</div>
 <div class="app">
 <aside class="sidebar">
   <div class="brand"><div class="brand-mark">IA</div><div><strong>INVENTORY AUDIT</strong><small>Store operations</small></div></div>
@@ -25,7 +212,7 @@
   <div class="side-note"><b>iPad-ready workflow</b>Import a store inventory workbook, select a case category, scan by location, then export the audit workbook.</div>
 </aside>
 <main class="main">
-<header class="topbar"><div><div class="eyebrow">Store operations / inventory control</div><h1 id="page-title">Audit dashboard</h1></div><div class="top-actions"><button class="secondary desktop-btn" id="top-import">↑ Import inventory</button><button class="primary" id="top-new">＋ New audit</button><div class="avatar">IA</div></div></header>
+<header class="topbar"><div class="topbar-heading"><button class="mobile-menu-trigger outline" id="mobile-menu-trigger" aria-label="Open navigation menu" aria-expanded="false"><span class="hamburger-lines">☰</span></button><div><div class="eyebrow">Store operations / inventory control</div><h1 id="page-title">Audit dashboard</h1></div></div><div class="top-actions"><button class="secondary desktop-btn" id="top-import">↑ Import inventory</button><button class="primary" id="top-new">＋ New audit</button><div class="avatar">IA</div></div></header>
 
 <section class="view active" id="view-dashboard">
   <div class="stats">
@@ -59,16 +246,18 @@
 
 <section class="view" id="view-audit-workspace">
   <div class="panel">
-    <div class="audit-title"><div><div class="eyebrow">Active workspace</div><h2 id="workspace-title">No audit selected</h2><p id="workspace-subtitle">Start an audit from the dashboard to begin scanning.</p></div><div class="toolbar"><button class="outline" id="export-btn">↓ Export Excel</button><button class="secondary" id="complete-audit-btn">Complete audit</button></div></div>
+    <div class="audit-title"><div><div class="eyebrow">Active workspace</div><h2 id="workspace-title">No audit selected</h2><p id="workspace-subtitle">Start an audit from the dashboard to begin scanning.</p></div><div class="toolbar"><span class="audit-focus-pill"><i></i> Audit in progress</span><button class="outline" id="export-btn">↓ Export Excel</button><button class="secondary" id="complete-audit-btn">Complete audit</button><button class="primary" id="finish-return-btn" style="display:none">Finish & return</button></div></div>
+    <div class="audit-handoff">
+      <div class="field"><label for="audit-initials">Associate initials</label><input id="audit-initials" placeholder="e.g. AO, JG" maxlength="40" /></div>
+      <div class="field"><label for="audit-live-notes">Audit notes / handoff</label><input id="audit-live-notes" placeholder="Exceptions, recounts, item concerns…" maxlength="500" /></div>
+    </div>
+    <div class="audit-lock-note"><span>✦</span><span><b>Audit focus is active.</b> Complete the audit before leaving, or confirm if you need to exit without completing it.</span></div>
     <div class="audit-layout" style="margin-top:20px">
       <div>
-        <div class="form-grid" style="grid-template-columns:1fr 1fr">
-          <div class="field"><label for="location-select">Current location</label><select id="location-select"><option value="">Select a location…</option></select></div>
-          <div class="field"><label for="location-manual">Or enter / scan location</label><input id="location-manual" placeholder="Scan location barcode…" /></div>
-        </div>
+        <div class="field" style="max-width:420px"><label for="location-select">Current location</label><select id="location-select"><option value="">Select a location…</option></select><small class="hint">Choose the location manually. Location QR/barcode scanning is disabled.</small></div>
         <div class="scan-bar"><input id="sku-input" placeholder="Scan or type SKU, then press Enter…" autocomplete="off" /><select id="scan-mode"><option value="one">Scan 1 unit / entry</option><option value="qty">Enter quantity</option></select><button class="primary" id="scan-btn">＋ Add SKU</button></div>
         <div class="toolbar" style="justify-content:space-between;margin:0 0 12px"><span class="hint" id="current-location-label">Choose a location before scanning.</span><button class="secondary" id="complete-section-btn">Complete section</button></div>
-        <div class="table-wrap"><table><thead><tr><th>SKU</th><th>Description</th><th>Style</th><th>Expected qty</th><th>Scanned qty</th><th>Location</th><th>Result</th><th></th></tr></thead><tbody id="scan-table-body"><tr><td colspan="8" class="empty">Your scanned items will appear here.</td></tr></tbody></table></div>
+        <div class="table-wrap desktop-scan-table"><table><thead><tr><th>SKU</th><th>Description</th><th>Style</th><th>Expected qty</th><th>Scanned qty</th><th>Location</th><th>Initials</th><th>Item notes</th><th>Result</th><th></th></tr></thead><tbody id="scan-table-body"><tr><td colspan="10" class="empty">Your scanned items will appear here.</td></tr></tbody></table></div><div class="mobile-scan-list" id="mobile-scan-list" aria-live="polite"></div>
       </div>
       <aside class="side-panel">
         <div class="panel"><h3>Section summary</h3><div class="small-label">Current location scanned quantity</div><div class="big-number" id="section-qty">0</div><div class="mini-stat"><span>Unique SKUs scanned</span><b id="section-skus">0</b></div><div class="mini-stat"><span>Not in audit</span><b id="section-unknown">0</b></div><button class="primary" id="section-confirm" style="width:100%;margin-top:13px">Confirm section</button></div>
@@ -94,6 +283,19 @@
 </main>
 </div>
 <nav class="mobile-nav"><button class="active" data-view="dashboard"><span>▦</span>Dashboard</button><button data-view="new-audit"><span>＋</span>Build</button><button data-view="audit-workspace"><span>▤</span>Workspace</button><button data-view="settings"><span>⚙</span>Settings</button></nav>
+<div class="mobile-menu-backdrop" id="mobile-menu-backdrop" aria-hidden="true">
+  <section class="mobile-menu-sheet" role="dialog" aria-modal="true" aria-label="Dashboard navigation">
+    <div class="mobile-menu-head"><div class="brand-mark">IA</div><div class="mobile-menu-brand"><strong>INVENTORY AUDIT</strong><small>Store operations</small></div><button class="mobile-menu-close outline" id="mobile-menu-close" aria-label="Close navigation menu">×</button></div>
+    <p class="mobile-menu-caption">NAVIGATION</p>
+    <nav class="mobile-menu-links">
+      <button data-view="dashboard"><span>▦</span><span><b>Dashboard</b><small>Overview and recent audits</small></span><i>›</i></button>
+      <button data-view="new-audit"><span>＋</span><span><b>Build an audit</b><small>Choose a category and begin</small></span><i>›</i></button>
+      <button data-view="audit-workspace"><span>▤</span><span><b>Audit workspace</b><small>Continue an active audit</small></span><i>›</i></button>
+      <button data-view="settings"><span>⚙</span><span><b>Settings</b><small>Locations and column mapping</small></span><i>›</i></button>
+    </nav>
+    <div class="mobile-menu-foot">Inventory Audit <span>•</span> Store operations</div>
+  </section>
+</div>
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -120,8 +322,13 @@ let locations=[...defaultLocations], inventory=[], columns=[], mapping={sku:-1,d
 const $=id=>document.getElementById(id);
 const norm=s=>String(s??'').trim().toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
 function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(window._toastTimer);window._toastTimer=setTimeout(()=>el.classList.remove('show'),2600)}
-function showView(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${name}`));document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));const titles={dashboard:'Audit dashboard','new-audit':'Build an audit','audit-workspace':'Audit workspace',settings:'Settings'};$('page-title').textContent=titles[name]||'Inventory audit';if(name==='new-audit')renderBuilder();if(name==='settings')renderSettings();if(name==='audit-workspace')renderWorkspace();window.scrollTo({top:0,behavior:'smooth'})}
+function showView(name){const current=activeAudit();if(current&&current.status==='in-progress'&&name!=='audit-workspace'){const ok=confirm('This audit is still in progress. Complete it before leaving, or choose OK to leave it open and return later.');if(!ok)return;}if(name!=='audit-workspace')document.querySelector('.app').classList.remove('audit-fullscreen');document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${name}`));document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));const titles={dashboard:'Audit dashboard','new-audit':'Build an audit','audit-workspace':'Audit workspace',settings:'Settings'};$('page-title').textContent=titles[name]||'Inventory audit';if(name==='new-audit')renderBuilder();if(name==='settings')renderSettings();if(name==='audit-workspace'){renderWorkspace();document.querySelector('.app').classList.add('audit-fullscreen');}window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+const mobileMenu=$('mobile-menu-backdrop'), mobileMenuTrigger=$('mobile-menu-trigger');
+function closeMobileMenu(){if(!mobileMenu)return;mobileMenu.classList.remove('open');mobileMenu.setAttribute('aria-hidden','true');mobileMenuTrigger?.setAttribute('aria-expanded','false');document.body.style.overflow='';}
+function openMobileMenu(){if(!mobileMenu||document.querySelector('.app')?.classList.contains('audit-fullscreen'))return;mobileMenu.classList.add('open');mobileMenu.setAttribute('aria-hidden','false');mobileMenuTrigger?.setAttribute('aria-expanded','true');document.body.style.overflow='hidden';}
+mobileMenuTrigger?.addEventListener('click',openMobileMenu);$('mobile-menu-close')?.addEventListener('click',closeMobileMenu);mobileMenu?.addEventListener('click',e=>{if(e.target===mobileMenu)closeMobileMenu();if(e.target.closest('[data-view]'))closeMobileMenu();});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileMenu();});
+
 $('top-new').onclick=$('dashboard-build').onclick=()=>showView('new-audit');
 $('top-import').onclick=$('choose-file').onclick=$('builder-import').onclick=()=>$('file-input').click();
 $('file-input').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{let rows;if(file.name.toLowerCase().endsWith('.csv')){const txt=await file.text();rows=parseCSV(txt)}else{if(!window.XLSX)throw new Error('Excel library did not load. Check your internet connection and try again.');const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});const sheet=wb.Sheets[wb.SheetNames.includes('Report')?'Report':wb.SheetNames[0]];rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
@@ -147,23 +354,26 @@ $('save-mapping').onclick=()=>{if(!columns.length)return toast('Import a workboo
 function categories(){const map=new Map();inventory.forEach(item=>{const k=item.category.trim()||'(BLANK)';if(!map.has(k))map.set(k,[]);map.get(k).push(item)});return [...map.entries()].sort((a,b)=>a[0]==='(BLANK)'?-1:b[0]==='(BLANK)'?1:a[0].localeCompare(b[0],undefined,{numeric:true}) )}
 function renderBuilder(){const has=inventory.length>0;$('builder-upload').style.display=has?'none':'block';$('builder-content').style.display=has?'block':'none';if(!has)return;const search=norm($('category-search').value);const cats=categories().filter(([name])=>norm(name).includes(search));$('category-grid').innerHTML=cats.map(([name,items])=>`<button class="category-option ${selectedCategory===name?'selected':''}" data-category="${escAttr(name)}"><b>${esc(name)}</b><small>${items.length} inventory row${items.length===1?'':'s'} · ${items.reduce((s,x)=>s+x.quantity,0)} units</small></button>`).join('')||'<div class="empty">No matching categories.</div>';document.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{selectedCategory=b.dataset.category;renderBuilder()});const count=selectedCategory?inventory.filter(x=>(x.category.trim()||'(BLANK)')===selectedCategory).length:0;$('selection-summary').textContent=selectedCategory?`${selectedCategory} selected · ${count} reference SKUs`:'Select a category to continue.';$('create-audit').disabled=!selectedCategory;$('audit-name').placeholder=selectedCategory?`${selectedCategory} audit`:'e.g. GIBS – October audit'}
 $('category-search').addEventListener('input',renderBuilder);
-$('create-audit').onclick=()=>{if(!selectedCategory)return;const items=inventory.filter(x=>(x.category.trim()||'(BLANK)')===selectedCategory).map(x=>({...x}));if(!items.length)return toast('No items in this category');const id=`audit-${Date.now()}`;const name=$('audit-name').value.trim()||`${selectedCategory} audit`;audits.unshift({id,name,category:selectedCategory,items,scans:[],completedLocations:[],status:'in-progress',createdAt:new Date().toISOString(),completedAt:null,workedBy:'',auditNotes:''});activeAuditId=id;renderDashboard();showView('audit-workspace');toast('Audit started');};
+function enterAuditWithLoading(id){activeAuditId=id;const overlay=$('audit-loading');const steps=[$('loading-step-1'),$('loading-step-2'),$('loading-step-3')];overlay.classList.add('show');document.querySelector('.app').classList.remove('audit-fullscreen');$('loading-title').textContent='Setting up audit';$('loading-subtitle').textContent='Preparing your audit workspace…';steps.forEach((el,i)=>el.classList.toggle('active',i===0));steps.forEach(el=>el.classList.remove('done'));setTimeout(()=>{steps[0].classList.remove('active');steps[0].classList.add('done');steps[1].classList.add('active');$('loading-title').textContent='Loading';$('loading-subtitle').textContent='Loading inventory, scan history, and locations…';},550);setTimeout(()=>{steps[1].classList.remove('active');steps[1].classList.add('done');steps[2].classList.add('active');$('loading-title').textContent='Opening audit';$('loading-subtitle').textContent='Entering focused full-screen mode…';},1150);setTimeout(()=>{showView('audit-workspace');overlay.classList.remove('show');toast('Audit ready');$('sku-input').focus();},1650)}
+$('create-audit').onclick=()=>{if(!selectedCategory)return;const items=inventory.filter(x=>(x.category.trim()||'(BLANK)')===selectedCategory).map(x=>({...x}));if(!items.length)return toast('No items in this category');const id=`audit-${Date.now()}`;const name=$('audit-name').value.trim()||`${selectedCategory} audit`;audits.unshift({id,name,category:selectedCategory,items,scans:[],completedLocations:[],status:'in-progress',createdAt:new Date().toISOString(),completedAt:null,workedBy:'',auditNotes:'',initials:'',liveNotes:''});renderDashboard();enterAuditWithLoading(id);};
 function activeAudit(){return audits.find(a=>a.id===activeAuditId)}
 function auditProgress(a){if(!a||!a.items.length)return 0;const expected=new Set(a.items.map(x=>x.sku));const checked=new Set(a.scans.filter(s=>expected.has(s.sku)).map(s=>s.sku));return Math.min(100,Math.round(checked.size/expected.size*100))}
-function renderDashboard(){const completed=audits.filter(a=>a.status==='completed').length,progress=audits.length-completed;$('stat-completed').textContent=completed;$('stat-progress').textContent=progress;$('stat-skus').textContent=inventory.length.toLocaleString();$('stat-scans').textContent=audits.reduce((n,a)=>n+a.scans.length,0).toLocaleString();const q=norm($('audit-search').value),f=$('audit-filter').value;const list=audits.filter(a=>(!q||norm(a.name+' '+a.category+' '+a.status).includes(q))&&(f==='all'||a.status===f));$('audit-grid').innerHTML=list.map(a=>{const p=auditProgress(a);return `<article class="audit-card"><div class="audit-card-top"><div><h3>${esc(a.name)}</h3><p>${esc(a.category)} · ${a.items.length} reference SKUs</p></div><span class="tag ${a.status==='completed'?'done':'progress'}">${a.status==='completed'?'Completed':'In progress'}</span></div><div class="progressline"><span style="width:${p}%"></span></div><div class="audit-meta"><span>${p}% checked · ${a.scans.length} scan entries</span><span>${a.completedLocations.length} locations</span></div><div class="audit-actions"><button class="primary" data-open="${a.id}">${a.status==='completed'?'Review audit':'Continue audit'} →</button><button class="outline" data-export="${a.id}">Export</button></div></article>`}).join('')||'<div class="panel empty" style="grid-column:1/-1"><b>No audits yet</b>Import inventory, then build your first audit.</div>';document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{activeAuditId=b.dataset.open;showView('audit-workspace')});document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>exportAudit(b.dataset.export));}
+function renderDashboard(){const completed=audits.filter(a=>a.status==='completed').length,progress=audits.length-completed;$('stat-completed').textContent=completed;$('stat-progress').textContent=progress;$('stat-skus').textContent=inventory.length.toLocaleString();$('stat-scans').textContent=audits.reduce((n,a)=>n+a.scans.length,0).toLocaleString();const q=norm($('audit-search').value),f=$('audit-filter').value;const list=audits.filter(a=>(!q||norm(a.name+' '+a.category+' '+a.status).includes(q))&&(f==='all'||a.status===f));$('audit-grid').innerHTML=list.map(a=>{const p=auditProgress(a);return `<article class="audit-card"><div class="audit-card-top"><div><h3>${esc(a.name)}</h3><p>${esc(a.category)} · ${a.items.length} reference SKUs</p></div><span class="tag ${a.status==='completed'?'done':'progress'}">${a.status==='completed'?'Completed':'In progress'}</span></div><div class="progressline"><span style="width:${p}%"></span></div><div class="audit-meta"><span>${p}% checked · ${a.scans.length} scan entries</span><span>${a.completedLocations.length} locations</span></div><div class="audit-actions"><button class="primary" data-open="${a.id}">${a.status==='completed'?'Review audit':'Continue audit'} →</button><button class="outline" data-export="${a.id}">Export</button></div></article>`}).join('')||'<div class="panel empty" style="grid-column:1/-1"><b>No audits yet</b>Import inventory, then build your first audit.</div>';document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>enterAuditWithLoading(b.dataset.open));document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>exportAudit(b.dataset.export));}
 $('audit-search').addEventListener('input',renderDashboard);$('audit-filter').addEventListener('change',renderDashboard);
 function fillLocations(){const sel=$('location-select'),old=sel.value;sel.innerHTML='<option value="">Select a location…</option>'+locations.map(l=>`<option value="${escAttr(l)}">${esc(l)}</option>`).join('');if(locations.includes(old))sel.value=old}
-function currentLocation(){return $('location-manual').value.trim()||$('location-select').value}
-$('location-select').onchange=()=>{$('location-manual').value='';updateLocationLabel()};
-$('location-manual').addEventListener('input',()=>{if($('location-manual').value.trim())$('location-select').value='';updateLocationLabel()});
-$('location-manual').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('sku-input').focus()}});
+function currentLocation(){return $('location-select').value}
+$('location-select').onchange=()=>{updateLocationLabel()};
 function updateLocationLabel(){$('current-location-label').textContent=currentLocation()?`Scanning into location: ${currentLocation()}`:'Choose a location before scanning.'}
-function renderWorkspace(){const a=activeAudit();fillLocations();if(!a){$('workspace-title').textContent='No audit selected';$('workspace-subtitle').textContent='Start an audit from the dashboard to begin scanning.';$('scan-table-body').innerHTML='<tr><td colspan="8" class="empty">Your scanned items will appear here.</td></tr>';return} $('workspace-title').textContent=a.name;$('workspace-subtitle').textContent=`${a.category} · ${a.items.length} reference SKUs · ${a.status==='completed'?'Completed':'In progress'}`;const scans=a.scans;const rows=scans.slice().reverse();$('scan-table-body').innerHTML=rows.map((s,revIndex)=>{const i=scans.length-1-revIndex;return `<tr><td><b>${esc(s.sku)}</b></td><td>${esc(s.description||'—')}</td><td>${esc(s.style||'—')}</td><td>${s.expected===null?'—':s.expected}</td><td>${s.qty}</td><td>${esc(s.location)}</td><td><span class="status ${s.result==='Match'?'match':s.result==='Not in audit'?'missing':'unknown'}">${esc(s.result)}</span></td><td><button class="danger" style="padding:5px 8px" data-delete-scan="${i}" aria-label="Remove scan">×</button></td></tr>`}).join('')||'<tr><td colspan="8" class="empty">No scans yet. Select a location and scan your first SKU.</td></tr>';document.querySelectorAll('[data-delete-scan]').forEach(b=>b.onclick=()=>{a.scans.splice(Number(b.dataset.deleteScan),1);renderWorkspace();renderDashboard()});const loc=currentLocation();const locScans=scans.filter(s=>s.location===loc);$('section-qty').textContent=locScans.reduce((n,s)=>n+s.qty,0);$('section-skus').textContent=new Set(locScans.map(s=>s.sku)).size;$('section-unknown').textContent=locScans.filter(s=>s.result==='Not in audit').length;const p=auditProgress(a);$('workspace-progress').textContent=p+'%';$('workspace-progress-bar').style.width=p+'%';$('workspace-reference').textContent=a.items.length;$('workspace-checked').textContent=new Set(scans.filter(s=>a.items.some(i=>i.sku===s.sku)).map(s=>s.sku)).size;$('workspace-locations').textContent=a.completedLocations.length;$('completed-locations').innerHTML=a.completedLocations.map(l=>`<span class="location-chip">✓ ${esc(l)}</span>`).join('')||'<span class="hint">None yet</span>';updateLocationLabel();$('complete-audit-btn').textContent=a.status==='completed'?'Reopen audit':'Complete audit';}
-function addScan(){const a=activeAudit();if(!a)return toast('Start or select an audit first');if(a.status==='completed')return toast('Reopen this audit before scanning');const loc=currentLocation();if(!loc)return toast('Choose or scan a location first');const sku=$('sku-input').value.trim();if(!sku)return toast('Scan or enter a SKU');const ref=a.items.find(x=>x.sku.toLowerCase()===sku.toLowerCase());let qty=1;if($('scan-mode').value==='qty'){const val=prompt('Enter scanned quantity for '+sku,'1');if(val===null)return;qty=Number(val);if(!Number.isFinite(qty)||qty<=0)return toast('Enter a quantity greater than zero')}const existing=a.scans.find(s=>s.sku.toLowerCase()===sku.toLowerCase()&&s.location===loc&&s.result===(ref?'Match':'Not in audit'));if(existing){existing.qty+=qty}else a.scans.push({sku,description:ref?.description||'',style:ref?.style||'',expected:ref?ref.quantity:null,qty,location:loc,result:ref?'Match':'Not in audit',timestamp:new Date().toISOString()});$('sku-input').value='';renderWorkspace();renderDashboard();$('sku-input').focus();toast(ref?'SKU added to audit':'SKU recorded: not in audit')}
+function renderWorkspace(){const a=activeAudit();fillLocations();if(!a){$('workspace-title').textContent='No audit selected';$('workspace-subtitle').textContent='Start an audit from the dashboard to begin scanning.';$('scan-table-body').innerHTML='<tr><td colspan="10" class="empty">Your scanned items will appear here.</td></tr>';return} $('workspace-title').textContent=a.name;$('workspace-subtitle').textContent=`${a.category} · ${a.items.length} reference SKUs · ${a.status==='completed'?'Completed':'In progress'}`;$('audit-initials').value=a.initials||a.workedBy||'';$('audit-live-notes').value=a.liveNotes||a.auditNotes||'';$('audit-initials').disabled=a.status==='completed';$('audit-live-notes').disabled=a.status==='completed';const scans=a.scans;const rows=scans.slice().reverse();$('scan-table-body').innerHTML=rows.map((s,revIndex)=>{const i=scans.length-1-revIndex;return `<tr><td><b>${esc(s.sku)}</b></td><td>${esc(s.description||'—')}</td><td>${esc(s.style||'—')}</td><td>${s.expected===null?'—':s.expected}</td><td>${s.qty}</td><td>${esc(s.location)}</td><td>${esc(s.initials||'—')}</td><td>${esc(s.notes||'—')}</td><td><span class="status ${s.result==='Match'?'match':s.result==='Not in audit'?'missing':'unknown'}">${esc(s.result)}</span></td><td><button class="danger" style="padding:5px 8px" data-delete-scan="${i}" aria-label="Remove scan">×</button></td></tr>`}).join('')||'<tr><td colspan="10" class="empty">No scans yet. Select a location and scan your first SKU.</td></tr>';const mobileList=$('mobile-scan-list');if(mobileList){mobileList.innerHTML=rows.map((s,revIndex)=>{const i=scans.length-1-revIndex;return `<article class="scan-item-card"><div class="scan-item-head"><div><b>${esc(s.sku)}</b><div class="scan-item-description">${esc(s.description||'No description')}</div></div><span class="status ${s.result==='Match'?'match':s.result==='Not in audit'?'missing':'unknown'}">${esc(s.result)}</span></div><div class="scan-item-details"><span><small>Qty</small><b>${s.qty}</b></span><span><small>Expected</small><b>${s.expected===null?'—':s.expected}</b></span><span><small>Location</small><b>${esc(s.location)}</b></span></div><div class="scan-item-meta"><span>${esc(s.initials||'No initials')} · ${esc(s.style||'No style')}</span><button class="danger" data-delete-scan="${i}" aria-label="Remove scan">Remove</button></div>${s.notes?`<p class="scan-item-note">${esc(s.notes)}</p>`:''}</article>`}).join('')||'<div class="empty scan-empty">No scans yet. Select a location and scan your first SKU.</div>';}
+    document.querySelectorAll('[data-delete-scan]').forEach(b=>b.onclick=()=>{a.scans.splice(Number(b.dataset.deleteScan),1);renderWorkspace();renderDashboard()});const loc=currentLocation();const locScans=scans.filter(s=>s.location===loc);$('section-qty').textContent=locScans.reduce((n,s)=>n+s.qty,0);$('section-skus').textContent=new Set(locScans.map(s=>s.sku)).size;$('section-unknown').textContent=locScans.filter(s=>s.result==='Not in audit').length;const p=auditProgress(a);$('workspace-progress').textContent=p+'%';$('workspace-progress-bar').style.width=p+'%';$('workspace-reference').textContent=a.items.length;$('workspace-checked').textContent=new Set(scans.filter(s=>a.items.some(i=>i.sku===s.sku)).map(s=>s.sku)).size;$('workspace-locations').textContent=a.completedLocations.length;$('completed-locations').innerHTML=a.completedLocations.map(l=>`<span class="location-chip">✓ ${esc(l)}</span>`).join('')||'<span class="hint">None yet</span>';updateLocationLabel();$('complete-audit-btn').textContent=a.status==='completed'?'Reopen audit':'Complete audit';$('finish-return-btn').style.display=a.status==='completed'?'inline-block':'none';document.querySelector('.audit-focus-pill').innerHTML=a.status==='completed'?'<i style="background:#16866b;box-shadow:0 0 0 4px rgba(22,134,107,.14)"></i> Audit completed':'<i></i> Audit in progress';}
+$('audit-initials').addEventListener('input',()=>{const a=activeAudit();if(a){a.initials=$('audit-initials').value.trim();a.workedBy=a.initials}});
+$('audit-live-notes').addEventListener('input',()=>{const a=activeAudit();if(a)a.liveNotes=$('audit-live-notes').value.trim()});
+function addScan(){const a=activeAudit();if(!a)return toast('Start or select an audit first');if(a.status==='completed')return toast('Reopen this audit before scanning');const loc=currentLocation();if(!loc)return toast('Choose or scan a location first');const sku=$('sku-input').value.trim();if(!sku)return toast('Scan or enter a SKU');const ref=a.items.find(x=>x.sku.toLowerCase()===sku.toLowerCase());let qty=1;if($('scan-mode').value==='qty'){const val=prompt('Enter scanned quantity for '+sku,'1');if(val===null)return;qty=Number(val);if(!Number.isFinite(qty)||qty<=0)return toast('Enter a quantity greater than zero')}const existing=a.scans.find(s=>s.sku.toLowerCase()===sku.toLowerCase()&&s.location===loc&&s.result===(ref?'Match':'Not in audit'));if(existing){existing.qty+=qty;existing.initials=$('audit-initials').value.trim()}else {const notes=prompt('Notes for this scanned item (optional)','');if(notes===null)return;a.scans.push({sku,description:ref?.description||'',style:ref?.style||'',expected:ref?ref.quantity:null,qty,location:loc,initials:$('audit-initials').value.trim(),notes:notes.trim(),result:ref?'Match':'Not in audit',timestamp:new Date().toISOString()});}$('sku-input').value='';renderWorkspace();renderDashboard();$('sku-input').focus();toast(ref?'SKU added to audit':'SKU recorded: not in audit')}
 $('scan-btn').onclick=addScan;$('sku-input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addScan()}});
 function completeSection(){const a=activeAudit();if(!a)return toast('No active audit');const loc=currentLocation();if(!loc)return toast('Choose a location first');if(!a.completedLocations.includes(loc))a.completedLocations.push(loc);const total=a.scans.filter(s=>s.location===loc).reduce((n,s)=>n+s.qty,0);renderWorkspace();renderDashboard();toast(`${loc} completed · ${total} total units scanned`)}
 $('complete-section-btn').onclick=$('section-confirm').onclick=completeSection;
 $('complete-audit-btn').onclick=()=>{const a=activeAudit();if(!a)return toast('No audit selected');if(a.status==='completed'){a.status='in-progress';a.completedAt=null;toast('Audit reopened')}else{if(!confirm('Mark this audit complete? You can still export and review it.'))return;a.status='completed';a.completedAt=new Date().toISOString();toast('Audit marked complete')}renderWorkspace();renderDashboard()};
+$('finish-return-btn').onclick=()=>{const a=activeAudit();if(!a||a.status!=='completed')return;document.querySelector('.app').classList.remove('audit-fullscreen');showView('dashboard')};
 function exportAudit(id){
  const a=audits.find(x=>x.id===id);if(!a)return toast('Audit not found');
  if(!window.XLSX)return toast('Excel export requires an internet connection to load the workbook library');
@@ -172,51 +382,51 @@ function exportAudit(id){
  // Capture the audit handoff details once and retain them for subsequent exports.
  if(a.workedBy===undefined)a.workedBy='';
  if(a.auditNotes===undefined)a.auditNotes='';
- const workedBy=prompt('Who worked on this audit? (Names or initials)',a.workedBy||'');
+ const workedBy=prompt('Who worked on this audit? (Names or initials)',a.initials||a.workedBy||'');
  if(workedBy===null)return;
- a.workedBy=workedBy.trim();
- const auditNotes=prompt('Audit notes (issues, exceptions, recounts, context)',a.auditNotes||'');
+ a.workedBy=workedBy.trim();a.initials=a.workedBy;
+ const auditNotes=prompt('Audit notes (issues, exceptions, recounts, context)',a.liveNotes||a.auditNotes||'');
  if(auditNotes===null)return;
- a.auditNotes=auditNotes.trim();
+ a.auditNotes=auditNotes.trim();a.liveNotes=a.auditNotes;
  const appBanner=`BUILT BY INVENTORY AUDIT APP  |  ${a.category}  |  EXPORTED ${exportedAt.toLocaleDateString('en-US')}`;
- const scanRows=[[appBanner],['Scan UPC','Not in TWC','Qty Scanned/On Hand','Style Number','Price','Description','Location']];
+ const scanRows=[[appBanner],['Scan UPC','Not in TWC','Qty Scanned/On Hand','Style Number','Price','Description','Location','Initials','Item Notes']];
  a.scans.forEach(s=>{
-   const excelSku=/^\d+$/.test(s.sku)?Number(s.sku):s.sku;
+   const excelSku=String(s.sku??'').trim();
    // Expand quantity entries into individual UPC rows so COUNTIF-based formulas match the reference workbook.
    for(let unit=0;unit<Math.max(1,Math.floor(Number(s.qty)||1));unit++){
      const r=scanRows.length+1;
      scanRows.push([excelSku,
       {f:`IF(COUNTIF(Audit!$B:$B,$A${r})>0,"-","Not in TWC")`},
-      {f:`IF($A${r}="","",COUNTIF($A$3:$A${r},$A${r})&"/"&IFERROR(VLOOKUP(VALUE($A${r}),Audit!$B:$G,6,FALSE),0))`},
-      {f:`IFERROR(INDEX(Audit!$D:$D,MATCH(VALUE(A${r}),Audit!$B:$B,0)),"Not Found")`},
-      {f:`IFERROR(INDEX(Audit!$F:$F,MATCH(VALUE(A${r}),Audit!$B:$B,0)),"-")`},
-      {f:`IFERROR(INDEX(Audit!$C:$C,MATCH(VALUE(A${r}),Audit!$B:$B,0)),"-")`},
-      s.location
+      {f:`IF($A${r}="","",COUNTIF($A$3:$A${r},$A${r})&"/"&IFERROR(VLOOKUP($A${r},Audit!$B:$G,6,FALSE),0))`},
+      {f:`IFERROR(INDEX(Audit!$D:$D,MATCH(A${r},Audit!$B:$B,0)),"Not Found")`},
+      {f:`IFERROR(INDEX(Audit!$F:$F,MATCH(A${r},Audit!$B:$B,0)),"-")`},
+      {f:`IFERROR(INDEX(Audit!$C:$C,MATCH(A${r},Audit!$B:$B,0)),"-")`},
+      s.location,s.initials||a.initials||'',s.notes||''
      ]);
    }
  });
  const scanWs=XLSX.utils.aoa_to_sheet(scanRows);
- scanWs['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}}];
+ scanWs['!merges']=[{s:{r:0,c:0},e:{r:0,c:8}}];
  scanWs['!autofilter']={ref:`A2:G${Math.max(2,scanRows.length)}`};
  scanWs['!freeze']={xSplit:0,ySplit:2};
- scanWs['!cols']=[{wch:18},{wch:16},{wch:25},{wch:22},{wch:12},{wch:62},{wch:20}];
+ scanWs['!cols']=[{wch:18},{wch:16},{wch:25},{wch:22},{wch:12},{wch:62},{wch:20},{wch:12},{wch:42}];
  XLSX.utils.book_append_sheet(wb,scanWs,'Scan');
- const auditRows=[[appBanner],['','UPC','Description','Style Number','Case Code','Sale Price','On Hand','Sales Floor','Scan Qty','Variance','Phy Qty','UPC Lookup']];
+ const auditRows=[[appBanner],['','UPC','Description','Style Number','Case Code','Sale Price','On Hand','Sales Floor','Scan Qty','Variance','Phy Qty','UPC Lookup','Audit Initials','Audit Notes']];
  a.items.forEach((x,i)=>{
    const r=i+3;
-   const excelSku=/^\d+$/.test(x.sku)?Number(x.sku):x.sku;
+   const excelSku=String(x.sku??'').trim();
    auditRows.push(['',excelSku,x.description,x.style,x.category||'(BLANK)',x.price||0,x.quantity,x.salesFloor,
     {f:`IF(B${r}="","",COUNTIF(Scan!$A:$A,B${r}))`},
     {f:`IF(B${r}="","",I${r}-G${r})`},
     null,
-    {f:`IFERROR(VALUE(B${r}),"")`}
+    {f:`IFERROR(B${r},"")`},a.initials||a.workedBy||'',a.liveNotes||a.auditNotes||''
    ]);
  });
  const auditWs=XLSX.utils.aoa_to_sheet(auditRows);
- auditWs['!merges']=[{s:{r:0,c:0},e:{r:0,c:11}}];
+ auditWs['!merges']=[{s:{r:0,c:0},e:{r:0,c:13}}];
  auditWs['!autofilter']={ref:`B2:K${Math.max(2,auditRows.length)}`};
  auditWs['!freeze']={xSplit:0,ySplit:2};
- auditWs['!cols']=[{wch:3},{wch:17},{wch:62},{wch:22},{wch:31},{wch:14},{wch:10},{wch:12},{wch:10},{wch:10},{wch:10},{wch:18}];
+ auditWs['!cols']=[{wch:3},{wch:17},{wch:62},{wch:22},{wch:31},{wch:14},{wch:10},{wch:12},{wch:10},{wch:10},{wch:10},{wch:18},{wch:14},{wch:42}];
  XLSX.utils.book_append_sheet(wb,auditWs,'Audit');
  // Summary worksheet documents the baseline, the final observed counts, and the handoff notes.
  const totalOnHand=a.items.reduce((n,x)=>n+(Number(x.quantity)||0),0);
@@ -236,7 +446,7 @@ function exportAudit(id){
   ['Audit started',baselineDate],
   ['Audit completed',completionDate],
   ['Exported at',exportedAt.toLocaleString('en-US')],
-  ['Worked on by',a.workedBy||'Not provided'],
+  ['Worked on by / initials',a.initials||a.workedBy||'Not provided'],
   ['Locations completed',a.completedLocations.length],
   ['Completed locations',a.completedLocations.join(', ')||'None'],
   [],

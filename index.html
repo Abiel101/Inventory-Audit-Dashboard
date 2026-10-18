@@ -368,20 +368,85 @@ mobileMenuTrigger?.addEventListener('click',openMobileMenu);$('mobile-menu-close
 $('top-new').onclick=$('dashboard-build').onclick=()=>showView('new-audit');
 $('top-source-replace').onclick=$('builder-import').onclick=()=>$('file-input').click();
 $('top-source').onclick=()=>{if(currentSourceUrl){const opened=window.open(currentSourceUrl,'_blank','noopener');if(!opened)toast('Your browser blocked the source preview. Use the browser share/open options or allow pop-ups for this app.');}else $('file-input').click();};
-$('file-input').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{let rows;if(file.name.toLowerCase().endsWith('.csv')){const txt=await file.text();rows=parseCSV(txt)}else{if(!window.XLSX)throw new Error('Excel library did not load. Check your internet connection and try again.');const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});const sheet=wb.Sheets[wb.SheetNames.includes('Report')?'Report':wb.SheetNames[0]];rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
- // DY Inventory by Location uses a two-row heading: the store/location is on row 1 and On Hand/ATS are on row 2.
- if(file.name.toLowerCase().includes('dy inventory') && rows.length>1){
-   const top=rows[0]||[], sub=rows[1]||[];
-   const combined=top.map((v,i)=>String(sub[i]||v||`Column ${i+1}`).trim());
-   rows=[combined,...rows.slice(2)];
- }}if(!rows.length)throw new Error('The selected workbook appears to be empty.');let dataStart=1;
-if(rows.length>1 && rows[1].some(v=>['on hand','ats','sales floor'].includes(norm(v)))) {
-  columns=rows[0].map((v,i)=>String(v||'').trim());
-  rows[1].forEach((v,i)=>{if(String(v??'').trim()){const nv=norm(v);if(['on hand','ats','sales floor'].includes(nv)) columns[i]=String(v).trim();}});
-  dataStart=2;
-} else columns=rows[0].map((v,i)=>String(v||`Column ${i+1}`).trim());
-columns=columns.map((v,i)=>v||`Column ${i+1}`);
-rawRows=rows.slice(dataStart).filter(r=>r.some(v=>String(v??'').trim()!==''));mapping=autoMap(columns);if(mapping.sku<0){throw new Error('Could not identify a UPC/SKU column. Open Settings → Inventory column mapping and select the UPC column, then import again. Detected columns: '+columns.join(', '));}inventory=normalizeRows(rawRows);if(!inventory.length){throw new Error('The workbook was opened, but no inventory rows with UPC/SKU values were found. Check the UPC mapping in Settings. Detected scan-code column: '+columns[mapping.sku]);}currentSourceName=file.name;currentSourceImportedAt=new Date().toISOString();if(currentSourceUrl)URL.revokeObjectURL(currentSourceUrl);currentSourceUrl=URL.createObjectURL(file);$('top-source').textContent=file.name;$('top-source').title=`Open current source file: ${file.name}`;$('top-source-replace').title='Replace current inventory source';$('top-source-replace').style.display='inline-flex';toast(`Imported ${inventory.length} inventory rows from ${file.name}`);renderDashboard();renderBuilder();renderMapping();}catch(err){toast(err.message||'Could not import workbook');}e.target.value='';});
+$('file-input').addEventListener('change',async e=>{
+ const file=e.target.files[0];if(!file)return;
+ try{
+  let rows,sourceWorkbook=null;
+  if(file.name.toLowerCase().endsWith('.csv')){
+   rows=parseCSV(await file.text());
+  }else{
+   if(!window.XLSX)throw new Error('Excel reader could not load. Check your internet connection and try importing again.');
+   const buf=await file.arrayBuffer();sourceWorkbook=XLSX.read(buf,{type:'array',cellDates:false});
+   const preferred=sourceWorkbook.SheetNames.find(n=>norm(n)==='report');
+   let bestRows=null,bestScore=-1;
+   for(const name of sourceWorkbook.SheetNames){
+    const candidate=XLSX.utils.sheet_to_json(sourceWorkbook.Sheets[name],{header:1,defval:'',raw:false});
+    const score=scoreHeaderRows(candidate);
+    if(name===preferred){bestRows=candidate;bestScore=score;break;}
+    if(score>bestScore){bestRows=candidate;bestScore=score;}
+   }
+   rows=bestRows||[];
+  }
+  if(!rows.length)throw new Error('The selected workbook appears to be empty or its worksheets could not be read.');
+  // Find the real header row rather than assuming headers are on row 1. Some inventory
+  // exports have report metadata or two-level headings before the actual column names.
+  const headerInfo=findInventoryHeader(rows);
+  if(!headerInfo)throw new Error('I opened the file but could not find recognizable inventory headers. Please check that the workbook contains columns such as UPC, Product Description, and On Hand.');
+  columns=headerInfo.columns;const dataStart=headerInfo.dataStart;
+  rawRows=rows.slice(dataStart).filter(r=>r.some(v=>String(v??'').trim()!==''));
+  mapping=autoMap(columns);
+  if(mapping.sku<0)throw new Error('I found the headers ('+columns.filter(Boolean).join(', ')+') but could not identify the UPC/SKU column. Open Settings → Inventory column mapping and select the UPC column.');
+  inventory=normalizeRows(rawRows);
+  if(!inventory.length)throw new Error('The headers were found, including “'+columns[mapping.sku]+'”, but no inventory rows contained values in that column. Check the UPC mapping and try again.');
+  currentSourceName=file.name;currentSourceImportedAt=new Date().toISOString();
+  if(currentSourceUrl)URL.revokeObjectURL(currentSourceUrl);
+  currentSourceUrl=URL.createObjectURL(file);
+  $('top-source').textContent=file.name;$('top-source').title=`Open current source file: ${file.name}`;
+  $('top-source-replace').title='Replace current inventory source';$('top-source-replace').style.display='inline-flex';
+  toast(`Imported ${inventory.length} inventory rows from ${file.name}`);renderDashboard();renderBuilder();renderMapping();
+ }catch(err){toast(err.message||'Could not import workbook');}
+ e.target.value='';
+});
+function headerRowScore(row){
+ const cells=(row||[]).map(v=>norm(v));let score=0;
+ const groups=[
+  ['upc','upc code','upc number','barcode','sku','sku upc','sku/upc','ean','gtin'],
+  ['product description','description','item description','product name'],
+  ['on hand','on hand qty','quantity','qty'],
+  ['case code','casecode','category'],
+  ['clu','style','style number','sell price','sale price','ats','plu']
+ ];
+ groups.forEach(group=>{if(cells.some(c=>group.some(t=>c===norm(t)||c.includes(norm(t)))))score+=1;});
+ return score;
+}
+function scoreHeaderRows(rows){let best=0;for(let i=0;i<Math.min(rows.length,20);i++){best=Math.max(best,headerRowScore(rows[i]));if(i+1<rows.length){const merged=(rows[i]||[]).map((v,j)=>String(v||rows[i+1]?.[j]||''));best=Math.max(best,headerRowScore(merged));}}return best;}
+function findInventoryHeader(rows){
+ let best=null,bestScore=0;
+ for(let i=0;i<Math.min(rows.length,30);i++){
+  const current=rows[i]||[],next=rows[i+1]||[];
+  // Prefer real column names in the row, but merge the next row for two-level exports.
+  const merged=current.map((v,j)=>{
+   const a=String(v??'').trim(),b=String(next[j]??'').trim();
+   if(!a)return b||`Column ${j+1}`;
+   if(!b)return a;
+   const an=norm(a),bn=norm(b);
+   if(['on hand','ats','sales floor','available to sell'].includes(bn))return b;
+   if(['on hand','ats','sales floor','available to sell'].includes(an))return a;
+   return a;
+  });
+  const score=headerRowScore(current),mergedScore=headerRowScore(merged);
+  const useMerged=mergedScore>score;
+  const chosen=useMerged?merged:current.map((v,j)=>String(v??'').trim()||`Column ${j+1}`);
+  const finalScore=Math.max(score,mergedScore);
+  if(finalScore>bestScore){
+   bestScore=finalScore;
+   const hasSubheader=next.some(v=>['on hand','ats','sales floor','available to sell'].includes(norm(v)));
+   best={columns:chosen.map((v,j)=>String(v??'').trim()||`Column ${j+1}`),dataStart:i+1+(hasSubheader?1:0),score:finalScore};
+  }
+  if(score>=3)break;
+ }
+ return bestScore>=2?best:null;
+}
 function parseCSV(text){const rows=[];let row=[],field='',q=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'&&q&&text[i+1]==='"'){field+='"';i++}else if(c==='"')q=!q;else if(c===','&&!q){row.push(field);field=''}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(field);rows.push(row);row=[];field=''}else field+=c}if(field.length||row.length){row.push(field);rows.push(row)}return rows}
 function autoMap(cols){
  const out={};

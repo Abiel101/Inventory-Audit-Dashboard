@@ -381,9 +381,27 @@ if(rows.length>1 && rows[1].some(v=>['on hand','ats','sales floor'].includes(nor
   dataStart=2;
 } else columns=rows[0].map((v,i)=>String(v||`Column ${i+1}`).trim());
 columns=columns.map((v,i)=>v||`Column ${i+1}`);
-rawRows=rows.slice(dataStart).filter(r=>r.some(v=>String(v??'').trim()!==''));mapping=autoMap(columns);inventory=normalizeRows(rawRows);currentSourceName=file.name;currentSourceImportedAt=new Date().toISOString();if(currentSourceUrl)URL.revokeObjectURL(currentSourceUrl);currentSourceUrl=URL.createObjectURL(file);$('top-source').textContent=file.name;$('top-source').title=`Open current source file: ${file.name}`;$('top-source-replace').title='Replace current inventory source';$('top-source-replace').style.display='inline-flex';toast(`Imported ${inventory.length} inventory rows from ${file.name}`);renderDashboard();renderBuilder();renderMapping();}catch(err){toast(err.message||'Could not import workbook');}e.target.value='';});
+rawRows=rows.slice(dataStart).filter(r=>r.some(v=>String(v??'').trim()!==''));mapping=autoMap(columns);if(mapping.sku<0){throw new Error('Could not identify a UPC/SKU column. Open Settings → Inventory column mapping and select the UPC column, then import again. Detected columns: '+columns.join(', '));}inventory=normalizeRows(rawRows);if(!inventory.length){throw new Error('The workbook was opened, but no inventory rows with UPC/SKU values were found. Check the UPC mapping in Settings. Detected scan-code column: '+columns[mapping.sku]);}currentSourceName=file.name;currentSourceImportedAt=new Date().toISOString();if(currentSourceUrl)URL.revokeObjectURL(currentSourceUrl);currentSourceUrl=URL.createObjectURL(file);$('top-source').textContent=file.name;$('top-source').title=`Open current source file: ${file.name}`;$('top-source-replace').title='Replace current inventory source';$('top-source-replace').style.display='inline-flex';toast(`Imported ${inventory.length} inventory rows from ${file.name}`);renderDashboard();renderBuilder();renderMapping();}catch(err){toast(err.message||'Could not import workbook');}e.target.value='';});
 function parseCSV(text){const rows=[];let row=[],field='',q=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'&&q&&text[i+1]==='"'){field+='"';i++}else if(c==='"')q=!q;else if(c===','&&!q){row.push(field);field=''}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(field);rows.push(row);row=[];field=''}else field+=c}if(field.length||row.length){row.push(field);rows.push(row)}return rows}
-function autoMap(cols){const out={};for(const f in fieldAliases){out[f]=cols.findIndex(c=>fieldAliases[f].some(a=>norm(c)===norm(a)||norm(c).includes(a)));}return out}
+function autoMap(cols){
+ const out={};
+ // Prefer exact, semantically specific headers over broad aliases. In the DY workbook
+ // PLU appears before UPC; treating PLU as the primary scan code caused UPC scans to miss.
+ const score=(field,header)=>{const h=norm(header);if(!h)return 0;const priorities={
+  sku:[['upc',120],['upc code',118],['upc number',118],['sku/upc',116],['sku upc',116],['barcode',112],['ean',108],['gtin',108],['sku',104],['item number',96],['item #',96],['item no',94],['product code',92],['stock number',90],['inventory number',88],['plu',50]],
+  description:[['product description',120],['item description',118],['description',110],['product name',100],['name',70]],
+  style:[['style number',120],['style #',118],['style',110],['clu',105],['model number',95],['model',80],['design',70]],
+  quantity:[['on hand',120],['on hand qty',118],['quantity',105],['qty',100],['count',80],['total qty',90],['inventory qty',90]],
+  price:[['sale price',120],['sell price',115],['retail price',110],['price',100]],
+  salesFloor:[['sales floor',120],['ats',115],['available to sell',110]],
+  category:[['case code',120],['casecode',118],['case category',115],['audit category',112],['location category',110],['category',100],['case',70],['group',60]]
+ };
+ const list=priorities[field]||fieldAliases[field].map(a=>[a,50]);let best=0;
+ for(const [term,weight] of list){if(h===norm(term))best=Math.max(best,weight);else if(h.includes(norm(term)))best=Math.max(best,weight-15)}
+ return best;};
+ for(const f in fieldAliases){let bestIndex=-1,bestScore=0;cols.forEach((c,i)=>{const sc=score(f,c);if(sc>bestScore){bestScore=sc;bestIndex=i;}});out[f]=bestIndex;}
+ return out;
+}
 function normalizeRows(rows){return rows.map((r,i)=>({id:`row-${i}`,sku:String(r[mapping.sku]??'').trim(),description:String(r[mapping.description]??'').trim(),style:String(r[mapping.style]??'').trim(),quantity:Number(String(r[mapping.quantity]??0).replace(/,/g,''))||0,price:Number(String(r[mapping.price]??0).replace(/[$,]/g,''))||0,salesFloor:Number(String(r[mapping.salesFloor]??r[mapping.quantity]??0).replace(/[$,]/g,''))||0,category:String(r[mapping.category]??'').trim(),raw:r})).filter(x=>x.sku)}
 function rebuildInventory(){inventory=normalizeRows(rawRows);renderDashboard();renderBuilder();renderWorkspace()}
 function renderMapping(){const host=$('mapping-form');if(!columns.length){host.innerHTML='<div class="hint">Import a workbook to configure column mapping.</div>';return}const labels={sku:'UPC / scan code',description:'Description',style:'Style number / CLU',category:'Case code / category',price:'Sale price',quantity:'On Hand quantity',salesFloor:'Sales Floor quantity / ATS'};host.innerHTML=Object.entries(labels).map(([f,label])=>`<div class="field"><label for="map-${f}">${label}</label><select id="map-${f}"><option value="-1">— Not mapped —</option>${columns.map((c,i)=>`<option value="${i}" ${mapping[f]===i?'selected':''}>${esc(c)}</option>`).join('')}</select></div>`).join('');}

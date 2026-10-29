@@ -1,3 +1,5 @@
+/* THEME AND GLOBAL ELEMENTS
+   Shared colors, sizing defaults, and button variants used across every view. */
 :root {
 	--bg: #f4f6fa;
 	--panel: #fff;
@@ -59,6 +61,8 @@ button:active {
 	background: #fff0f0;
 	color: var(--red);
 }
+/* APPLICATION SHELL AND DESKTOP NAVIGATION
+   Sidebar, brand, page header, and the main content area. */
 .app {
 	display: flex;
 	min-height: 100vh;
@@ -171,6 +175,8 @@ button:active {
 	place-items: center;
 	font-weight: 800;
 }
+/* PAGE VIEWS AND DASHBOARD
+   Only the active view is displayed; dashboard cards and summary counters share these styles. */
 .view {
 	display: none;
 }
@@ -357,6 +363,8 @@ button:active {
 	color: var(--ink);
 	margin-bottom: 4px;
 }
+/* AUDIT BUILDER
+   File-import prompt, data-entry fields, and category selection tiles. */
 .upload-box {
 	border: 1.5px dashed #c7cede;
 	border-radius: 16px;
@@ -430,6 +438,8 @@ button:active {
 .category-option small {
 	color: var(--muted);
 }
+/* AUDIT WORKSPACE
+   Scan controls, inventory table, result states, and the side-panel summaries. */
 .audit-layout {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 290px;
@@ -557,6 +567,8 @@ tr:last-child td {
 	font-size: 11px;
 	color: #58647a;
 }
+/* SETTINGS AND SHARED FEEDBACK
+   Editable location rows, notices, and temporary toast messages. */
 .settings-list {
 	display: grid;
 	gap: 8px;
@@ -621,6 +633,8 @@ tr:last-child td {
 .right {
 	margin-left: auto;
 }
+/* GENERAL RESPONSIVE LAYOUT
+   Gradually collapse multi-column layouts for tablets and narrow screens. */
 @media (max-width: 1000px) {
 	.sidebar {
 		width: 210px;
@@ -766,7 +780,8 @@ tr:last-child td {
 	}
 }
 
-/* Active audit focus: subtle indigo aura keeps the active task visually prominent. */
+/* ACTIVE AUDIT EMPHASIS
+   Subtle indigo glow distinguishes the current audit from other content. */
 #view-audit-workspace.active .panel:first-child {
 	position: relative;
 	box-shadow:
@@ -790,6 +805,8 @@ tr:last-child td {
 			0 12px 35px rgba(29, 43, 69, 0.07);
 	}
 }
+/* AUDIT HANDOFF DETAILS
+   Associate notes and the reminder shown while scanning is in progress. */
 .audit-handoff {
 	display: grid;
 	grid-template-columns: minmax(150px, 0.65fr) minmax(220px, 1.35fr);
@@ -819,7 +836,8 @@ tr:last-child td {
 		grid-template-columns: 1fr;
 	}
 }
-/* Dedicated full-screen audit mode: no app navigation while the audit is active. */
+/* FOCUSED WORKSPACE MODE
+   Hide general navigation and give the active audit the available screen space. */
 .app.audit-fullscreen {
 	display: block;
 	min-height: 100dvh;
@@ -882,6 +900,8 @@ tr:last-child td {
 	}
 }
 
+/* VIEW-SPECIFIC COMPONENTS
+   Layout helpers for audit search, category creation, progress, and settings forms. */
 .audit-search-toolbar {
 	margin-bottom: 14px;
 }
@@ -972,6 +992,8 @@ tr:last-child td {
 	box-shadow: 0 0 0 4px rgba(22, 134, 107, 0.14);
 	animation: none;
 }
+/* AUDIT LOADING OVERLAY
+   Full-screen progress state shown during audit startup and finalization. */
 .audit-loading {
 	position: fixed;
 	inset: 0;
@@ -1067,6 +1089,114 @@ tr:last-child td {
 .loading-step.done .step-dot {
 	background: #55c8a6;
 }
+/* INVENTORY UPLOAD CONFIRMATION */
+.upload-confirmation {
+	position: fixed;
+	inset: 0;
+	z-index: 1100;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	background: radial-gradient(ellipse at 50% 35%, #203a4d 0%, #102332 54%, #091720 100%);
+	color: #fff;
+}
+.upload-confirmation.show {
+	display: flex;
+	animation: uploadFadeIn 0.2s ease-out;
+}
+@keyframes uploadFadeIn {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+.upload-confirmation-card {
+	width: min(440px, 100%);
+	padding: 38px 30px 32px;
+	text-align: center;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 24px;
+	background: rgba(15, 30, 43, 0.76);
+	box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+}
+.upload-confirmation-icon {
+	width: 70px;
+	height: 70px;
+	margin: 0 auto 22px;
+	display: grid;
+	place-items: center;
+	border: 1px solid rgba(118, 204, 255, 0.24);
+	border-radius: 22px;
+	background: rgba(70, 170, 225, 0.12);
+}
+.upload-confirmation-icon span {
+	width: 28px;
+	height: 28px;
+	border: 3px solid rgba(255, 255, 255, 0.18);
+	border-top-color: #7cd3ff;
+	border-right-color: #7cd3ff;
+	border-radius: 50%;
+	animation: loadingSpin 0.85s linear infinite;
+}
+.upload-confirmation-kicker {
+	margin-bottom: 9px;
+	color: #8bd9ff;
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.14em;
+}
+.upload-confirmation h2 {
+	margin: 0 0 9px;
+	font-size: 25px;
+	letter-spacing: -0.04em;
+}
+.upload-confirmation p {
+	margin: 0;
+	color: #bac9d5;
+	font-size: 14px;
+	line-height: 1.5;
+}
+.upload-confirmation-file {
+	max-width: 100%;
+	margin: 22px auto 0;
+	padding: 10px 14px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.05);
+	color: #e3edf4;
+	font-size: 12px;
+	font-weight: 650;
+	overflow-wrap: anywhere;
+}
+.upload-confirmation.success .upload-confirmation-icon {
+	border-color: rgba(87, 220, 169, 0.36);
+	background: rgba(49, 180, 127, 0.14);
+}
+.upload-confirmation.success .upload-confirmation-icon span {
+	width: 30px;
+	height: 16px;
+	margin-top: -5px;
+	border: 0;
+	border-bottom: 3px solid #61e1ad;
+	border-left: 3px solid #61e1ad;
+	border-radius: 1px;
+	transform: rotate(-45deg);
+	animation: uploadCheck 0.25s ease-out;
+}
+@keyframes uploadCheck {
+	from { opacity: 0; transform: rotate(-45deg) scale(0.55); }
+	to { opacity: 1; transform: rotate(-45deg) scale(1); }
+}
+.upload-confirmation.success .upload-confirmation-kicker {
+	color: #75e4b6;
+}
+@media (prefers-reduced-motion: reduce) {
+	.upload-confirmation.show,
+	.upload-confirmation-icon span {
+		animation: none;
+	}
+}
+/* RESPONSIVE FOCUSED WORKSPACE
+   Adapt the audit controls and summary panels for tablets and phones. */
 @media (max-width: 900px) {
 	.app.audit-fullscreen .audit-layout {
 		grid-template-columns: 1fr;
@@ -1116,7 +1246,8 @@ tr:last-child td {
 	}
 }
 
-/* Compact, split-screen-friendly audit workspace */
+/* MOBILE SCAN CARDS
+   Alternative to the wide table on compact and split-screen displays. */
 .mobile-scan-list {
 	display: none;
 	gap: 9px;
@@ -1368,7 +1499,8 @@ tr:last-child td {
 	}
 }
 
-/* Whole-app responsive pass: dashboard, builder, settings and audit workspace */
+/* COMPACT APP LAYOUT
+   Resize the dashboard, builder, settings, and bottom navigation on small screens. */
 @media (max-width: 760px), (max-height: 650px) and (max-width: 1024px) {
 	.app:not(.audit-fullscreen) {
 		display: block;
@@ -1686,7 +1818,8 @@ tr:last-child td {
 	}
 }
 
-/* Mobile hamburger navigation drawer */
+/* MOBILE NAVIGATION DRAWER
+   Header menu button and slide-up navigation sheet for phone layouts. */
 .topbar-heading {
 	display: flex;
 	align-items: center;
@@ -1860,7 +1993,8 @@ tr:last-child td {
 		display: none !important;
 	}
 }
-/* Prevent iOS Safari from auto-zooming when form controls receive focus. */
+/* MOBILE FORM CONTROLS
+   Keep iOS Safari from zooming the page when an input receives focus. */
 @media (max-width: 760px) {
 	input,
 	select,
@@ -1875,6 +2009,8 @@ tr:last-child td {
 	}
 }
 
+/* AUDIT CARD STATES AND LAYOUT
+   Highlight the active/selected audit and keep audit cards readable at small sizes. */
 .top-actions #top-source {
 	max-width: 240px;
 	overflow: hidden;
@@ -2020,12 +2156,21 @@ tr:last-child td {
 	}
 }
 
+/* INVENTORY SOURCE CONTROL
+   Keep the source filename and replace action usable in the shared header. */
 .source-control {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 	min-width: 0;
 	max-width: min(46vw, 440px);
+}
+#top-source.source-loaded {
+	border-color: #75dcb0 !important;
+	background: #e5f8ef !important;
+	color: #116b4c !important;
+	box-shadow: inset 0 0 0 1px rgba(17, 107, 76, 0.05), 0 3px 12px rgba(24, 140, 94, 0.12);
+	font-weight: 750;
 }
 #top-source {
 	max-width: 100%;

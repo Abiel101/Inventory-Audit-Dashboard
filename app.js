@@ -1,3 +1,5 @@
+// DEFAULTS AND SESSION STATE
+// Store locations, workbook-header aliases, and the in-memory data shared by each view.
 const defaultLocations = [
 	...Array.from({ length: 7 }, (_, i) => String(100 + i)),
 	...Array.from({ length: 9 }, (_, i) => String(200 + i)),
@@ -104,6 +106,8 @@ let locations = [...defaultLocations],
 	currentSourceName = "",
 	currentSourceImportedAt = null,
 	currentSourceUrl = null;
+// SHARED HELPERS AND VIEW NAVIGATION
+// Shortcuts for common text and DOM operations used throughout the application.
 const $ = (id) => document.getElementById(id);
 const norm = (s) =>
 	String(s ?? "")
@@ -139,6 +143,7 @@ function toast(msg) {
 	clearTimeout(window._toastTimer);
 	window._toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
 }
+// Switch between the dashboard, builder, workspace, and settings views.
 function showView(name) {
 	if (name === "audit-workspace") {
 		const a = activeAudit();
@@ -196,6 +201,7 @@ function showView(name) {
 document
 	.querySelectorAll("[data-view]")
 	.forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
+// Keep the mobile navigation drawer accessible and synchronized with page navigation.
 const mobileMenu = $("mobile-menu-backdrop"),
 	mobileMenuTrigger = $("mobile-menu-trigger");
 function closeMobileMenu() {
@@ -226,6 +232,8 @@ document.addEventListener("keydown", (e) => {
 	if (e.key === "Escape") closeMobileMenu();
 });
 
+// HEADER ACTIONS AND INVENTORY IMPORT
+// The header shortcuts open the builder or select an inventory file to import.
 $("top-new").onclick = $("dashboard-build").onclick = () =>
 	showView("new-audit");
 $("top-source-replace").onclick = $("builder-import").onclick = () =>
@@ -239,10 +247,39 @@ $("top-source").onclick = () => {
 			);
 	} else $("file-input").click();
 };
+function showUploadConfirmation(file) {
+	const overlay = $("upload-confirmation");
+	overlay.classList.remove("success");
+	overlay.classList.add("show");
+	overlay.setAttribute("aria-hidden", "false");
+	$("upload-confirmation-kicker").textContent = "INVENTORY SOURCE";
+	$("upload-confirmation-title").textContent = "Uploading your inventory";
+	$("upload-confirmation-message").textContent = "Reading and checking the file…";
+	$("upload-confirmation-file").textContent = file.name;
+}
+function finishUploadConfirmation() {
+	const overlay = $("upload-confirmation");
+	overlay.classList.add("success");
+	$("upload-confirmation-kicker").textContent = "READY TO GO";
+	$("upload-confirmation-title").textContent = "Upload successful";
+	$("upload-confirmation-message").textContent = `${inventory.length.toLocaleString()} inventory items are loaded and ready for your audit.`;
+	window.setTimeout(() => {
+		overlay.classList.remove("show", "success");
+		overlay.setAttribute("aria-hidden", "true");
+	}, 1300);
+}
+function hideUploadConfirmation() {
+	const overlay = $("upload-confirmation");
+	overlay.classList.remove("show", "success");
+	overlay.setAttribute("aria-hidden", "true");
+}
 $("file-input").addEventListener("change", async (e) => {
 	const file = e.target.files[0];
 	if (!file) return;
+	showUploadConfirmation(file);
 	try {
+		// Let the browser paint the confirmation before parsing large workbooks.
+		await new Promise((resolve) => requestAnimationFrame(resolve));
 		let rows,
 			sourceWorkbook = null;
 		if (file.name.toLowerCase().endsWith(".csv")) {
@@ -311,19 +348,25 @@ $("file-input").addEventListener("change", async (e) => {
 		currentSourceImportedAt = new Date().toISOString();
 		if (currentSourceUrl) URL.revokeObjectURL(currentSourceUrl);
 		currentSourceUrl = URL.createObjectURL(file);
-		$("top-source").textContent = file.name;
-		$("top-source").title = `Open current source file: ${file.name}`;
+		$("top-source").textContent = `✓ ${file.name}`;
+		$("top-source").classList.add("source-loaded");
+		$("top-source").title = `Inventory loaded · Open source file: ${file.name}`;
+		$("top-source").setAttribute("aria-label", `Inventory loaded: ${file.name}. Open source file`);
 		$("top-source-replace").title = "Replace current inventory source";
 		$("top-source-replace").style.display = "inline-flex";
+		finishUploadConfirmation();
 		toast(`Imported ${inventory.length} inventory rows from ${file.name}`);
 		renderDashboard();
 		renderBuilder();
 		renderMapping();
 	} catch (err) {
+		hideUploadConfirmation();
 		toast(err.message || "Could not import workbook");
 	}
 	e.target.value = "";
 });
+// WORKBOOK AND CSV PARSING
+// Detect inventory headings even when a workbook has report titles or multiple header rows.
 function headerRowScore(row) {
 	const cells = (row || []).map((v) => norm(v));
 	let score = 0;
@@ -439,6 +482,7 @@ function parseCSV(text) {
 	}
 	return rows;
 }
+// Map detected workbook headings to app fields and convert rows into inventory records.
 function autoMap(cols) {
 	const out = {};
 	// Prefer exact, semantically specific headers over broad aliases. In the DY workbook
@@ -593,6 +637,8 @@ $("save-mapping").onclick = () => {
 	$("mapping-status").textContent = "Mapping saved for this session.";
 	toast("Inventory regrouped using selected columns");
 };
+// AUDIT BUILDER AND CREATION
+// Group imported items by case/category and render the category selection controls.
 function categories() {
 	const map = new Map();
 	inventory.forEach((item) => {
@@ -649,6 +695,7 @@ function renderBuilder() {
 			: "Optional shared audit name";
 }
 $("category-search").addEventListener("input", renderBuilder);
+// Confirm the selected audit and show progress while the workspace is prepared.
 function enterAuditWithLoading(id) {
 	const chosen = audits.find((a) => a.id === id);
 	if (!chosen) {
@@ -746,6 +793,8 @@ $("create-audit").onclick = () => {
 		`${created.length} audit${created.length === 1 ? "" : "s"} created. Select one and start when ready.`,
 	);
 };
+// DASHBOARD AND AUDIT HISTORY
+// Calculate audit progress, render open/closed cards, and handle history actions.
 function activeAudit() {
 	return audits.find((a) => a.id === activeAuditId);
 }
@@ -905,6 +954,8 @@ $("start-selected-audit").onclick = () => {
 };
 $("audit-search").addEventListener("input", renderDashboard);
 $("audit-filter").addEventListener("change", renderDashboard);
+// AUDIT WORKSPACE AND LOCATION SUMMARY
+// Keep the location selector and current-location label in sync with store settings.
 function fillLocations() {
 	const sel = $("location-select"),
 		old = sel.value;
@@ -1032,6 +1083,8 @@ $("audit-live-notes").addEventListener("input", () => {
 	const a = activeAudit();
 	if (a) a.liveNotes = $("audit-live-notes").value.trim();
 });
+// SCANNING AND SECTION COMPLETION
+// Match each scan against the audit snapshot, record its count, and refresh the views.
 function addScan() {
 	const a = activeAudit();
 	if (!a) return toast("Start or select an audit first");
@@ -1109,6 +1162,8 @@ function completeSection() {
 }
 $("complete-section-btn").onclick = $("section-confirm").onclick =
 	completeSection;
+// AUDIT CLOSURE
+// Finalize the audit, export its workbook, and return the user to the dashboard.
 function finalizeAudit(id) {
 	const a = audits.find((x) => x.id === id);
 	if (!a) return;
@@ -1176,6 +1231,8 @@ $("finish-return-btn").onclick = () => {
 	document.querySelector(".app").classList.remove("audit-fullscreen");
 	showView("dashboard");
 };
+// EXCEL EXPORT
+// Build the Scan, Audit, and Audit Summary worksheets from a closed audit snapshot.
 function exportAudit(id, options = {}) {
 	const a = audits.find((x) => x.id === id);
 	if (!a) return toast("Audit not found");
@@ -1428,6 +1485,8 @@ $("export-btn").onclick = () => {
 	if (!activeAudit()) return toast("Select an audit first");
 	exportAudit(activeAuditId);
 };
+// SETTINGS AND HTML-SAFETY HELPERS
+// Render editable locations and mapping controls; escape values before inserting markup.
 function renderSettings() {
 	fillLocations();
 	$("settings-locations").innerHTML = locations

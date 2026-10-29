@@ -6,10 +6,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Inventory Audit | Store Ops</title>
 
+  <!-- Load the shared site styles; page-specific content is organized below. -->
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
+  <!-- Brief confirmation shown while an inventory source is being validated. -->
+  <div class="upload-confirmation" id="upload-confirmation" role="status" aria-live="polite" aria-hidden="true">
+    <div class="upload-confirmation-card">
+      <div class="upload-confirmation-icon" id="upload-confirmation-icon" aria-hidden="true"><span></span></div>
+      <div class="upload-confirmation-kicker" id="upload-confirmation-kicker">INVENTORY SOURCE</div>
+      <h2 id="upload-confirmation-title">Uploading your inventory</h2>
+      <p id="upload-confirmation-message">Reading and checking the file…</p>
+      <div class="upload-confirmation-file" id="upload-confirmation-file"></div>
+    </div>
+  </div>
+  <!-- Full-screen progress overlay shown while an audit is being opened or closed. -->
   <div class="audit-loading" id="audit-loading" role="status" aria-live="polite" aria-label="Setting up audit">
     <div class="audit-loading-card">
       <div class="loading-mark">IA</div>
@@ -26,7 +38,10 @@
       </div>
     </div>
   </div>
+
+  <!-- Main application shell: desktop navigation, page header, and active view. -->
   <div class="app">
+    <!-- Primary navigation and short workflow reminder. -->
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">IA</div>
@@ -42,6 +57,7 @@
         by location, then export the audit workbook.</div>
     </aside>
     <main class="main">
+      <!-- Shared header: current section, inventory source controls, and new-audit shortcut. -->
       <header class="topbar">
         <div class="topbar-heading"><button class="mobile-menu-trigger outline" id="mobile-menu-trigger"
             aria-label="Open navigation menu" aria-expanded="false"><span class="hamburger-lines">☰</span></button>
@@ -60,6 +76,7 @@
         </div>
       </header>
 
+      <!-- Dashboard: high-level counts, searchable open audits, and closed audit history. -->
       <section class="view active" id="view-dashboard">
         <div class="stats">
           <div class="stat">
@@ -113,6 +130,7 @@
         <input id="file-input" type="file" accept=".xlsx,.xls,.csv" hidden />
       </section>
 
+      <!-- Audit builder: import a workbook, choose categories, and create audit snapshots. -->
       <section class="view" id="view-new-audit">
         <div class="section-head no-top-margin">
           <div>
@@ -145,6 +163,7 @@
         </div>
       </section>
 
+      <!-- Audit workspace: scan items, complete locations, and monitor audit progress. -->
       <section class="view" id="view-audit-workspace">
         <div class="panel">
           <div class="audit-title">
@@ -231,6 +250,7 @@
         </div>
       </section>
 
+      <!-- Settings: maintain store locations and verify imported workbook column mapping. -->
       <section class="view" id="view-settings">
         <div class="section-head no-top-margin">
           <div>
@@ -262,6 +282,8 @@
       </section>
     </main>
   </div>
+
+  <!-- Fixed mobile navigation and its slide-up navigation drawer. -->
   <nav class="mobile-nav"><button class="active" data-view="dashboard"><span>▦</span>Dashboard</button><button
       data-view="new-audit"><span>＋</span>Build</button><button
       data-view="audit-workspace"><span>▤</span>Workspace</button><button
@@ -287,7 +309,11 @@
       <div class="mobile-menu-foot">Inventory Audit <span>•</span> Store operations</div>
     </section>
   </div>
+
+  <!-- Shared transient feedback region; JavaScript fills and displays it as needed. -->
   <div class="toast" id="toast"></div>
+
+  <!-- Load the spreadsheet parser before the application code that uses XLSX. -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="app.js"></script>
 </body>

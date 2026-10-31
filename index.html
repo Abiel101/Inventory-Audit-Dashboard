@@ -250,12 +250,25 @@
         </div>
       </section>
 
-      <!-- Settings: maintain store locations and verify imported workbook column mapping. -->
+      <!-- Settings: choose the interface appearance, maintain locations, and verify column mapping. -->
       <section class="view" id="view-settings">
         <div class="section-head no-top-margin">
           <div>
             <h2>Settings</h2>
-            <p>Manage location dropdowns and inventory column mapping.</p>
+            <p>Customize the dashboard and manage your inventory audit preferences.</p>
+          </div>
+        </div>
+        <div class="panel appearance-panel">
+          <h3 class="settings-heading">Appearance</h3>
+          <p class="hint">Choose a color theme for the dashboard. Your preference is saved on this device.</p>
+          <div class="field theme-field">
+            <label for="theme-select">Color theme</label>
+            <select id="theme-select">
+              <option value="default">Default</option>
+              <option value="tokyo-night">Tokyo Night</option>
+              <option value="github-white">GitHub White</option>
+              <option value="nord">Nord</option>
+            </select>
           </div>
         </div>
         <div class="panel location-settings-panel">

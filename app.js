@@ -109,6 +109,31 @@ let locations = [...defaultLocations],
 // SHARED HELPERS AND VIEW NAVIGATION
 // Shortcuts for common text and DOM operations used throughout the application.
 const $ = (id) => document.getElementById(id);
+const availableThemes = ["default", "tokyo-night", "github-white", "nord"];
+let selectedTheme = "default";
+try {
+	const savedTheme = localStorage.getItem("inventory-audit-theme");
+	if (availableThemes.includes(savedTheme)) selectedTheme = savedTheme;
+} catch {
+	// Theme selection remains usable when browser storage is unavailable.
+}
+function applyTheme(theme) {
+	selectedTheme = availableThemes.includes(theme) ? theme : "default";
+	document.documentElement.dataset.theme = selectedTheme;
+	document.documentElement.style.colorScheme =
+		selectedTheme === "tokyo-night" ? "dark" : "light";
+	const themeSelect = $("theme-select");
+	if (themeSelect) themeSelect.value = selectedTheme;
+	try {
+		localStorage.setItem("inventory-audit-theme", selectedTheme);
+	} catch {
+		// Keep the selected theme for the current page when browser storage is unavailable.
+	}
+}
+applyTheme(selectedTheme);
+$("theme-select").addEventListener("change", (event) =>
+	applyTheme(event.target.value),
+);
 const norm = (s) =>
 	String(s ?? "")
 		.trim()

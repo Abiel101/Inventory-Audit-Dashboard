@@ -2569,13 +2569,15 @@ body > .mobile-nav button.active,
 .app:not(.audit-fullscreen) .audit-grid {
 	grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
 	gap: 10px;
+	align-items: start;
 }
 .audit-card,
 .app:not(.audit-fullscreen) .audit-card {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	grid-template-areas: "top actions" "bar bar" "meta meta";
-	align-items: center;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-areas: "top" "bar" "meta" "actions";
+	align-content: start;
+	align-items: start;
 	column-gap: 14px;
 	padding: 12px 16px;
 	min-height: 0;
@@ -2583,7 +2585,7 @@ body > .mobile-nav button.active,
 .audit-card .audit-card-top { grid-area: top; display: flex; flex-direction: row; }
 .audit-card .progressline { grid-area: bar; margin: 10px 0 6px; }
 .audit-card .audit-meta { grid-area: meta; display: flex; flex-direction: row; justify-content: space-between; }
-.audit-card .audit-actions { grid-area: actions; margin: 0; padding: 0; display: flex; flex-direction: row; justify-content: flex-end; }
+.audit-card .audit-actions { grid-area: actions; margin: 10px 0 0; padding: 0; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .audit-card .audit-actions button { width: auto; white-space: nowrap; }
 @media (max-width: 700px) {
 	.audit-grid,

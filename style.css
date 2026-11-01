@@ -2901,3 +2901,24 @@ body > .mobile-nav button.active,
 .calendar-legend { font-size: 14px; }
 .calendar-detail h4 { font-size: 15px; }
 .cal-activity-row { font-size: 14px; }
+
+.cal-bulk {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+.cal-unsched-item {
+	cursor: pointer;
+}
+#cal-add-select {
+	width: 100%;
+	margin: 0.5rem 0;
+}
+
+.cal-day-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}

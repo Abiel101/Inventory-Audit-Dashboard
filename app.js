@@ -1596,7 +1596,8 @@ let schedule = readJSON(SCHEDULE_KEY, {}),
 	knownCodes = readJSON(CODES_KEY, []);
 const todayDate = new Date();
 let calMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1),
-	calSelected = dateKey(todayDate);
+	calSelected = dateKey(todayDate),
+	calChecked = new Set();
 function dateKey(d) {
 	const p = (n) => String(n).padStart(2, "0");
 	return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
@@ -1695,21 +1696,65 @@ function renderCalendarDay() {
 	const act = dayActivity(key);
 	const unscheduled = knownCodes.filter((c) => !schedule[c]);
 	$("cal-day-body").innerHTML = `
-		<h4>Scheduled case codes</h4>
+		<div class="cal-day-head"><h4>Scheduled case codes</h4>${codes.length ? '<button class="outline" id="cal-clear-day">Clear day</button>' : ""}</div>
 		${codes.map((c) => `<div class="cal-row"><span class="cal-chip cal-${caseCodeStatus(c, key)}">${esc(c)}</span><small>${calStatusLabel[caseCodeStatus(c, key)]}</small><input type="date" value="${key}" data-cal-move="${escAttr(c)}" aria-label="Reschedule ${escAttr(c)}"><button class="outline" data-cal-unschedule="${escAttr(c)}" aria-label="Unschedule">×</button></div>`).join("") || '<p class="hint">Nothing scheduled this day.</p>'}
+		<div id="cal-day-add"></div>
 		<h4>What was done</h4>
 		${act.map((x) => `<div class="cal-activity-row"><b>${esc(x.audit.name)}</b><span>${x.scans} scans · ${x.units} units${x.locations.length ? ` · ${x.locations.map(esc).join(", ")}` : ""}</span>${x.closed ? `<span class="tag ${auditProgress(x.audit) >= 100 ? "done" : "progress"}">Closed at ${auditProgress(x.audit)}%${auditProgress(x.audit) < 100 ? " · needs research" : ""}</span>` : ""}</div>`).join("") || '<p class="hint">No audit activity recorded.</p>'}
 `;
+	calChecked.forEach((c) => {
+		if (!unscheduled.includes(c)) calChecked.delete(c);
+	});
+	const nSel = calChecked.size;
 	$("cal-unscheduled-count").textContent = unscheduled.length;
 	$("cal-unscheduled-body").innerHTML = `${knownCodes.length ? "" : '<p class="hint">Import an inventory source to load case codes.</p>'}
-		<div class="cal-unscheduled">${unscheduled.map((c) => `<div class="cal-unsched-item"><span class="cal-chip cal-scheduled">${esc(c)}</span><button class="outline" data-cal-add="${escAttr(c)}">Schedule here</button></div>`).join("")}</div>`;
-	document.querySelectorAll("[data-cal-add]").forEach((b) => {
-		b.onclick = () => {
-			schedule[b.dataset.calAdd] = key;
+		${unscheduled.length ? `<div class="cal-bulk"><label><input type="checkbox" id="cal-sel-all" ${nSel === unscheduled.length ? "checked" : ""}> Select all</label><span class="hint">${nSel} selected</span><input type="date" id="cal-bulk-date" value="${key}" aria-label="Date for selected case codes"><button id="cal-bulk-go" ${nSel ? "" : "disabled"}>Schedule selected</button></div>` : ""}
+		<div class="cal-unscheduled">${unscheduled.map((c) => `<label class="cal-unsched-item"><input type="checkbox" data-cal-check="${escAttr(c)}" ${calChecked.has(c) ? "checked" : ""}><span class="cal-chip cal-scheduled">${esc(c)}</span></label>`).join("")}</div>`;
+	$("cal-day-add").innerHTML = unscheduled.length
+		? `<select id="cal-add-select" aria-label="Add case code to this day"><option value="">Add unscheduled case code…</option>${unscheduled.map((c) => `<option value="${escAttr(c)}">${esc(c)}</option>`).join("")}</select>`
+		: "";
+	if ($("cal-add-select"))
+		$("cal-add-select").onchange = (e) => {
+			if (!e.target.value) return;
+			schedule[e.target.value] = key;
 			saveSchedule();
 			renderCalendar();
 		};
+	if ($("cal-clear-day"))
+		$("cal-clear-day").onclick = () => {
+			if (!confirm(`Unschedule all ${codes.length} case code(s) on this day?`))
+				return;
+			codes.forEach((c) => delete schedule[c]);
+			saveSchedule();
+			renderCalendar();
+		};
+	document.querySelectorAll("[data-cal-check]").forEach((i) => {
+		i.onchange = () => {
+			i.checked
+				? calChecked.add(i.dataset.calCheck)
+				: calChecked.delete(i.dataset.calCheck);
+			renderCalendarDay();
+		};
 	});
+	if ($("cal-sel-all"))
+		$("cal-sel-all").onchange = (e) => {
+			calChecked = new Set(e.target.checked ? unscheduled : []);
+			renderCalendarDay();
+		};
+	if ($("cal-bulk-go"))
+		$("cal-bulk-go").onclick = () => {
+			const d = $("cal-bulk-date").value;
+			if (!d || !calChecked.size) return;
+			calChecked.forEach((c) => {
+				schedule[c] = d;
+			});
+			calChecked = new Set();
+			calSelected = d;
+			calMonth = new Date(`${d}T00:00:00`);
+			calMonth.setDate(1);
+			saveSchedule();
+			renderCalendar();
+		};
 	document.querySelectorAll("[data-cal-unschedule]").forEach((b) => {
 		b.onclick = () => {
 			delete schedule[b.dataset.calUnschedule];

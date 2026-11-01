@@ -1211,8 +1211,7 @@ function finalizeAudit(id) {
 		steps[0].classList.remove("active");
 		steps[0].classList.add("done");
 		steps[1].classList.add("active");
-		$("loading-subtitle").textContent = "Generating your Excel audit workbook…";
-		exportAudit(id, { silent: true });
+		$("loading-subtitle").textContent = "Saving final audit results…";
 	}, 650);
 	setTimeout(() => {
 		steps[1].classList.remove("active");
@@ -1227,7 +1226,7 @@ function finalizeAudit(id) {
 		document.querySelector(".app").classList.remove("audit-fullscreen");
 		showView("dashboard");
 		renderDashboard();
-		toast("Audit closed and results exported");
+		toast("Audit closed");
 	}, 1850);
 }
 $("complete-audit-btn").onclick = () => {
@@ -1239,7 +1238,7 @@ $("complete-audit-btn").onclick = () => {
 	}
 	if (
 		!confirm(
-			"Are you sure you are complete? Confirm to complete this audit. Once confirmed, the audit will be finalized, exported, and closed.",
+			"Are you sure you are complete? Confirm to complete this audit. Once confirmed, the audit will be finalized and closed.",
 		)
 	)
 		return;

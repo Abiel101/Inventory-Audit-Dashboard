@@ -1597,7 +1597,9 @@ let schedule = readJSON(SCHEDULE_KEY, {}),
 const todayDate = new Date();
 let calMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1),
 	calSelected = dateKey(todayDate),
-	calChecked = new Set();
+	calChecked = new Set(),
+	calPickerOpen = false,
+	calPickQuery = "";
 function dateKey(d) {
 	const p = (n) => String(n).padStart(2, "0");
 	return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
@@ -1706,20 +1708,31 @@ function renderCalendarDay() {
 		if (!unscheduled.includes(c)) calChecked.delete(c);
 	});
 	const nSel = calChecked.size;
-	$("cal-unscheduled-count").textContent = unscheduled.length;
-	$("cal-unscheduled-body").innerHTML = `${knownCodes.length ? "" : '<p class="hint">Import an inventory source to load case codes.</p>'}
-		${unscheduled.length ? `<div class="cal-bulk"><label><input type="checkbox" id="cal-sel-all" ${nSel === unscheduled.length ? "checked" : ""}> Select all</label><span class="hint">${nSel} selected</span><input type="date" id="cal-bulk-date" value="${key}" aria-label="Date for selected case codes"><button id="cal-bulk-go" ${nSel ? "" : "disabled"}>Schedule selected</button></div>` : ""}
-		<div class="cal-unscheduled">${unscheduled.map((c) => `<label class="cal-unsched-item"><input type="checkbox" data-cal-check="${escAttr(c)}" ${calChecked.has(c) ? "checked" : ""}><span class="cal-chip cal-scheduled">${esc(c)}</span></label>`).join("")}</div>`;
 	$("cal-day-add").innerHTML = unscheduled.length
-		? `<select id="cal-add-select" aria-label="Add case code to this day"><option value="">Add unscheduled case code…</option>${unscheduled.map((c) => `<option value="${escAttr(c)}">${esc(c)}</option>`).join("")}</select>`
-		: "";
-	if ($("cal-add-select"))
-		$("cal-add-select").onchange = (e) => {
-			if (!e.target.value) return;
-			schedule[e.target.value] = key;
-			saveSchedule();
-			renderCalendar();
+		? `<details class="cal-picker" ${calPickerOpen ? "open" : ""}><summary>Add case codes to this day <span class="tag progress">${unscheduled.length}</span></summary>
+			<input type="search" id="cal-pick-search" placeholder="Filter case codes…" aria-label="Filter case codes">
+			<label class="cal-pick-all"><input type="checkbox" id="cal-sel-all" ${nSel === unscheduled.length ? "checked" : ""}> Select all</label>
+			<div class="cal-pick-list">${unscheduled.map((c) => `<label class="cal-pick-item" data-name="${escAttr(c.toLowerCase())}"><input type="checkbox" data-cal-check="${escAttr(c)}" ${calChecked.has(c) ? "checked" : ""}> ${esc(c)}</label>`).join("")}</div>
+			<button id="cal-bulk-go" ${nSel ? "" : "disabled"}>Add ${nSel || ""} selected to this day</button></details>`
+		: `<p class="hint">${knownCodes.length ? "All case codes are scheduled." : "Import an inventory source to load case codes."}</p>`;
+	if ($("cal-day-add").querySelector("details"))
+		$("cal-day-add").querySelector("details").ontoggle = (e) => {
+			calPickerOpen = e.target.open;
 		};
+	if ($("cal-pick-search")) {
+		const filter = () => {
+			const q = calPickQuery.trim().toLowerCase();
+			document.querySelectorAll(".cal-pick-item").forEach((l) => {
+				l.hidden = !!q && !l.dataset.name.includes(q);
+			});
+		};
+		$("cal-pick-search").value = calPickQuery;
+		$("cal-pick-search").oninput = (e) => {
+			calPickQuery = e.target.value;
+			filter();
+		};
+		filter();
+	}
 	if ($("cal-clear-day"))
 		$("cal-clear-day").onclick = () => {
 			if (!confirm(`Unschedule all ${codes.length} case code(s) on this day?`))
@@ -1743,15 +1756,11 @@ function renderCalendarDay() {
 		};
 	if ($("cal-bulk-go"))
 		$("cal-bulk-go").onclick = () => {
-			const d = $("cal-bulk-date").value;
-			if (!d || !calChecked.size) return;
+			if (!calChecked.size) return;
 			calChecked.forEach((c) => {
-				schedule[c] = d;
+				schedule[c] = key;
 			});
 			calChecked = new Set();
-			calSelected = d;
-			calMonth = new Date(`${d}T00:00:00`);
-			calMonth.setDate(1);
 			saveSchedule();
 			renderCalendar();
 		};

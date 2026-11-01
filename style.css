@@ -2922,3 +2922,31 @@ body > .mobile-nav button.active,
 	justify-content: space-between;
 	align-items: center;
 }
+
+.cal-picker {
+	margin: 0.75rem 0;
+}
+.cal-picker summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+.cal-picker input[type="search"] {
+	width: 100%;
+	margin: 0.5rem 0;
+}
+.cal-pick-list {
+	max-height: 260px;
+	overflow-y: auto;
+	margin: 0.5rem 0;
+}
+.cal-pick-item,
+.cal-pick-all {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.25rem 0;
+	cursor: pointer;
+}
+.cal-pick-item[hidden] {
+	display: none;
+}

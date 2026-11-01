@@ -210,12 +210,15 @@ function showView(name) {
 		dashboard: "Audit dashboard",
 		"new-audit": "Build an audit",
 		"audit-workspace": "Audit workspace",
+		calendar: "Audit calendar",
 		settings: "Settings",
 	};
+	document.querySelector(".app").classList.toggle("on-dashboard", name === "dashboard");
 	$("page-title").textContent = titles[name] || "Inventory audit";
 	if (name === "new-audit") renderBuilder();
 	if (name === "settings") renderSettings();
 	if (name === "dashboard") renderDashboard();
+	if (name === "calendar") renderCalendar();
 	if (name === "audit-workspace") {
 		renderWorkspace();
 		document.querySelector(".app").classList.add("audit-fullscreen");
@@ -259,7 +262,7 @@ document.addEventListener("keydown", (e) => {
 
 // HEADER ACTIONS AND INVENTORY IMPORT
 // The header shortcuts open the builder or select an inventory file to import.
-$("top-new").onclick = $("dashboard-build").onclick = () =>
+$("top-new").onclick = () =>
 	showView("new-audit");
 $("top-source-replace").onclick = $("builder-import").onclick = () =>
 	$("file-input").click();
@@ -840,22 +843,13 @@ function renderDashboard() {
 	$("stat-scans").textContent = audits
 		.reduce((n, a) => n + a.scans.length, 0)
 		.toLocaleString();
-	const q = norm($("audit-search").value),
-		f = $("audit-filter").value;
-	const list = openAudits.filter(
-		(a) =>
-			(!q ||
-				norm(
-					a.name + " " + a.category + " in progress " + (a.sourceName || ""),
-				).includes(q)) &&
-			(f === "all" || f === "in-progress"),
-	);
+	const list = openAudits;
 	$("audit-grid").innerHTML =
 		list
 			.map((a) => {
 				const p = auditProgress(a),
 					selected = selectedDashboardAudits.includes(a.id);
-				return `<article class="audit-card ${a.status === "in-progress" ? "audit-card-active" : ""} ${selected ? "audit-card-selected" : ""}"><div class="audit-card-top"><div><h3>${esc(a.name)}</h3><p>${esc(a.category)} · ${a.items.length} reference SKUs</p></div><span class="tag progress">In progress</span></div><div class="progressline"><span class="progress-fill" data-progress="${p}"></span></div><div class="audit-meta"><span>${p}% checked</span><span>${a.completedLocations.length} locations</span></div><div class="audit-actions"><button class="${selected ? "primary" : "outline"}" data-select-audit="${a.id}">${selected ? "✓ Selected" : "Select audit"}</button></div></article>`;
+				return `<article class="audit-card ${a.status === "in-progress" ? "audit-card-active" : ""} ${selected ? "audit-card-selected" : ""}"><div class="audit-card-top"><span class="tag progress">${a.status === "in-progress" ? "Active · " : ""}In progress</span><div><h3>${esc(a.name)}</h3><p>${esc(a.category)} · ${a.items.length} reference SKUs</p></div></div><div class="progressline"><span class="progress-fill" data-progress="${p}"></span></div><div class="audit-meta"><span>${p}% checked</span><span>${a.completedLocations.length} locations</span></div><div class="audit-actions"><button class="${selected ? "primary" : "outline"}" data-select-audit="${a.id}">${selected ? "✓ Selected" : "Select audit"}</button></div></article>`;
 			})
 			.join("") ||
 		'<div class="panel empty grid-empty"><b>No open audits</b>Import inventory and build an audit to get started.</div>';
@@ -864,7 +858,7 @@ function renderDashboard() {
 		closed
 			.map(
 				(a) =>
-					`<article class="audit-card"><div class="audit-card-top"><div><h3>${esc(a.name)}</h3><p>${esc(a.category)} · ${a.items.length} reference SKUs</p><p class="small-label">Closed: ${a.completedAt ? new Date(a.completedAt).toLocaleString() : "Date unavailable"}</p></div><span class="tag done">Closed</span></div><div class="progressline"><span class="progress-fill closed-progress" data-progress="${auditProgress(a)}"></span></div><div class="audit-meta"><span>${auditProgress(a)}% checked</span><span>${a.completedLocations.length} locations</span></div><div class="audit-actions"><button class="outline" data-view-closed="${a.id}">View audit</button><button class="outline" data-export="${a.id}">Export snapshot</button><button class="secondary" data-manager-reopen="${a.id}">Manager edit</button></div></article>`,
+					`<article class="audit-card"><div class="audit-card-top"><span class="tag done">Closed</span><div><h3>${esc(a.name)}</h3><p>${esc(a.category)} · ${a.items.length} reference SKUs</p><p class="small-label">Closed: ${a.completedAt ? new Date(a.completedAt).toLocaleString() : "Date unavailable"}</p></div></div><div class="progressline"><span class="progress-fill closed-progress" data-progress="${auditProgress(a)}"></span></div><div class="audit-meta"><span>${auditProgress(a)}% checked</span><span>${a.completedLocations.length} locations</span></div><div class="audit-actions"><button class="outline" data-view-closed="${a.id}">View audit</button><button class="outline" data-export="${a.id}">Export snapshot</button><button class="secondary" data-manager-reopen="${a.id}">Manager edit</button></div></article>`,
 			)
 			.join("") ||
 		'<div class="panel empty grid-empty"><b>No closed audits yet</b>Completed audits will be archived here with their original inventory snapshot.</div>';
@@ -977,8 +971,6 @@ $("start-selected-audit").onclick = () => {
 	}
 	enterAuditWithLoading(selectedDashboardAudits[0]);
 };
-$("audit-search").addEventListener("input", renderDashboard);
-$("audit-filter").addEventListener("change", renderDashboard);
 // AUDIT WORKSPACE AND LOCATION SUMMARY
 // Keep the location selector and current-location label in sync with store settings.
 function fillLocations() {
@@ -994,7 +986,19 @@ function fillLocations() {
 function currentLocation() {
 	return $("location-select").value;
 }
+// Reopening a completed section moves it back to the active (left) side for editing.
+function reopenSection(loc) {
+	const a = activeAudit();
+	if (!a || a.status === "completed" || !a.completedLocations.includes(loc))
+		return;
+	a.completedLocations = a.completedLocations.filter((l) => l !== loc);
+	$("location-select").value = loc;
+	renderWorkspace();
+	renderDashboard();
+	toast(`Section ${loc} reopened. Edit or add items, then complete it again.`);
+}
 $("location-select").onchange = () => {
+	reopenSection(currentLocation());
 	updateLocationLabel();
 };
 function updateLocationLabel() {
@@ -1029,11 +1033,9 @@ function renderWorkspace() {
 	$("export-btn").style.display =
 		a.status === "completed" ? "inline-flex" : "none";
 	const scans = a.scans;
-	const rows = scans.slice().sort((x, y) => {
-		const xc = a.completedLocations.includes(x.location) ? 1 : 0,
-			yc = a.completedLocations.includes(y.location) ? 1 : 0;
-		return xc - yc || new Date(y.timestamp || 0) - new Date(x.timestamp || 0);
-	});
+	const rows = scans
+		.filter((s) => !a.completedLocations.includes(s.location))
+		.sort((x, y) => new Date(y.timestamp || 0) - new Date(x.timestamp || 0));
 	$("scan-table-body").innerHTML =
 		rows
 			.map((s, revIndex) => {
@@ -1082,8 +1084,14 @@ function renderWorkspace() {
 	$("workspace-locations").textContent = a.completedLocations.length;
 	$("completed-locations").innerHTML =
 		a.completedLocations
-			.map((l) => `<span class="location-chip">✓ ${esc(l)}</span>`)
+			.map((l) => {
+				const ls = scans.filter((s) => s.location === l);
+				return `<details class="completed-section"><summary><span>✓ ${esc(l)}</span><small>${ls.reduce((n, s) => n + s.qty, 0)} units · ${ls.length} scans</small></summary>${a.status === "completed" ? "" : `<button class="outline reopen-section" data-reopen-section="${escAttr(l)}">Edit section</button>`}<ul>${ls.map((s) => `<li><b>${esc(s.sku)}</b><span>${esc(s.description || "—")}</span><em>×${s.qty}</em></li>`).join("") || '<li class="hint">No scans</li>'}</ul></details>`;
+			})
 			.join("") || '<span class="hint">None yet</span>';
+	document.querySelectorAll("[data-reopen-section]").forEach((b) => {
+		b.onclick = () => reopenSection(b.dataset.reopenSection);
+	});
 	updateLocationLabel();
 	$("complete-audit-btn").style.display = "inline-flex";
 	$("complete-audit-btn").textContent =
@@ -1572,6 +1580,168 @@ function esc(s) {
 function escAttr(s) {
 	return esc(s);
 }
+
+// AUDIT CALENDAR
+// Case-code schedule persists in localStorage; status is derived from audits.
+const SCHEDULE_KEY = "inventory-audit-schedule",
+	CODES_KEY = "inventory-audit-known-codes";
+const readJSON = (k, d) => {
+	try {
+		return JSON.parse(localStorage.getItem(k)) ?? d;
+	} catch {
+		return d;
+	}
+};
+let schedule = readJSON(SCHEDULE_KEY, {}),
+	knownCodes = readJSON(CODES_KEY, []);
+const todayDate = new Date();
+let calMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1),
+	calSelected = dateKey(todayDate);
+function dateKey(d) {
+	const p = (n) => String(n).padStart(2, "0");
+	return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function saveSchedule() {
+	localStorage.setItem(SCHEDULE_KEY, JSON.stringify(schedule));
+	localStorage.setItem(CODES_KEY, JSON.stringify(knownCodes));
+}
+function syncKnownCodes() {
+	if (!inventory.length) return;
+	const codes = categories().map(([name]) => name);
+	knownCodes = [...new Set([...knownCodes, ...codes])];
+	saveSchedule();
+}
+function caseCodeStatus(code, dayKey) {
+	const list = audits.filter((a) => a.category === code);
+	if (list.some((a) => a.status !== "completed")) return "progress";
+	const closed = list.filter((a) => a.status === "completed");
+	if (closed.length)
+		return closed.some((a) => auditProgress(a) >= 100) ? "complete" : "research";
+	return dayKey < dateKey(new Date()) ? "overdue" : "scheduled";
+}
+const calStatusLabel = {
+	scheduled: "Scheduled",
+	progress: "In progress",
+	research: "Closed · needs research",
+	complete: "Complete",
+	overdue: "Overdue",
+};
+function dayActivity(key) {
+	const out = [];
+	audits.forEach((a) => {
+		const n = a.scans.filter(
+			(s) => s.timestamp && dateKey(new Date(s.timestamp)) === key,
+		);
+		const closed = a.completedAt && dateKey(new Date(a.completedAt)) === key;
+		if (n.length || closed)
+			out.push({
+				audit: a,
+				scans: n.length,
+				units: n.reduce((t, s) => t + s.qty, 0),
+				locations: [...new Set(n.map((s) => s.location))],
+				closed,
+			});
+	});
+	return out;
+}
+function renderCalendar() {
+	syncKnownCodes();
+	$("cal-title").textContent = calMonth.toLocaleDateString("en-US", {
+		month: "long",
+		year: "numeric",
+	});
+	const first = new Date(calMonth),
+		start = new Date(first);
+	start.setDate(1 - first.getDay());
+	const byDay = {};
+	Object.entries(schedule).forEach(([code, d]) =>
+		(byDay[d] = byDay[d] || []).push(code),
+	);
+	let cells = "";
+	for (let i = 0; i < 42; i++) {
+		const d = new Date(start);
+		d.setDate(start.getDate() + i);
+		const k = dateKey(d),
+			codes = byDay[k] || [],
+			act = dayActivity(k).length;
+		const chips = codes
+			.slice(0, 3)
+			.map(
+				(c) =>
+					`<span class="cal-chip cal-${caseCodeStatus(c, k)}">${esc(c)}</span>`,
+			)
+			.join("");
+		cells += `<button class="cal-cell ${d.getMonth() !== calMonth.getMonth() ? "other-month" : ""} ${k === dateKey(new Date()) ? "today" : ""} ${k === calSelected ? "selected" : ""}" data-cal-day="${k}"><b>${d.getDate()}</b>${chips}${codes.length > 3 ? `<small>+${codes.length - 3} more</small>` : ""}${act && !codes.length ? '<small class="cal-activity">activity</small>' : ""}</button>`;
+	}
+	$("cal-grid").innerHTML = cells;
+	document.querySelectorAll("[data-cal-day]").forEach((b) => {
+		b.onclick = () => {
+			calSelected = b.dataset.calDay;
+			renderCalendar();
+		};
+	});
+	renderCalendarDay();
+}
+function renderCalendarDay() {
+	const key = calSelected,
+		date = new Date(`${key}T00:00:00`);
+	$("cal-day-title").textContent = date.toLocaleDateString("en-US", {
+		weekday: "long",
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+	});
+	const codes = Object.keys(schedule).filter((c) => schedule[c] === key);
+	const act = dayActivity(key);
+	const unscheduled = knownCodes.filter((c) => !schedule[c]);
+	$("cal-day-body").innerHTML = `
+		<h4>Scheduled case codes</h4>
+		${codes.map((c) => `<div class="cal-row"><span class="cal-chip cal-${caseCodeStatus(c, key)}">${esc(c)}</span><small>${calStatusLabel[caseCodeStatus(c, key)]}</small><input type="date" value="${key}" data-cal-move="${escAttr(c)}" aria-label="Reschedule ${escAttr(c)}"><button class="outline" data-cal-unschedule="${escAttr(c)}" aria-label="Unschedule">×</button></div>`).join("") || '<p class="hint">Nothing scheduled this day.</p>'}
+		<h4>What was done</h4>
+		${act.map((x) => `<div class="cal-activity-row"><b>${esc(x.audit.name)}</b><span>${x.scans} scans · ${x.units} units${x.locations.length ? ` · ${x.locations.map(esc).join(", ")}` : ""}</span>${x.closed ? `<span class="tag ${auditProgress(x.audit) >= 100 ? "done" : "progress"}">Closed at ${auditProgress(x.audit)}%${auditProgress(x.audit) < 100 ? " · needs research" : ""}</span>` : ""}</div>`).join("") || '<p class="hint">No audit activity recorded.</p>'}
+		<h4>Unscheduled case codes (${unscheduled.length})</h4>
+		${knownCodes.length ? "" : '<p class="hint">Import an inventory source to load case codes.</p>'}
+		<div class="cal-unscheduled">${unscheduled.map((c) => `<div class="cal-row"><span class="cal-chip cal-scheduled">${esc(c)}</span><button class="outline" data-cal-add="${escAttr(c)}">Schedule here</button></div>`).join("")}</div>`;
+	document.querySelectorAll("[data-cal-add]").forEach((b) => {
+		b.onclick = () => {
+			schedule[b.dataset.calAdd] = key;
+			saveSchedule();
+			renderCalendar();
+		};
+	});
+	document.querySelectorAll("[data-cal-unschedule]").forEach((b) => {
+		b.onclick = () => {
+			delete schedule[b.dataset.calUnschedule];
+			saveSchedule();
+			renderCalendar();
+		};
+	});
+	document.querySelectorAll("[data-cal-move]").forEach((i) => {
+		i.onchange = () => {
+			if (!i.value) return;
+			schedule[i.dataset.calMove] = i.value;
+			calSelected = i.value;
+			calMonth = new Date(`${i.value}T00:00:00`);
+			calMonth.setDate(1);
+			saveSchedule();
+			renderCalendar();
+		};
+	});
+}
+$("cal-prev").onclick = () => {
+	calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1);
+	renderCalendar();
+};
+$("cal-next").onclick = () => {
+	calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1);
+	renderCalendar();
+};
+$("cal-today").onclick = () => {
+	const t = new Date();
+	calMonth = new Date(t.getFullYear(), t.getMonth(), 1);
+	calSelected = dateKey(t);
+	renderCalendar();
+};
 renderDashboard();
 fillLocations();
 renderMapping();

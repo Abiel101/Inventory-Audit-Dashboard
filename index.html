@@ -40,7 +40,7 @@
   </div>
 
   <!-- Main application shell: desktop navigation, page header, and active view. -->
-  <div class="app">
+  <div class="app on-dashboard">
     <!-- Primary navigation and short workflow reminder. -->
     <aside class="sidebar">
       <div class="brand">
@@ -51,6 +51,7 @@
         <button class="active" data-view="dashboard"><span class="ico">▦</span>Dashboard</button>
         <button data-view="new-audit"><span class="ico">＋</span>Build an audit</button>
         <button data-view="audit-workspace"><span class="ico">▤</span>Audit workspace</button>
+        <button data-view="calendar"><span class="ico">▣</span>Calendar</button>
         <button data-view="settings"><span class="ico">⚙</span>Settings</button>
       </nav>
       <div class="side-note"><b>iPad-ready workflow</b>Import a store inventory workbook, select a case category, scan
@@ -104,14 +105,7 @@
           <div>
             <h2>Recent audits</h2>
             <p>Pick up where you left off or review completed work.</p>
-          </div><button class="outline" id="dashboard-build">＋ Build audit</button>
-        </div>
-        <div class="toolbar audit-search-toolbar">
-          <div class="search"><input id="audit-search" placeholder="Search audits by category or status…" /></div>
-          <select id="audit-filter" class="field audit-filter">
-            <option value="all">All open audits</option>
-            <option value="in-progress">In progress</option>
-          </select>
+          </div>
         </div>
         <div id="dashboard-selection-bar" class="panel dashboard-selection-bar">
           <div><b id="dashboard-selection-count">0 audits selected</b>
@@ -242,11 +236,45 @@
                 <div class="mini-stat"><span>Locations completed</span><b id="workspace-locations">0</b></div>
               </div>
               <div class="panel">
-                <h3>Locations completed</h3>
-                <div class="location-list" id="completed-locations"><span class="hint">None yet</span></div>
+                <h3>Completed sections</h3>
+                <div class="completed-sections" id="completed-locations"><span class="hint">None yet</span></div>
               </div>
             </aside>
           </div>
+        </div>
+      </section>
+
+      <!-- Calendar: schedule every uploaded case code and review daily audit activity. -->
+      <section class="view" id="view-calendar">
+        <div class="section-head no-top-margin">
+          <div>
+            <h2>Audit calendar</h2>
+            <p>Schedule every case code from the source ahead of time and review what was done each day.</p>
+          </div>
+        </div>
+        <div class="calendar-split">
+          <div class="panel calendar-panel">
+            <div class="calendar-nav">
+              <button class="outline" id="cal-prev" aria-label="Previous month">‹</button>
+              <h3 id="cal-title"></h3>
+              <button class="outline" id="cal-next" aria-label="Next month">›</button>
+              <button class="outline" id="cal-today">Today</button>
+            </div>
+            <div class="calendar-grid calendar-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+            <div class="calendar-grid" id="cal-grid"></div>
+            <div class="calendar-legend">
+              <span><i class="cal-scheduled"></i>Scheduled</span>
+              <span><i class="cal-progress"></i>In progress</span>
+              <span><i class="cal-research"></i>Closed · needs research (&lt;100%)</span>
+              <span><i class="cal-complete"></i>Complete (100%)</span>
+              <span><i class="cal-overdue"></i>Overdue</span>
+            </div>
+          </div>
+          <aside class="panel calendar-detail">
+            <div class="eyebrow">Selected day</div>
+            <h3 id="cal-day-title">Pick a day</h3>
+            <div id="cal-day-body"></div>
+          </aside>
         </div>
       </section>
 
@@ -300,6 +328,7 @@
   <nav class="mobile-nav"><button class="active" data-view="dashboard"><span>▦</span>Dashboard</button><button
       data-view="new-audit"><span>＋</span>Build</button><button
       data-view="audit-workspace"><span>▤</span>Workspace</button><button
+      data-view="calendar"><span>▣</span>Calendar</button><button
       data-view="settings"><span>⚙</span>Settings</button></nav>
   <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" aria-hidden="true">
     <section class="mobile-menu-sheet" role="dialog" aria-modal="true" aria-label="Dashboard navigation">
@@ -316,6 +345,8 @@
               begin</small></span><i>›</i></button>
         <button data-view="audit-workspace"><span>▤</span><span><b>Audit workspace</b><small>Continue an active
               audit</small></span><i>›</i></button>
+        <button data-view="calendar"><span>▣</span><span><b>Calendar</b><small>Schedule case code
+              audits</small></span><i>›</i></button>
         <button data-view="settings"><span>⚙</span><span><b>Settings</b><small>Locations and column
               mapping</small></span><i>›</i></button>
       </nav>

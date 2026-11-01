@@ -849,7 +849,7 @@ function renderDashboard() {
 			.map((a) => {
 				const p = auditProgress(a),
 					selected = selectedDashboardAudits.includes(a.id);
-				return `<article class="audit-card ${a.status === "in-progress" ? "audit-card-active" : ""} ${selected ? "audit-card-selected" : ""}"><div class="audit-card-top"><span class="tag progress">${a.status === "in-progress" ? "Active · " : ""}In progress</span><div><h3>${esc(a.name)}</h3><p>${esc(a.category)} · ${a.items.length} reference SKUs</p></div></div><div class="progressline"><span class="progress-fill" data-progress="${p}"></span></div><div class="audit-meta"><span>${p}% checked</span><span>${a.completedLocations.length} locations</span></div><div class="audit-actions"><button class="${selected ? "primary" : "outline"}" data-select-audit="${a.id}">${selected ? "✓ Selected" : "Select audit"}</button></div></article>`;
+				return `<article class="audit-card ${a.status === "in-progress" ? "audit-card-active" : ""} ${selected ? "audit-card-selected" : ""}"><div class="audit-card-top"><span class="tag progress">${a.status === "in-progress" ? "Active · " : ""}In progress</span><h3>${esc(a.name)}</h3><p>${esc(a.category)}</p></div><div class="audit-card-stats"><div><b>${p}%</b><span>Checked</span></div><div><b>${a.items.length}</b><span>Reference SKUs</span></div><div><b>${a.completedLocations.length}</b><span>Locations</span></div></div><div class="progressline"><span class="progress-fill" data-progress="${p}"></span></div><div class="audit-actions"><button class="${selected ? "primary" : "outline"}" data-select-audit="${a.id}">${selected ? "✓ Selected" : "Select audit"}</button></div></article>`;
 			})
 			.join("") ||
 		'<div class="panel empty grid-empty"><b>No open audits</b>Import inventory and build an audit to get started.</div>';
@@ -1699,9 +1699,10 @@ function renderCalendarDay() {
 		${codes.map((c) => `<div class="cal-row"><span class="cal-chip cal-${caseCodeStatus(c, key)}">${esc(c)}</span><small>${calStatusLabel[caseCodeStatus(c, key)]}</small><input type="date" value="${key}" data-cal-move="${escAttr(c)}" aria-label="Reschedule ${escAttr(c)}"><button class="outline" data-cal-unschedule="${escAttr(c)}" aria-label="Unschedule">×</button></div>`).join("") || '<p class="hint">Nothing scheduled this day.</p>'}
 		<h4>What was done</h4>
 		${act.map((x) => `<div class="cal-activity-row"><b>${esc(x.audit.name)}</b><span>${x.scans} scans · ${x.units} units${x.locations.length ? ` · ${x.locations.map(esc).join(", ")}` : ""}</span>${x.closed ? `<span class="tag ${auditProgress(x.audit) >= 100 ? "done" : "progress"}">Closed at ${auditProgress(x.audit)}%${auditProgress(x.audit) < 100 ? " · needs research" : ""}</span>` : ""}</div>`).join("") || '<p class="hint">No audit activity recorded.</p>'}
-		<h4>Unscheduled case codes (${unscheduled.length})</h4>
-		${knownCodes.length ? "" : '<p class="hint">Import an inventory source to load case codes.</p>'}
-		<div class="cal-unscheduled">${unscheduled.map((c) => `<div class="cal-row"><span class="cal-chip cal-scheduled">${esc(c)}</span><button class="outline" data-cal-add="${escAttr(c)}">Schedule here</button></div>`).join("")}</div>`;
+`;
+	$("cal-unscheduled-count").textContent = unscheduled.length;
+	$("cal-unscheduled-body").innerHTML = `${knownCodes.length ? "" : '<p class="hint">Import an inventory source to load case codes.</p>'}
+		<div class="cal-unscheduled">${unscheduled.map((c) => `<div class="cal-unsched-item"><span class="cal-chip cal-scheduled">${esc(c)}</span><button class="outline" data-cal-add="${escAttr(c)}">Schedule here</button></div>`).join("")}</div>`;
 	document.querySelectorAll("[data-cal-add]").forEach((b) => {
 		b.onclick = () => {
 			schedule[b.dataset.calAdd] = key;

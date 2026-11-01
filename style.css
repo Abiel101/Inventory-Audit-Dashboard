@@ -2787,3 +2787,122 @@ body > .mobile-nav button.active,
 		min-height: 58px;
 	}
 }
+
+/* Redesigned audit cards: header, stat tiles, progress, full-width action. */
+.audit-grid,
+.app:not(.audit-fullscreen) .audit-grid {
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap: 16px;
+}
+.audit-card,
+.app:not(.audit-fullscreen) .audit-card {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 18px;
+	border-radius: 16px;
+}
+.audit-card .audit-card-top {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+}
+.audit-card .audit-card-top h3 {
+	margin: 0;
+	font-size: 18px;
+	line-height: 1.25;
+}
+.audit-card .audit-card-top p {
+	margin: 0;
+	font-size: 14px;
+	color: var(--muted);
+}
+.audit-card-stats {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+}
+.audit-card-stats > div {
+	display: flex;
+	flex-direction: column;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+}
+.audit-card-stats b {
+	font-size: 20px;
+}
+.audit-card-stats span {
+	font-size: 12px;
+	color: var(--muted);
+}
+.audit-card .progressline {
+	margin: 0;
+}
+.audit-card .audit-actions {
+	margin: 0;
+	justify-content: stretch;
+}
+.audit-card .audit-actions button {
+	flex: 1;
+}
+
+/* Workspace: scanning on the left; summary + progress top-right, completed sections below. */
+@media (min-width: 901px) {
+	.audit-layout.workspace-layout,
+	.app.audit-fullscreen .audit-layout.workspace-layout {
+		grid-template-columns: minmax(0, 1fr) minmax(380px, 34%);
+		align-items: start;
+	}
+	.workspace-layout .side-panel,
+	.app.audit-fullscreen .workspace-layout .side-panel {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+		align-content: start;
+	}
+	.workspace-layout .side-panel .completed-panel {
+		grid-column: 1 / -1;
+	}
+}
+
+/* Calendar: unscheduled case codes get their own full-width section. */
+.cal-unscheduled-panel {
+	margin-top: 16px;
+}
+.cal-unscheduled-head h3 {
+	margin: 0 0 4px;
+	font-size: 18px;
+}
+.cal-unscheduled {
+	max-height: 320px;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 10px;
+	margin-top: 12px;
+}
+.cal-unsched-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+}
+.cal-unsched-item .cal-chip {
+	font-size: 13px;
+	max-width: 55%;
+}
+.calendar-weekdays span { font-size: 13px; }
+.cal-cell small { font-size: 12px; }
+.cal-chip { font-size: 12px; }
+.calendar-legend { font-size: 14px; }
+.calendar-detail h4 { font-size: 15px; }
+.cal-activity-row { font-size: 14px; }
+
+/* Crisper, larger UI on big monitors. */
+@media (min-width: 1700px) {
+	body { zoom: 1.15; }
+}

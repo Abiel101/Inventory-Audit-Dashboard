@@ -219,6 +219,10 @@ function showView(name) {
 	if (name === "settings") renderSettings();
 	if (name === "dashboard") renderDashboard();
 	if (name === "calendar") renderCalendar();
+	else if (calDayOpen) {
+		calDayOpen = false;
+		renderCalendarDay();
+	}
 	if (name === "audit-workspace") {
 		renderWorkspace();
 		document.querySelector(".app").classList.add("audit-fullscreen");
@@ -1004,7 +1008,10 @@ $("location-select").onchange = () => {
 function updateLocationLabel() {
 	$("current-location-label").textContent = currentLocation()
 		? `Scanning into location: ${currentLocation()}`
-		: "Choose a location before scanning.";
+		: "Pick manually — location barcode scanning is turned off.";
+	$("scan-hint").textContent = currentLocation()
+		? ""
+		: "Select a location to begin";
 }
 function renderWorkspace() {
 	const a = activeAudit();
@@ -1028,7 +1035,6 @@ function renderWorkspace() {
 	$("scan-mode").disabled = a.status === "completed";
 	$("scan-btn").disabled = a.status === "completed";
 	$("location-select").disabled = false;
-	$("complete-section-btn").disabled = a.status === "completed";
 	$("section-confirm").disabled = a.status === "completed";
 	$("export-btn").style.display =
 		a.status === "completed" ? "inline-flex" : "none";
@@ -1078,6 +1084,11 @@ function renderWorkspace() {
 	$("workspace-progress").textContent = p + "%";
 	$("workspace-progress-bar").style.width = p + "%";
 	$("workspace-reference").textContent = a.items.length;
+	$("workspace-total").textContent = a.items.length;
+	$("section-confirm").disabled = a.status === "completed" || !locScans.length;
+	$("section-confirm-note").textContent = locScans.length
+		? "Marks this location as finished"
+		: "Available after your first scan";
 	$("workspace-checked").textContent = new Set(
 		scans.filter((s) => a.items.some((i) => i.sku === s.sku)).map((s) => s.sku),
 	).size;
@@ -1193,8 +1204,7 @@ function completeSection() {
 		`${loc} completed · ${total} units. Select this location again to add or reorganize items if needed.`,
 	);
 }
-$("complete-section-btn").onclick = $("section-confirm").onclick =
-	completeSection;
+$("section-confirm").onclick = completeSection;
 // AUDIT CLOSURE
 // Finalize the audit, export its workbook, and return the user to the dashboard.
 function finalizeAudit(id) {
@@ -1599,6 +1609,7 @@ let calMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1),
 	calSelected = dateKey(todayDate),
 	calChecked = new Set(),
 	calPickerOpen = false,
+	calDayOpen = false,
 	calPickQuery = "";
 function dateKey(d) {
 	const p = (n) => String(n).padStart(2, "0");
@@ -1680,12 +1691,37 @@ function renderCalendar() {
 	document.querySelectorAll("[data-cal-day]").forEach((b) => {
 		b.onclick = () => {
 			calSelected = b.dataset.calDay;
+			calDayOpen = true;
 			renderCalendar();
 		};
 	});
 	renderCalendarDay();
+	renderMonthUpcoming();
+}
+function renderMonthUpcoming() {
+	const m = dateKey(calMonth).slice(0, 7);
+	const rows = Object.entries(schedule)
+		.filter(([c, d]) => d.startsWith(m) && caseCodeStatus(c, d) !== "complete")
+		.sort((a, b) => a[1].localeCompare(b[1]) || a[0].localeCompare(b[0]));
+	$("cal-upcoming-count").textContent = rows.length;
+	$("cal-upcoming").innerHTML =
+		rows
+			.map(([c, d]) => {
+				const st = caseCodeStatus(c, d);
+				return `<button class="cal-upcoming-item" data-cal-jump="${d}"><span class="cal-chip cal-${st}">${esc(c)}</span><span>${new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span><small>${calStatusLabel[st]}</small></button>`;
+			})
+			.join("") ||
+		'<p class="hint">No pending audits scheduled this month.</p>';
+	document.querySelectorAll("[data-cal-jump]").forEach((b) => {
+		b.onclick = () => {
+			calSelected = b.dataset.calJump;
+			calDayOpen = true;
+			renderCalendar();
+		};
+	});
 }
 function renderCalendarDay() {
+	$("cal-detail").hidden = !calDayOpen;
 	const key = calSelected,
 		date = new Date(`${key}T00:00:00`);
 	$("cal-day-title").textContent = date.toLocaleDateString("en-US", {
@@ -1783,6 +1819,10 @@ function renderCalendarDay() {
 		};
 	});
 }
+$("cal-day-close").onclick = $("cal-backdrop").onclick = () => {
+	calDayOpen = false;
+	renderCalendarDay();
+};
 $("cal-prev").onclick = () => {
 	calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1);
 	renderCalendar();

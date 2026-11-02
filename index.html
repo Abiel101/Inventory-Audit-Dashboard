@@ -162,86 +162,96 @@
 
       <!-- Audit workspace: scan items, complete locations, and monitor audit progress. -->
       <section class="view" id="view-audit-workspace">
-        <div class="panel">
-          <div class="audit-title">
+        <div class="ws">
+          <div class="ws-head">
             <div>
               <div class="eyebrow">Active workspace</div>
               <h2 id="workspace-title">No audit selected</h2>
               <p id="workspace-subtitle">Start an audit from the dashboard to begin scanning.</p>
             </div>
-            <div class="toolbar"><span class="audit-focus-pill"><i></i> Audit in progress</span><button class="outline"
-                id="export-btn">↓ Export Excel</button><button class="secondary" id="complete-audit-btn">Complete
+            <div class="ws-actions"><span class="audit-focus-pill"><i></i> Audit in progress</span><button class="outline"
+                id="export-btn">↓ Export Excel</button><button class="outline" id="complete-audit-btn">Complete
                 audit</button><button class="primary hidden-action" id="finish-return-btn">Finish & return</button>
             </div>
           </div>
-          <div class="audit-handoff">
-            <div class="field"><label for="audit-initials">Associate initials</label><input id="audit-initials"
-                placeholder="e.g. AO, JG" maxlength="40" /></div>
-            <div class="field"><label for="audit-live-notes">Audit notes / handoff</label><input id="audit-live-notes"
-                placeholder="Exceptions, recounts, item concerns…" maxlength="500" /></div>
-          </div>
-          <div class="audit-lock-note"><span>✦</span><span><b>Audit focus is active.</b> Complete the audit before
-              leaving, or confirm if you need to exit without completing it.</span></div>
-          <div class="audit-layout workspace-layout">
-            <div>
-              <div class="field location-field"><label for="location-select">Current location</label><select
-                  id="location-select">
-                  <option value="">Select a location…</option>
-                </select><small class="hint">Choose the location manually. Location QR/barcode scanning is
-                  disabled.</small></div>
-              <div class="scan-bar"><input id="sku-input" placeholder="Scan or type SKU, then press Enter…"
-                  autocomplete="off" /><select id="scan-mode">
-                  <option value="one">Scan 1 unit / entry</option>
-                  <option value="qty">Enter quantity</option>
-                </select><button class="primary" id="scan-btn">＋ Add SKU</button></div>
-              <div class="toolbar section-toolbar"><span class="hint" id="current-location-label">Choose a location
-                  before scanning.</span><button class="secondary" id="complete-section-btn">Complete section</button>
-              </div>
-              <div class="table-wrap desktop-scan-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>SKU</th>
-                      <th>Description</th>
-                      <th>Style</th>
-                      <th>Expected qty</th>
-                      <th>Scanned qty</th>
-                      <th>Location</th>
-                      <th>Initials</th>
-                      <th>Result</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody id="scan-table-body">
-                    <tr>
-                      <td colspan="9" class="empty">Your scanned items will appear here.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="mobile-scan-list" id="mobile-scan-list" aria-live="polite"></div>
+          <div class="audit-lock-note"><span>✦</span><span><b>Audit focus is on.</b> Complete the audit before
+              leaving, or confirm if you need to exit without finishing.</span></div>
+          <div class="ws-grid">
+            <div class="ws-main">
+              <section class="ws-card">
+                <h3>Who’s counting</h3>
+                <div class="ws-who">
+                  <div class="field"><label for="audit-initials">Associate initials</label><input id="audit-initials"
+                      placeholder="e.g. AO" maxlength="40" /></div>
+                  <div class="field"><label for="audit-live-notes">Handoff notes <span class="opt">(optional)</span></label><input id="audit-live-notes"
+                      placeholder="Exceptions, recounts, item concerns…" maxlength="500" /></div>
+                </div>
+              </section>
+              <section class="ws-card">
+                <h3>Choose a location</h3>
+                <div class="field location-field"><select id="location-select" aria-label="Current location">
+                    <option value="">Select a location…</option>
+                  </select><small class="hint" id="current-location-label">Pick manually — location barcode scanning is turned off.</small></div>
+                <div class="ws-scan">
+                  <div class="ws-scan-title"><h4>Scan items</h4><small class="hint" id="scan-hint">Select a location to begin</small></div>
+                  <div class="scan-bar"><input id="sku-input" placeholder="Scan or type SKU, then press Enter…"
+                      autocomplete="off" /><select id="scan-mode" aria-label="Units per scan">
+                      <option value="one">1 unit per scan</option>
+                      <option value="qty">Enter quantity</option>
+                    </select><button class="primary" id="scan-btn">Add SKU</button></div>
+                </div>
+              </section>
+              <section class="ws-card ws-log">
+                <h3>Scan log</h3>
+                <div class="table-wrap desktop-scan-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>SKU</th>
+                        <th>Description</th>
+                        <th>Style</th>
+                        <th>Expected</th>
+                        <th>Scanned</th>
+                        <th>Location</th>
+                        <th>Initials</th>
+                        <th>Result</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="scan-table-body">
+                      <tr>
+                        <td colspan="9" class="empty">Your scanned items will appear here.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mobile-scan-list" id="mobile-scan-list" aria-live="polite"></div>
+              </section>
             </div>
-            <aside class="side-panel">
-              <div class="panel summary-panel">
-                <h3>Section summary</h3>
-                <div class="small-label">Current location scanned quantity</div>
-                <div class="big-number" id="section-qty">0</div>
-                <div class="mini-stat"><span>Unique SKUs scanned</span><b id="section-skus">0</b></div>
-                <div class="mini-stat"><span>Not in audit</span><b id="section-unknown">0</b></div><button
-                  class="primary section-confirm" id="section-confirm">Confirm section</button>
-              </div>
-              <div class="panel progress-panel">
+            <aside class="ws-side">
+              <section class="ws-card ws-dark">
                 <h3>Audit progress</h3>
-                <div class="big-number" id="workspace-progress">0%</div>
+                <div class="ws-pct"><span class="ws-big" id="workspace-progress">0%</span><span>of <b id="workspace-total">0</b> SKUs checked</span></div>
                 <div class="progressline"><span class="progress-fill" id="workspace-progress-bar"></span></div>
-                <div class="mini-stat"><span>Reference SKUs</span><b id="workspace-reference">0</b></div>
-                <div class="mini-stat"><span>SKUs checked</span><b id="workspace-checked">0</b></div>
-                <div class="mini-stat"><span>Locations completed</span><b id="workspace-locations">0</b></div>
-              </div>
-              <div class="panel completed-panel">
+                <div class="ws-tiles">
+                  <div><b id="workspace-reference">0</b><span>Reference</span></div>
+                  <div><b id="workspace-checked">0</b><span>Checked</span></div>
+                  <div><b id="workspace-locations">0</b><span>Locations</span></div>
+                </div>
+              </section>
+              <section class="ws-card">
+                <h3>This section</h3>
+                <div class="ws-units-label">Units scanned</div>
+                <div class="ws-big" id="section-qty">0</div>
+                <div class="ws-row"><span>Unique SKUs</span><b id="section-skus">0</b></div>
+                <div class="ws-row"><span>Not in audit</span><b id="section-unknown">0</b></div>
+                <button class="section-confirm" id="section-confirm">Confirm section</button>
+                <p class="ws-note" id="section-confirm-note">Available after your first scan</p>
+              </section>
+              <section class="ws-card">
                 <h3>Completed sections</h3>
                 <div class="completed-sections" id="completed-locations"><span class="hint">None yet</span></div>
-              </div>
+              </section>
             </aside>
           </div>
         </div>
@@ -273,11 +283,11 @@
               <span><i class="cal-overdue"></i>Overdue</span>
             </div>
           </div>
-          <aside class="panel calendar-detail">
-            <div class="eyebrow">Selected day</div>
-            <h3 id="cal-day-title">Pick a day</h3>
-            <div id="cal-day-body"></div>
-          </aside>
+        </div>
+        <div class="panel cal-upcoming-panel">
+          <div class="cal-upcoming-head"><h3>Scheduled audits to complete</h3><span class="tag progress" id="cal-upcoming-count">0</span></div>
+          <p class="hint">Audits scheduled this month that are not yet complete.</p>
+          <div class="cal-upcoming" id="cal-upcoming"></div>
         </div>
       </section>
 
@@ -362,7 +372,14 @@
 
   <!-- Load the spreadsheet parser before the application code that uses XLSX. -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="app.js"></script>
+          <div class="cal-backdrop" id="cal-backdrop" hidden></div>
+<aside class="panel calendar-detail" id="cal-detail" hidden>
+  <div class="cal-detail-top"><div><div class="eyebrow">Selected day</div>
+  <h3 id="cal-day-title">Pick a day</h3></div><button class="outline" id="cal-day-close" aria-label="Close">×</button></div>
+  <div id="cal-day-body"></div>
+</aside>
+
+<script src="app.js"></script>
 </body>
 
 </html>

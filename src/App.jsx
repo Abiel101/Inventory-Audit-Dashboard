@@ -37,12 +37,20 @@ function useAuditState() {
       return isLegacyList ? { ...saved, locations: defaultLocations } : saved;
     } catch { return initialState; }
   });
-  const update = (callback) => setState((current) => {
-    const next = callback(current);
-    localStorage.setItem(storageKey, JSON.stringify(next));
-    return next;
-  });
-  return [state, update];
+  const stateRef = useRef(state);
+  const [storageError, setStorageError] = useState(false);
+  const update = (callback) => {
+    const next = callback(stateRef.current);
+    stateRef.current = next;
+    setState(next);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(next));
+      setStorageError(false);
+    } catch {
+      setStorageError(true);
+    }
+  };
+  return [state, update, storageError];
 }
 
 function SourceBadge({ state }) {
@@ -57,16 +65,17 @@ function SourceBadge({ state }) {
   return <Badge variant={variant} className="max-w-[55vw] truncate" title={hover}>Source: {state.sourceName}{detail ? ` · ${detail}` : ""}</Badge>;
 }
 
-function AppShell({ state, children }) {
+function AppShell({ state, storageError, children }) {
   const { pathname } = useLocation();
   return <SidebarProvider>
     <AppSidebar />
     <SidebarInset className="bg-slate-50">
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
         <SidebarTrigger className="h-6 w-6 [&_svg]:size-3.5" />
-        <div className="min-w-0 flex-1"><h1 className="truncate text-xl font-bold">{pageTitle(pathname)}</h1></div>
+        <div className="min-w-0 flex-1"><h1 id="page-title" tabIndex={-1} className="truncate text-xl font-bold">{pageTitle(pathname)}</h1></div>
         <SourceBadge state={state} />
       </header>
+      {storageError && <p role="alert" className="border-b border-amber-300 bg-amber-50 px-5 py-3 text-sm text-amber-900">The latest changes could not be saved in this browser (storage may be full). They will be lost when this tab closes; export any needed audits and free browser storage before continuing.</p>}
       <div key={pathname} className="mx-auto w-full max-w-7xl p-5 md:p-8">{children}</div>
     </SidebarInset>
   </SidebarProvider>;
@@ -87,16 +96,22 @@ function AppSidebar() {
 function EmptyState({ title, detail }) { return <Card className="border-dashed"><CardContent className="p-8 text-center"><p className="font-semibold">{title}</p><p className="mt-1 text-sm text-slate-500">{detail}</p></CardContent></Card>; }
 
 function AuditBuilder({ state, update }) {
-  const navigate = useNavigate(); const fileRef = useRef(); const [search, setSearch] = useState(""); const [chosen, setChosen] = useState([]);
+  const navigate = useNavigate(); const fileRef = useRef(); const [search, setSearch] = useState(""); const [chosen, setChosen] = useState([]); const [importError, setImportError] = useState("");
   const terms = useMemo(() => search.split(",").map((term) => term.trim().toLowerCase()).filter(Boolean), [search]);
   const categories = useMemo(() => Object.entries(state.inventory.reduce((groups, item) => { const key = item.category || "(BLANK)"; (groups[key] ??= []).push(item); return groups; }, {})).filter(([category]) => !terms.length || terms.some((term) => category.toLowerCase().includes(term))), [state.inventory, terms]);
   const byCategory = useMemo(() => new Map(categories), [categories]);
   const importFile = async (event) => {
-    const file = event.target.files?.[0]; if (!file) return;
-    const { inventory, ...source } = await readInventoryFile(file);
-    update((current) => ({ ...current, inventory, ...source }));
+    const file = event.target.files?.[0]; event.target.value = ""; if (!file) return;
+    try {
+      const { inventory, ...source } = await readInventoryFile(file);
+      update((current) => ({ ...current, inventory, ...source }));
+      setImportError("");
+    } catch (error) {
+      setImportError(error.message || "Could not read this inventory file.");
+    }
   };
   const createAudits = () => { update((current) => ({ ...current, audits: [...chosen.map((category, index) => buildAudit(current.inventory, category, undefined, index)), ...current.audits] })); navigate("/dashboard"); };  return <div className="space-y-6"><div><p className="text-slate-500">Import a workbook and choose the categories to audit.</p></div><div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="note"><Info className="mt-0.5 h-4 w-4 shrink-0" /><p><b>Manual redos only.</b> Regular monthly audits are started from Monthly status or the Calendar. Use this page only to redo an audit by hand.</p></div>
+    {importError && <p role="alert" className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">{importError}</p>}
     {!state.inventory.length ? <Card><CardContent className="grid min-h-64 place-items-center p-8 text-center"><div><FileUp className="mx-auto h-10 w-10 text-sky-600" /><h3 className="mt-4 font-semibold">No workbook loaded yet</h3><p className="mt-1 max-w-md text-sm text-slate-500">Import your inventory workbook to automatically group items by case code or category.</p><Button className="mt-5" onClick={() => fileRef.current.click()}>Import workbook</Button><input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={importFile} /></div></CardContent></Card> : <Card><CardHeader><CardTitle>Choose categories</CardTitle><CardDescription>{state.inventory.length.toLocaleString()} inventory rows loaded from {state.sourceName}.</CardDescription></CardHeader><CardContent className="space-y-5"><div className="relative max-w-xl"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><Input value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9 pr-10" placeholder="Search case codes, e.g. bridal, mens, silver ice" aria-label="Search case codes" /><TooltipProvider delayDuration={100}><Tooltip><TooltipTrigger asChild><button type="button" className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded text-slate-400 hover:text-slate-700" aria-label="Search tips"><Info className="h-4 w-4" /></button></TooltipTrigger><TooltipContent side="bottom" align="end" className="max-w-xs text-xs"><p className="font-semibold">Search tips</p><p>Type part of a case code to filter the list.</p><p>Separate several searches with commas to show them together, e.g. <b>bridal, mens, silver ice</b>.</p></TooltipContent></Tooltip></TooltipProvider></div><div className="space-y-6">{groupCodes(categories.map(([category]) => category)).map(([group, codes]) => <section key={group}><div className="mb-2"><h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{group} <span className="font-normal">({codes.length})</span></h4></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{codes.map((category) => { const items = byCategory.get(category); return <button key={category} onClick={() => setChosen((current) => current.includes(category) ? current.filter((value) => value !== category) : [...current, category])} className={`rounded-lg border p-4 text-left transition ${chosen.includes(category) ? "border-sky-600 bg-sky-50" : "border-slate-200 hover:border-slate-400"}`}><p className="font-semibold uppercase">{category}</p><p className="mt-1 text-sm text-slate-500">{items.length} rows · {items.reduce((sum, item) => sum + item.quantity, 0)} units</p></button>; })}</div></section>)}</div><div className="flex items-center justify-between"><p className="text-sm text-slate-500">{chosen.length ? `${chosen.length} categories selected` : "Select one or more categories."}</p><Button disabled={!chosen.length} onClick={createAudits}>Create selected audits</Button></div></CardContent></Card>}</div>;
 }
 
@@ -120,7 +135,11 @@ function SettingsPage({ state, update }) {
   };
   const rename = (index) => {
     const value = window.prompt("Rename location", state.locations[index])?.trim();
-    if (value) { update((current) => ({ ...current, locations: current.locations.map((location, position) => position === index ? value : location) })); setMessage("Location renamed"); }
+    if (value) {
+      if (state.locations.some((location, position) => position !== index && location.toLowerCase() === value.toLowerCase())) return setMessage("That location already exists");
+      update((current) => ({ ...current, locations: current.locations.map((location, position) => position === index ? value : location) }));
+      setMessage("Location renamed");
+    }
   };
   const remove = (index) => {
     if (window.confirm(`Remove location “${state.locations[index]}” from the dropdown? Existing scan history will be preserved.`)) update((current) => ({ ...current, locations: current.locations.filter((_, position) => position !== index) }));
@@ -131,6 +150,6 @@ function SettingsPage({ state, update }) {
 }
 
 export default function App() {
-  const [state, update] = useAuditState();
-  return <AppShell state={state}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell>;
+  const [state, update, storageError] = useAuditState();
+  return <AppShell state={state} storageError={storageError}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell>;
 }

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, FlaskConical, Play, RefreshCw, Save } from "lucide-react";
+import * as XLSX from "xlsx";
+import { CheckCircle2, Download, FlaskConical, Play, RefreshCw, Save, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { DataTable } from "@/components/data-table";
 import { auditProgress, auditTally, cn, formatDate, identifiersMatch } from "@/lib/utils";
 
@@ -24,7 +26,7 @@ function Empty({ title, detail }) {
 export function AuditWorkspace({ state, update }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const audit = state.audits.find((item) => item.id === id) ?? state.audits.find((item) => item.status === "in-progress");
+  const audit = id ? state.audits.find((item) => item.id === id) : state.audits.find((item) => item.status === "in-progress");
   const [initials, setInitials] = useState(audit?.initials ?? "");
   const [locationName, setLocationName] = useState("");
   const [sku, setSku] = useState("");
@@ -55,8 +57,8 @@ export function AuditWorkspace({ state, update }) {
   const patch = (changes) => update((current) => ({ ...current, audits: current.audits.map((candidate) => candidate.id === audit.id ? { ...candidate, ...changes } : candidate) }));
 
   const start = () => { if (!cleanInitials) return; patch({ phase: "running", initials: cleanInitials, startedAt: audit.startedAt ?? new Date().toISOString() }); setNotice(""); };
-  const saveAndClose = () => { patch({ phase: "paused" }); navigate("/dashboard"); };
-  const finish = () => { if (!cleanInitials) return; patch({ status: "completed", phase: "closed", initials: cleanInitials, completedBy: cleanInitials, completedAt: new Date().toISOString() }); setConfirming(false); setTab("scan"); };
+  const saveAndClose = () => { patch({ phase: "paused" }); navigate("/dashboard"); requestAnimationFrame(() => document.getElementById("page-title")?.focus()); };
+  const finish = () => { if (!cleanInitials) return; patch({ status: "completed", phase: "closed", initials: cleanInitials, completedBy: cleanInitials, completedAt: new Date().toISOString() }); setConfirming(false); setTab("scan"); requestAnimationFrame(() => document.getElementById("workspace-title")?.focus()); };
   const refreshItems = () => {
     const items = state.inventory.filter((item) => (item.category || "(BLANK)") === audit.category);
     if (!items.length) return setNotice(`No rows for ${String(audit.category).toUpperCase()} in the current inventory source (${state.sourceName || "none loaded"}). Upload an updated file from the calendar first.`);
@@ -66,9 +68,31 @@ export function AuditWorkspace({ state, update }) {
 
   const addScan = () => {
     if (!locationName || !sku.trim() || !(Number(quantity) > 0)) return;
-    const reference = audit.items.find((item) => identifiersMatch(item.sku, sku) || identifiersMatch(item.style, sku));
+    const reference = audit.items.find((item) => identifiersMatch(item.sku, sku)) ?? audit.items.find((item) => identifiersMatch(item.style, sku));
     patch({ scans: [...audit.scans, { id: crypto.randomUUID(), sku: reference?.sku ?? sku.trim(), description: reference?.description ?? "", style: reference?.style ?? "", qty: Number(quantity), location: locationName, timestamp: new Date().toISOString() }] });
     setSku("");
+  };
+  const removeScan = (scan) => patch({ scans: audit.scans.filter((item) => item.id !== scan.id), completedLocations: audit.completedLocations.filter((location) => location !== scan.location) });
+  const exportAudit = () => {
+    const workbook = XLSX.utils.book_new();
+    const auditRows = [...tally.expected].map(([sku, expected]) => {
+      const scanned = tally.scanned.get(sku) ?? 0;
+      return { SKU: sku, Expected: expected, Scanned: scanned, Variance: expected - scanned };
+    });
+    const scanRows = audit.scans.map((scan) => ({ SKU: scan.sku, Description: scan.description, Style: scan.style, Quantity: scan.qty, Location: scan.location, Timestamp: scan.timestamp, Result: tally.status(scan) }));
+    const summaryRows = [
+      { Field: "Audit", Value: audit.name },
+      { Field: "Category", Value: audit.category },
+      { Field: "Status", Value: "Closed" },
+      { Field: "Progress", Value: `${progress}%` },
+      { Field: "Completed", Value: audit.completedAt ?? "" },
+      { Field: "Completed by", Value: audit.completedBy ?? audit.initials ?? "" },
+    ];
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryRows), "Summary");
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(auditRows), "Audit");
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(scanRows), "Scan log");
+    const filename = audit.name.trim().replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "audit";
+    XLSX.writeFile(workbook, `${filename}-results.xlsx`);
   };
   const completeSection = () => {
     if (!locationName || !audit.scans.some((scan) => scan.location === locationName)) return;
@@ -83,6 +107,7 @@ export function AuditWorkspace({ state, update }) {
     { accessorKey: "qty", header: "Scanned" },
     { id: "total", header: "Audit total", accessorFn: (scan) => tally.totalFor(scan).total, cell: ({ row }) => { const { total, expected } = tally.totalFor(row.original); return expected === null ? `${total} / —` : `${total} / ${expected}`; } },
     { id: "result", header: "Result", accessorFn: (scan) => tally.status(scan), cell: ({ getValue }) => <Badge variant={resultVariant[getValue()]}>{resultLabel[getValue()]}</Badge> },
+    ...(!closed ? [{ id: "actions", header: "Actions", enableSorting: false, cell: ({ row }) => <Button variant="ghost" size="icon" aria-label={`Remove scan for ${row.original.sku}`} onClick={() => removeScan(row.original)}><Trash2 className="h-4 w-4 text-rose-600" /></Button> }] : []),
   ];
 
   const locationSummary = [...audit.scans.reduce((map, scan) => map.set(scan.location, (map.get(scan.location) ?? 0) + (Number(scan.qty) || 0)), new Map())];
@@ -127,18 +152,22 @@ export function AuditWorkspace({ state, update }) {
   const initialsField = (label) => <label className="grid gap-1 text-sm font-medium">{label}<Input className="w-48 uppercase" maxLength={5} value={initials} onChange={(event) => setInitials(event.target.value)} placeholder="e.g. AB" /></label>;
 
   if (phase === "running") {
-    return <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-50" role="dialog" aria-label="Audit in progress">
+    return <Sheet open onOpenChange={(open) => { if (!open) saveAndClose(); }}>
+      <SheetContent side="top" className="!inset-0 !h-screen !w-screen !max-w-none !translate-y-0 overflow-y-auto rounded-none border-0 bg-slate-50 p-0 [&>button]:hidden">
+        <SheetTitle className="sr-only">Audit in progress</SheetTitle>
+        <SheetDescription className="sr-only">Scan inventory in the active audit, then save progress or complete the audit.</SheetDescription>
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-5 py-3">
         <div className="min-w-0 flex-1"><Badge variant="warning">Audit in progress</Badge><h2 className="mt-1 truncate text-xl font-bold uppercase">{audit.name}</h2><p className="text-xs text-slate-500"><span className="uppercase">{audit.category}</span> · Associate {audit.initials}</p></div>
         {confirming ? <div className="flex flex-wrap items-end gap-2">{initialsField("Associate initials")}<Button disabled={!cleanInitials} onClick={finish}><CheckCircle2 className="h-4 w-4" />Confirm complete</Button><Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button></div>
           : <div className="flex gap-2"><Button variant="outline" onClick={saveAndClose}><Save className="h-4 w-4" />Close &amp; save progress</Button><Button onClick={() => setConfirming(true)}><CheckCircle2 className="h-4 w-4" />Complete audit</Button></div>}
       </div>
       <div className="mx-auto w-full max-w-7xl p-5 md:p-8">{content}</div>
-    </div>;
+      </SheetContent>
+    </Sheet>;
   }
 
   return <div className="space-y-6">
-    <div className="flex flex-wrap items-start justify-between gap-4"><div><Badge variant={closed ? "success" : "warning"}>{closed ? "Audit closed" : phase === "paused" ? "Progress saved" : "Ready to start"}</Badge><h2 className="mt-3 text-2xl font-bold uppercase">{audit.name}</h2><p className="mt-1 text-slate-500"><span className="uppercase">{audit.category}</span> · {audit.items.length} reference SKUs{audit.initials ? ` · Associate ${closed ? audit.completedBy ?? audit.initials : audit.initials}` : ""}</p></div></div>
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><Badge variant={closed ? "success" : "warning"}>{closed ? "Audit closed" : phase === "paused" ? "Progress saved" : "Ready to start"}</Badge><h2 id="workspace-title" tabIndex={-1} className="mt-3 text-2xl font-bold uppercase">{audit.name}</h2><p className="mt-1 text-slate-500"><span className="uppercase">{audit.category}</span> · {audit.items.length} reference SKUs{audit.initials ? ` · Associate ${closed ? audit.completedBy ?? audit.initials : audit.initials}` : ""}</p></div>{closed && <Button variant="outline" onClick={exportAudit}><Download className="h-4 w-4" />Export results</Button>}</div>
     {notice && <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm" role="status">{notice}</div>}
     {!closed && <Card><CardHeader><CardTitle>{phase === "paused" ? "Resume audit" : "Start audit"}</CardTitle><CardDescription>{phase === "paused" ? "Your progress is saved. Refresh the audit with the latest inventory before resuming if the source file changed." : "Enter the associate's initials, then start. The workspace stays focused until you complete or close the audit."}</CardDescription></CardHeader><CardContent className="flex flex-wrap items-end gap-3">
       {initialsField("Associate initials")}

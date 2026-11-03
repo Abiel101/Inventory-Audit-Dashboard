@@ -44,7 +44,7 @@ export function MonthStatus({ state, update }) {
   const rows = useMemo(() => {
     const codes = new Set([...state.inventory.map(categoryOf), ...state.audits.map((audit) => audit.category), ...Object.keys(schedule)]);
     return [...codes].map((code) => {
-      const audits = state.audits.filter((audit) => audit.category === code && (inMonth(audit.createdAt, month) || inMonth(audit.startedAt, month) || inMonth(audit.completedAt, month)));
+      const audits = state.audits.filter((audit) => audit.category === code && (audit.scheduledDate ? audit.scheduledDate.slice(0, 7) === month : inMonth(audit.createdAt, month) || inMonth(audit.startedAt, month) || inMonth(audit.completedAt, month)));
       const notes = monthNotes[code] ?? [];
       const running = audits.find((audit) => audit.status !== "completed");
       const closed = audits.filter((audit) => audit.status === "completed");

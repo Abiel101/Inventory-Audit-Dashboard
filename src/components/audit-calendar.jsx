@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { buildAudit, categoryOf, compareCodes, groupCodes, readInventoryFile, sourceFreshness } from "@/lib/inventory";
 import { auditProgress, cn, dateKey } from "@/lib/utils";
 
@@ -63,11 +64,12 @@ export function AuditCalendar({ state, update }) {
   const saveSchedule = (next) => { setSchedule(next); localStorage.setItem(SCHEDULE_KEY, JSON.stringify(next)); };
 
   const auditsFor = (code) => audits.filter((audit) => audit.category === code);
+  const auditsForMonth = (code, key) => auditsFor(code).filter((audit) => String(audit.scheduledDate || audit.createdAt || "").slice(0, 7) === key.slice(0, 7));
   const codeStatus = (code, key) => {
-    const related = auditsFor(code);
+    const related = auditsForMonth(code, key);
     if (related.some((audit) => audit.status !== "completed")) return "progress";
-    const closed = related.filter((audit) => audit.status === "completed");
-    if (closed.length) return closed.some((audit) => auditProgress(audit) >= 100) ? "complete" : "research";
+    const closed = related.filter((audit) => audit.status === "completed").sort((left, right) => String(right.completedAt || right.createdAt).localeCompare(String(left.completedAt || left.createdAt)));
+    if (closed.length) return auditProgress(closed[0]) >= 100 ? "complete" : "research";
     return key < todayKey ? "overdue" : "scheduled";
   };
 
@@ -106,18 +108,20 @@ export function AuditCalendar({ state, update }) {
   const move = (code, key) => { if (!key) return; saveSchedule({ ...schedule, [code]: key }); goTo(key); };
 
   const openAudit = (code, sourceInventory) => {
-    const open = auditsFor(code).find((audit) => audit.status !== "completed");
-    const closed = auditsFor(code).find((audit) => audit.status === "completed");
+    const related = auditsForMonth(code, selected);
+    const open = related.find((audit) => audit.status !== "completed");
+    const closed = related.find((audit) => audit.status === "completed");
     const existing = open ?? closed;
     if (existing) return navigate(`/workspace/${existing.id}`);
     const audit = buildAudit(sourceInventory, code);
     if (!audit.items.length) return setNotice(`No inventory rows found for case code ${code.toUpperCase()}. Upload an inventory source that includes it.`);
+    audit.scheduledDate = selected;
     update((current) => ({ ...current, audits: [audit, ...current.audits] }));
     navigate(`/workspace/${audit.id}`);
   };
 
   const requestStart = (code) => {
-    const hasAudit = auditsFor(code).length > 0;
+    const hasAudit = auditsForMonth(code, selected).length > 0;
     if (needsUpdate && !hasAudit) { setPendingStart(code); return; }
     openAudit(code, inventory);
   };
@@ -125,11 +129,15 @@ export function AuditCalendar({ state, update }) {
   const importFile = async (event) => {
     const file = event.target.files?.[0]; event.target.value = "";
     if (!file) return;
-    const { inventory: nextInventory, ...source } = await readInventoryFile(file); const nextName = source.sourceName;
-    update((current) => ({ ...current, inventory: nextInventory, ...source }));
-    const check = sourceFreshness(nextName, true, todayKey, dateKey(new Date(source.sourceModifiedAt || source.sourceUploadedAt)));
-    setNotice(check.status === "fresh" ? `Inventory updated from ${nextName}.` : check.status === "stale" ? `Loaded ${nextName}, but it is dated ${longDate(check.sourceDate)}, not today.` : `Loaded ${nextName}, but no date was found in the file name.`);
-    if (pendingStart) { const code = pendingStart; setPendingStart(null); openAudit(code, nextInventory); }
+    try {
+      const { inventory: nextInventory, ...source } = await readInventoryFile(file); const nextName = source.sourceName;
+      update((current) => ({ ...current, inventory: nextInventory, ...source }));
+      const check = sourceFreshness(nextName, true, todayKey, dateKey(new Date(source.sourceModifiedAt || source.sourceUploadedAt)));
+      setNotice(check.status === "fresh" ? `Inventory updated from ${nextName}.` : check.status === "stale" ? `Loaded ${nextName}, but it is dated ${longDate(check.sourceDate)}, not today.` : `Loaded ${nextName}, but no date was found in the file name.`);
+      if (pendingStart) { const code = pendingStart; setPendingStart(null); openAudit(code, nextInventory); }
+    } catch (error) {
+      setNotice(error.message || "Could not read this inventory file. The current inventory was not changed.");
+    }
   };
 
   const freshnessMessage = {
@@ -142,12 +150,11 @@ export function AuditCalendar({ state, update }) {
     <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={importFile} />
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><p className="text-slate-500">{scheduling ? "Scheduling mode: click a day to assign case codes to it." : "Click a day to see what needs to be done and start an audit."}</p></div>
-      <Button variant={scheduling ? "default" : "outline"} onClick={() => { setScheduling((value) => !value); setPendingStart(null); }}>{scheduling ? <><Check className="h-4 w-4" />Done scheduling</> : <><CalendarPlus className="h-4 w-4" />Schedule</>}</Button>
+      <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" />Upload/replace inventory</Button><Button variant={scheduling ? "default" : "outline"} onClick={() => { setScheduling((value) => !value); setPendingStart(null); }}>{scheduling ? <><Check className="h-4 w-4" />Done scheduling</> : <><CalendarPlus className="h-4 w-4" />Schedule</>}</Button></div>
     </div>
 
     {needsUpdate && <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
       <AlertTriangle className="h-5 w-5 shrink-0" /><p className="min-w-0 flex-1">{freshnessMessage}</p>
-      <Button size="sm" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" />Upload updated file</Button>
     </div>}
     {notice && <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm" role="status"><span>{notice}</span><Button variant="ghost" size="icon" aria-label="Dismiss" onClick={() => setNotice("")}><X className="h-4 w-4" /></Button></div>}
 
@@ -178,7 +185,7 @@ export function AuditCalendar({ state, update }) {
           <div className="mt-3 flex flex-wrap gap-2"><Button size="sm" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" />Upload updated file</Button><Button size="sm" variant="outline" onClick={() => { const code = pendingStart; setPendingStart(null); openAudit(code, inventory); }}>Start anyway</Button><Button size="sm" variant="ghost" onClick={() => setPendingStart(null)}>Cancel</Button></div>
         </div>}
         <div className="space-y-2">{dayCodes.length ? dayCodes.map((code) => {
-          const status = codeStatus(code, selected); const related = auditsFor(code); const pct = related.length ? Math.max(...related.map(auditProgress)) : 0;
+          const status = codeStatus(code, selected); const related = auditsForMonth(code, selected); const currentAudit = related.find((audit) => audit.status !== "completed") ?? related.filter((audit) => audit.status === "completed").sort((left, right) => String(right.completedAt || right.createdAt).localeCompare(String(left.completedAt || left.createdAt)))[0]; const pct = currentAudit ? auditProgress(currentAudit) : 0;
           const label = status === "progress" ? "Continue" : status === "complete" || status === "research" ? "View" : "Start";
           return <div key={code} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2.5">
             <span className={cn("min-w-0 flex-1 break-words rounded px-2 py-1 text-xs font-semibold uppercase", statusStyle[status])} title={statusLabel[status]}>{code}</span>
@@ -191,10 +198,10 @@ export function AuditCalendar({ state, update }) {
       </CardContent></Card>
     </div>
 
-    {dayOpen && scheduling && <>
-      <div className="fixed inset-0 z-40 bg-black/40" onClick={closeDay} />
-      <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto border-l border-slate-200 bg-white p-5 shadow-xl" role="dialog" aria-label="Selected day">
-        <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{scheduling ? "Scheduling" : "Selected day"}</p><h3 className="mt-1 text-lg font-semibold">{parseKey(selected).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</h3></div><Button variant="outline" size="icon" aria-label="Close" onClick={closeDay}><X className="h-4 w-4" /></Button></div>
+    <Sheet open={dayOpen && scheduling} onOpenChange={(open) => { if (!open) closeDay(); }}>
+      <SheetContent side="right" className="w-full max-w-md overflow-y-auto border-l border-slate-200 bg-white p-5 shadow-xl [&>button]:hidden">
+        <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{scheduling ? "Scheduling" : "Selected day"}</p><SheetTitle className="mt-1 text-lg font-semibold">{parseKey(selected).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</SheetTitle></div><Button variant="outline" size="icon" aria-label="Close" onClick={closeDay}><X className="h-4 w-4" /></Button></div>
+        <SheetDescription className="sr-only">Choose and manage case codes scheduled for this day.</SheetDescription>
 
         {scheduling ? <>
           <div className="mt-5 flex items-center justify-between"><h4 className="text-sm font-semibold">Scheduled case codes</h4>{dayCodes.length > 0 && <Button variant="outline" size="sm" onClick={clearDay}>Clear day</Button>}</div>
@@ -219,7 +226,7 @@ export function AuditCalendar({ state, update }) {
 
         <h4 className="mt-6 text-sm font-semibold">What was done</h4>
         <div className="mt-2 divide-y divide-slate-200">{activity.length ? activity.map(({ audit, scans, units, locations, closed }) => <div key={audit.id} className="grid gap-1 py-2 text-sm"><b className="uppercase">{audit.name}</b><span className="text-slate-500">{scans} scans · {units} units{locations.length ? ` · ${locations.join(", ")}` : ""}</span>{closed && <Badge variant={auditProgress(audit) >= 100 ? "success" : "warning"} className="w-fit">Closed at {auditProgress(audit)}%{auditProgress(audit) < 100 ? " · needs research" : ""}</Badge>}</div>) : <p className="py-2 text-sm text-slate-500">No audit activity recorded.</p>}</div>
-      </aside>
-    </>}
+      </SheetContent>
+    </Sheet>
   </div>;
 }

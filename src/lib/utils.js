@@ -52,9 +52,19 @@ export function dateKey(date) {
 // Quantities are totalled per audit item across every location, so the same SKU
 // scanned in several locations adds up against the imported quantity.
 export function auditTally(audit) {
-  const find = (value) => audit.items.find((item) => identifiersMatch(item.sku, value) || identifiersMatch(item.style, value));
+  const find = (value) => audit.items.find((item) => identifiersMatch(item.sku, value)) ?? audit.items.find((item) => identifiersMatch(item.style, value));
+  const skuKey = (value) => {
+    const key = scanKey(value);
+    return /^\d+$/.test(key) ? key.replace(/^0+(?=\d)/, "") : key;
+  };
   const expected = new Map();
-  audit.items.forEach((item) => expected.set(item.sku, (expected.get(item.sku) ?? 0) + (Number(item.quantity) || 0)));
+  const representatives = new Map();
+  audit.items.forEach((item) => {
+    const normalized = skuKey(item.sku);
+    const representative = representatives.get(normalized) ?? item.sku;
+    representatives.set(normalized, representative);
+    expected.set(representative, (expected.get(representative) ?? 0) + (Number(item.quantity) || 0));
+  });
   const scanned = new Map();
   const extra = new Map();
   audit.scans.forEach((scan) => {
@@ -78,7 +88,7 @@ export function auditProgress(audit) {
   const need = [...expected.values()].reduce((sum, value) => sum + value, 0);
   if (!need) return 0;
   const found = [...expected].reduce((sum, [sku, value]) => sum + Math.min(value, scanned.get(sku) ?? 0), 0);
-  return Math.round((found / need) * 100);
+  return Math.floor((found / need) * 100);
 }
 
 export function formatDate(value) {

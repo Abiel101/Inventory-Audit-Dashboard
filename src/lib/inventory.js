@@ -1,13 +1,42 @@
 import * as XLSX from "xlsx";
 import { dateKey } from "@/lib/utils";
 
+const normalizeHeader = (value) => String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const headerAliases = {
+  sku: ["upc", "sku", "barcode", "item number", "item no", "item #", "product number"],
+  description: ["description", "product name"],
+  style: ["style", "clu"],
+  quantity: ["on hand", "quantity", "qty"],
+  category: ["case code", "category"],
+};
+const normalizedAliases = Object.fromEntries(Object.entries(headerAliases).map(([field, aliases]) => [field, new Set(aliases.map(normalizeHeader))]));
+
 export async function readInventoryFile(file) {
   const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
-  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
-  const inventory = rows.map((row, index) => {
-    const get = (...names) => names.map((name) => Object.entries(row).find(([key]) => key.toLowerCase().replace(/[_-]/g, " ").includes(name))?.[1]).find((value) => value !== undefined) ?? "";
-    return { id: `row-${index}`, sku: String(get("upc", "sku", "barcode")).trim(), description: String(get("description", "product name")).trim(), style: String(get("style", "clu")).trim(), quantity: Number(get("on hand", "quantity", "qty")) || 0, category: String(get("case code", "category")).trim() };
+  const candidates = workbook.SheetNames.flatMap((sheetName) => {
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: "", blankrows: false });
+    return rows.flatMap((headers, headerIndex) => {
+      const columns = Object.fromEntries(Object.keys(normalizedAliases).map((field) => [
+        field,
+        headers.findIndex((header) => {
+          const normalized = normalizeHeader(header);
+          return [...normalizedAliases[field]].some((alias) => normalized.includes(alias));
+        }),
+      ]));
+      if (columns.sku < 0 || columns.category < 0 || columns.sku === columns.category) return [];
+      const score = Object.values(columns).filter((column) => column >= 0).length + (/inventory|stock/i.test(sheetName) ? 1 : 0);
+      return [{ rows, headerIndex, columns, score }];
+    });
+  }).sort((left, right) => right.score - left.score);
+  const candidate = candidates[0];
+  if (!candidate) throw new Error("This workbook has no recognizable inventory headers. Include an item number or SKU column and a case code or category column.");
+  const { rows, headerIndex, columns } = candidate;
+  const inventory = rows.slice(headerIndex + 1).map((row, index) => {
+    const get = (field) => columns[field] < 0 ? "" : row[columns[field]] ?? "";
+    const quantity = Number(String(get("quantity")).replace(/,/g, "").trim()) || 0;
+    return { id: `row-${index}`, sku: String(get("sku")).trim(), description: String(get("description")).trim(), style: String(get("style")).trim(), quantity, category: String(get("category")).trim() };
   }).filter((item) => item.sku);
+  if (!inventory.length) throw new Error("No inventory rows with item numbers or SKUs were found below the workbook headers.");
   return { inventory, sourceName: file.name, sourceUploadedAt: new Date().toISOString(), sourceModifiedAt: file.lastModified ? new Date(file.lastModified).toISOString() : "" };
 }
 

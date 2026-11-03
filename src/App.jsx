@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { CalendarDays, CheckCircle2, ClipboardList, FileUp, LayoutDashboard, MapPin, PackageSearch, Plus, Settings, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/data-table";
-import { formatDate, identifiersMatch } from "@/lib/utils";
+import { formatDate, identifiersMatch, defaultLocations, themes, applyTheme, getSavedTheme } from "@/lib/utils";
+import { AuditCalendar } from "@/components/audit-calendar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 
-const defaultLocations = ["100", "101", "102", "200", "201", "300", "301", "Understock 1", "Vault Holds"];
+const legacyLocations = ["100", "101", "102", "200", "201", "300", "301", "Understock 1", "Vault Holds"];
 const navigation = [
   ["/dashboard", "Dashboard", LayoutDashboard],
   ["/audits/new", "Build an audit", Plus],
@@ -22,7 +24,11 @@ const initialState = { inventory: [], audits: [], locations: defaultLocations, s
 
 function useAuditState() {
   const [state, setState] = useState(() => {
-    try { return { ...initialState, ...JSON.parse(localStorage.getItem(storageKey)) }; } catch { return initialState; }
+    try {
+      const saved = { ...initialState, ...JSON.parse(localStorage.getItem(storageKey)) };
+      const isLegacyList = saved.locations.length === legacyLocations.length && legacyLocations.every((value, index) => saved.locations[index] === value);
+      return isLegacyList ? { ...saved, locations: defaultLocations } : saved;
+    } catch { return initialState; }
   });
   const update = (callback) => setState((current) => {
     const next = callback(current);
@@ -33,17 +39,31 @@ function useAuditState() {
 }
 
 function AppShell({ state, children }) {
-  return <div className="min-h-screen md:grid md:grid-cols-[16rem_1fr]">
-    <aside className="hidden border-r border-slate-200 bg-white p-5 md:block">
-      <div className="mb-9 flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-lg bg-sky-600 font-bold text-white">IA</div><div><strong className="text-sm tracking-wide">INVENTORY AUDIT</strong><p className="text-xs text-slate-500">Store operations</p></div></div>
-      <nav className="space-y-1">{navigation.map(([to, label, Icon]) => <NavLink key={to} to={to} className={({ isActive }) => `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium ${isActive ? "bg-sky-50 text-sky-700" : "text-slate-600 hover:bg-slate-100"}`}><Icon className="h-4 w-4" />{label}</NavLink>)}</nav>
-      <p className="mt-10 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600"><b className="block text-slate-800">iPad-ready workflow</b>Import, build an audit, scan by location, then export results.</p>
-    </aside>
-    <main className="min-w-0"><header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 md:px-8"><div><p className="text-xs font-medium uppercase tracking-wide text-slate-500">Store operations / inventory control</p><h1 className="mt-1 text-xl font-bold">Inventory Audit</h1></div><Badge variant={state.sourceName ? "success" : "secondary"}>{state.sourceName ? `Source: ${state.sourceName}` : "No source loaded"}</Badge></header><div className="mx-auto max-w-7xl p-5 md:p-8">{children}</div></main>
-    <nav className="fixed inset-x-0 bottom-0 flex justify-around border-t bg-white p-2 md:hidden">{navigation.map(([to, label, Icon]) => <NavLink key={to} to={to} className={({ isActive }) => `grid place-items-center gap-1 text-[10px] ${isActive ? "text-sky-700" : "text-slate-500"}`}><Icon className="h-4 w-4" />{label}</NavLink>)}</nav>
-  </div>;
+  const { pathname } = useLocation();
+  return <SidebarProvider>
+    <AppSidebar />
+    <SidebarInset>
+      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
+        <SidebarTrigger />
+        <div className="min-w-0 flex-1"><p className="truncate text-xs font-medium uppercase tracking-wide text-slate-500">Store operations / inventory control</p><h1 className="text-xl font-bold">Inventory Audit</h1></div>
+        <Badge variant={state.sourceName ? "success" : "secondary"} className="max-w-[50vw] truncate">{state.sourceName ? `Source: ${state.sourceName}` : "No source loaded"}</Badge>
+      </header>
+      <div key={pathname} className="mx-auto w-full max-w-7xl p-5 md:p-8">{children}</div>
+    </SidebarInset>
+  </SidebarProvider>;
 }
 
+function AppSidebar() {
+  const { pathname } = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
+  return <Sidebar>
+    <SidebarHeader><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-lg bg-sky-600 font-bold text-white">IA</div><div><strong className="text-sm tracking-wide">INVENTORY AUDIT</strong><p className="text-xs text-slate-500">Store operations</p></div></div></SidebarHeader>
+    <SidebarContent>
+      <SidebarGroup><SidebarMenu>{navigation.map(([to, label, Icon]) => <SidebarMenuItem key={to}><SidebarMenuButton asChild isActive={pathname === to || pathname.startsWith(`${to}/`)}><NavLink to={to} onClick={() => isMobile && setOpenMobile(false)}><Icon />{label}</NavLink></SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu></SidebarGroup>
+    </SidebarContent>
+    <SidebarFooter><p className="rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600"><b className="block text-slate-800">iPad-ready workflow</b>Import, build an audit, scan by location, then export results.</p></SidebarFooter>
+  </Sidebar>;
+}
 function Stat({ label, value, icon: Icon }) {
   return <Card><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-slate-500">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></div><Icon className="h-7 w-7 text-sky-600" /></CardContent></Card>;
 }
@@ -102,15 +122,29 @@ function Workspace({ state, update }) {
 }
 
 function Calendar({ state }) {
-  const scheduled = state.audits.filter((audit) => audit.status !== "completed");
-  const columns = [{ accessorKey: "name", header: "Audit" }, { accessorKey: "category", header: "Category" }, { accessorKey: "createdAt", header: "Created", cell: ({ getValue }) => formatDate(getValue()) }, { accessorKey: "status", header: "Status", cell: ({ getValue }) => <Badge variant={getValue() === "completed" ? "success" : "warning"}>{getValue()}</Badge> }];
-  return <div className="space-y-6"><div><h2 className="text-2xl font-bold">Audit calendar</h2><p className="mt-1 text-slate-500">Review scheduled and completed audit activity.</p></div><Card><CardHeader><CardTitle>Scheduled audits to complete</CardTitle><CardDescription>{scheduled.length} audits currently in progress.</CardDescription></CardHeader><CardContent><DataTable columns={columns} data={state.audits} searchPlaceholder="Search audits..." /></CardContent></Card></div>;
+  return <AuditCalendar audits={state.audits} inventory={state.inventory} />;
 }
 
 function SettingsPage({ state, update }) {
   const [newLocation, setNewLocation] = useState("");
-  const add = () => { if (!newLocation.trim() || state.locations.includes(newLocation.trim())) return; update((current) => ({ ...current, locations: [...current.locations, newLocation.trim()] })); setNewLocation(""); };
-  return <div className="space-y-6"><div><h2 className="text-2xl font-bold">Settings</h2><p className="mt-1 text-slate-500">Manage audit workspace preferences.</p></div><Card><CardHeader><CardTitle>Audit locations</CardTitle><CardDescription>Locations appear in the audit workspace.</CardDescription></CardHeader><CardContent><div className="flex max-w-md gap-2"><Input value={newLocation} onChange={(event) => setNewLocation(event.target.value)} onKeyDown={(event) => event.key === "Enter" && add()} placeholder="Add location or bin name" /><Button onClick={add}>Add</Button></div><div className="mt-5 divide-y">{state.locations.map((location) => <div key={location} className="flex items-center justify-between py-3 text-sm"><span>{location}</span><Button variant="ghost" size="icon" aria-label={`Remove ${location}`} onClick={() => update((current) => ({ ...current, locations: current.locations.filter((value) => value !== location) }))}><Trash2 className="h-4 w-4 text-rose-600" /></Button></div>)}</div></CardContent></Card></div>;
+  const [theme, setTheme] = useState(getSavedTheme);
+  const [message, setMessage] = useState("");
+  const add = () => {
+    const value = newLocation.trim();
+    if (!value) return setMessage("Enter a location name");
+    if (state.locations.some((location) => location.toLowerCase() === value.toLowerCase())) return setMessage("That location already exists");
+    update((current) => ({ ...current, locations: [...current.locations, value] })); setNewLocation(""); setMessage("Location added");
+  };
+  const rename = (index) => {
+    const value = window.prompt("Rename location", state.locations[index])?.trim();
+    if (value) { update((current) => ({ ...current, locations: current.locations.map((location, position) => position === index ? value : location) })); setMessage("Location renamed"); }
+  };
+  const remove = (index) => {
+    if (window.confirm(`Remove location “${state.locations[index]}” from the dropdown? Existing scan history will be preserved.`)) update((current) => ({ ...current, locations: current.locations.filter((_, position) => position !== index) }));
+  };
+  return <div className="space-y-6"><div><h2 className="text-2xl font-bold">Settings</h2><p className="mt-1 text-slate-500">Manage audit workspace preferences.</p></div>
+    <Card><CardHeader><CardTitle>Appearance</CardTitle><CardDescription>Choose a color theme for the dashboard. Your preference is saved on this device.</CardDescription></CardHeader><CardContent><label className="block max-w-xs text-sm font-medium" htmlFor="theme-select">Color theme<select id="theme-select" className="mt-2 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm" value={theme} onChange={(event) => setTheme(applyTheme(event.target.value))}>{themes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label></CardContent></Card>
+    <Card><CardHeader><CardTitle>Audit locations</CardTitle><CardDescription>{state.locations.length} locations appear in the audit workspace dropdown.</CardDescription></CardHeader><CardContent><div className="flex max-w-md gap-2"><Input value={newLocation} onChange={(event) => setNewLocation(event.target.value)} onKeyDown={(event) => event.key === "Enter" && add()} placeholder="Add location or bin name" /><Button onClick={add}>Add</Button></div>{message && <p className="mt-2 text-sm text-slate-500" role="status">{message}</p>}<div className="mt-5 max-h-[32rem] divide-y divide-slate-200 overflow-y-auto">{state.locations.map((location, index) => <div key={location} className="flex items-center justify-between gap-3 py-2.5 text-sm"><span>{location}</span><div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => rename(index)}>Rename</Button><Button variant="ghost" size="icon" aria-label={`Remove ${location}`} onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-rose-600" /></Button></div></div>)}</div></CardContent></Card></div>;
 }
 
 export default function App() {

@@ -49,10 +49,36 @@ export function dateKey(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+// Quantities are totalled per audit item across every location, so the same SKU
+// scanned in several locations adds up against the imported quantity.
+export function auditTally(audit) {
+  const find = (value) => audit.items.find((item) => identifiersMatch(item.sku, value) || identifiersMatch(item.style, value));
+  const expected = new Map();
+  audit.items.forEach((item) => expected.set(item.sku, (expected.get(item.sku) ?? 0) + (Number(item.quantity) || 0)));
+  const scanned = new Map();
+  const extra = new Map();
+  audit.scans.forEach((scan) => {
+    const reference = find(scan.sku);
+    const target = reference ? scanned : extra;
+    const key = reference ? reference.sku : scan.sku;
+    target.set(key, (target.get(key) ?? 0) + (Number(scan.qty) || 0));
+  });
+  const status = (scan) => {
+    const reference = find(scan.sku);
+    if (!reference) return "extra";
+    const total = scanned.get(reference.sku) ?? 0;
+    const need = expected.get(reference.sku) ?? 0;
+    return total === need ? "match" : total > need ? "over" : "short";
+  };
+  return { expected, scanned, extra, status, totalFor: (scan) => { const reference = find(scan.sku); return reference ? { total: scanned.get(reference.sku) ?? 0, expected: expected.get(reference.sku) ?? 0 } : { total: extra.get(scan.sku) ?? 0, expected: null }; } };
+}
+
 export function auditProgress(audit) {
-  if (!audit.items.length) return 0;
-  const scanned = new Set(audit.scans.filter((scan) => audit.items.some((item) => item.sku === scan.sku)).map((scan) => scan.sku));
-  return Math.round((scanned.size / audit.items.length) * 100);
+  const { expected, scanned } = auditTally(audit);
+  const need = [...expected.values()].reduce((sum, value) => sum + value, 0);
+  if (!need) return 0;
+  const found = [...expected].reduce((sum, [sku, value]) => sum + Math.min(value, scanned.get(sku) ?? 0), 0);
+  return Math.round((found / need) * 100);
 }
 
 export function formatDate(value) {

@@ -101,7 +101,7 @@ export function AuditWorkspace({ state, update }) {
 
   const columns = [
     { accessorKey: "sku", header: "SKU" },
-    { accessorKey: "description", header: "Description" },
+    { accessorKey: "description", header: "Description", cell: ({ getValue }) => <span className="whitespace-nowrap">{getValue()}</span> },
     { accessorKey: "style", header: "Style" },
     { accessorKey: "location", header: "Location" },
     { accessorKey: "qty", header: "Scanned" },
@@ -117,7 +117,8 @@ export function AuditWorkspace({ state, update }) {
     {[["scan", "Scan"], ["research", "Research"]].map(([value, label]) => <button key={value} role="tab" aria-selected={tab === value} onClick={() => setTab(value)} className={cn("flex items-center gap-1.5 rounded-md px-4 py-1.5 font-medium", tab === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{value === "research" && <FlaskConical className="h-4 w-4" />}{label}</button>)}
   </div>;
 
-  const scanPanel = <div className="grid items-start gap-5 lg:grid-cols-[1fr_19rem]">
+  const scanPanel = <div className="space-y-4">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>
     <div className="space-y-5">
       {phase === "running" && <Card><CardHeader><CardTitle>Scan items</CardTitle><CardDescription>Quantities add up across every location against the imported quantity.</CardDescription></CardHeader><CardContent>
         <div className="grid gap-3 md:grid-cols-4">
@@ -130,8 +131,7 @@ export function AuditWorkspace({ state, update }) {
       </CardContent></Card>}
       <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle>Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent><DataTable columns={columns} data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan) => rowTone[tally.status(scan)]} /></CardContent></Card>
     </div>
-    <div className="space-y-5">
-      <Card className="bg-slate-900 text-white"><CardContent className="p-5"><p className="text-sm text-slate-300">Audit progress</p><p className="mt-2 text-4xl font-bold">{progress}%</p><div className="mt-4 h-2 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><span>{expectedUnits} expected units</span><span>{foundUnits} scanned units</span><span>{audit.items.length} reference SKUs</span><span>{tally.extra.size} not in audit</span></div></CardContent></Card>
+    <div>
       <Card><CardHeader><CardTitle>Completed sections</CardTitle></CardHeader><CardContent className="space-y-2 text-sm">
         {locationSummary.length ? locationSummary.map(([name, units]) => <div key={name} className="flex items-center justify-between gap-2"><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant="success">Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></div>) : <p className="text-slate-500">No sections scanned yet.</p>}
       </CardContent></Card>
@@ -161,7 +161,7 @@ export function AuditWorkspace({ state, update }) {
         {confirming ? <div className="flex flex-wrap items-end gap-2">{initialsField("Associate initials")}<Button disabled={!cleanInitials} onClick={finish}><CheckCircle2 className="h-4 w-4" />Confirm complete</Button><Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button></div>
           : <div className="flex gap-2"><Button variant="outline" onClick={saveAndClose}><Save className="h-4 w-4" />Close &amp; save progress</Button><Button onClick={() => setConfirming(true)}><CheckCircle2 className="h-4 w-4" />Complete audit</Button></div>}
       </div>
-      <div className="mx-auto w-full max-w-7xl p-5 md:p-8">{content}</div>
+      <div className="mx-auto w-full max-w-[110rem] p-4 md:p-6">{content}</div>
       </SheetContent>
     </Sheet>;
   }

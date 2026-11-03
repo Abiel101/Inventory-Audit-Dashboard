@@ -1,37 +1,65 @@
 import * as XLSX from "xlsx";
 import { dateKey } from "@/lib/utils";
 
-const normalizeHeader = (value) => String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const normalizeHeader = (value) => String(value ?? "").toLowerCase().replace(/#/g, " number ").replace(/[^a-z0-9]/g, "");
 const headerAliases = {
-  sku: ["upc", "sku", "barcode", "item number", "item no", "item #", "product number"],
-  description: ["description", "product name"],
-  style: ["style", "clu"],
-  quantity: ["on hand", "quantity", "qty"],
-  category: ["case code", "category"],
+  sku: [
+    ["upc", 120], ["upc code", 118], ["upc number", 118], ["sku/upc", 116],
+    ["sku upc", 116], ["barcode", 112], ["ean", 108], ["gtin", 108],
+    ["sku", 104], ["item number", 96], ["item #", 96], ["item no", 94],
+    ["product number", 93], ["product code", 92], ["stock number", 90],
+    ["inventory number", 88], ["scan upc", 86], ["plu", 50],
+  ],
+  description: [["product description", 120], ["item description", 118], ["description", 110], ["product name", 100], ["name", 70]],
+  style: [["style number", 120], ["style #", 118], ["style", 110], ["clu", 105], ["model number", 95], ["model", 80], ["design", 70]],
+  quantity: [["on hand", 120], ["on hand qty", 118], ["quantity", 105], ["qty", 100], ["total qty", 90], ["inventory qty", 90], ["count", 80]],
+  category: [["case code", 120], ["casecode", 118], ["case category", 115], ["audit category", 112], ["location category", 110], ["category", 100], ["case", 70], ["group", 60]],
 };
-const normalizedAliases = Object.fromEntries(Object.entries(headerAliases).map(([field, aliases]) => [field, new Set(aliases.map(normalizeHeader))]));
+const normalizedAliases = Object.fromEntries(Object.entries(headerAliases).map(([field, aliases]) => [field, aliases.map(([alias, score]) => [normalizeHeader(alias), score])]));
+
+function mapHeaders(headers) {
+  return Object.fromEntries(Object.entries(normalizedAliases).map(([field, aliases]) => {
+    let bestIndex = -1;
+    let bestScore = 0;
+    headers.forEach((header, index) => {
+      const normalized = normalizeHeader(header);
+      for (const [alias, score] of aliases) {
+        const candidateScore = normalized === alias ? score : normalized.includes(alias) ? score - 15 : 0;
+        if (candidateScore > bestScore) {
+          bestIndex = index;
+          bestScore = candidateScore;
+        }
+      }
+    });
+    return [field, bestIndex];
+  }));
+}
 
 export async function readInventoryFile(file) {
   const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
   const candidates = workbook.SheetNames.flatMap((sheetName) => {
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: "", blankrows: false });
     return rows.flatMap((headers, headerIndex) => {
-      const columns = Object.fromEntries(Object.keys(normalizedAliases).map((field) => [
-        field,
-        headers.findIndex((header) => {
-          const normalized = normalizeHeader(header);
-          return [...normalizedAliases[field]].some((alias) => normalized.includes(alias));
-        }),
-      ]));
-      if (columns.sku < 0 || columns.category < 0 || columns.sku === columns.category) return [];
-      const score = Object.values(columns).filter((column) => column >= 0).length + (/inventory|stock/i.test(sheetName) ? 1 : 0);
-      return [{ rows, headerIndex, columns, score }];
+      const nextHeaders = rows[headerIndex + 1] ?? [];
+      const mergedHeaders = headers.map((header, index) => [header, nextHeaders[index]].filter((value) => String(value ?? "").trim()).join(" "));
+      const variants = [
+        { headers, dataIndex: headerIndex + 1 },
+        { headers: mergedHeaders, dataIndex: headerIndex + 2 },
+      ];
+      return variants.flatMap(({ headers: candidateHeaders, dataIndex }) => {
+        const columns = mapHeaders(candidateHeaders);
+        if (columns.sku < 0 || columns.category < 0 || columns.quantity < 0 || new Set([columns.sku, columns.category, columns.quantity]).size < 3) return [];
+        const hasData = rows.slice(dataIndex).some((row) => String(row[columns.sku] ?? "").trim());
+        if (!hasData) return [];
+        const score = Object.values(columns).filter((column) => column >= 0).length + (/inventory|stock/i.test(sheetName) ? 1 : 0);
+        return [{ rows, dataIndex, columns, score }];
+      });
     });
   }).sort((left, right) => right.score - left.score);
   const candidate = candidates[0];
-  if (!candidate) throw new Error("This workbook has no recognizable inventory headers. Include an item number or SKU column and a case code or category column.");
-  const { rows, headerIndex, columns } = candidate;
-  const inventory = rows.slice(headerIndex + 1).map((row, index) => {
+  if (!candidate) throw new Error("This workbook has no recognizable inventory headers. Include an item number or SKU, case code or category, and on-hand quantity column.");
+  const { rows, dataIndex, columns } = candidate;
+  const inventory = rows.slice(dataIndex).map((row, index) => {
     const get = (field) => columns[field] < 0 ? "" : row[columns[field]] ?? "";
     const quantity = Number(String(get("quantity")).replace(/,/g, "").trim()) || 0;
     return { id: `row-${index}`, sku: String(get("sku")).trim(), description: String(get("description")).trim(), style: String(get("style")).trim(), quantity, category: String(get("category")).trim() };

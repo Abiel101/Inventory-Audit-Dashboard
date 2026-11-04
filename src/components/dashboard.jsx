@@ -68,7 +68,7 @@ export function Dashboard({ state, update }) {
   const auditFor = (code) => state.audits.find((audit) => audit.category === code && audit.status !== "completed") ?? state.audits.find((audit) => audit.category === code && audit.status === "completed" && audit.completedAt && dateKey(new Date(audit.completedAt)) === today);
 
   const start = (code) => {
-    const audit = buildAudit(state.inventory, code);
+    const audit = buildAudit(state.inventory, code, undefined, 0, state);
     if (!audit.items.length) return;
     update((current) => ({ ...current, audits: [audit, ...current.audits] }));
     navigate(`/workspace/${audit.id}`);

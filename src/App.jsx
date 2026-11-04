@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ToastProvider, useToast } from "@/components/ui/toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DataTable } from "@/components/data-table";
 import { formatDate, identifiersMatch, defaultLocations, themes, applyTheme, getSavedTheme } from "@/lib/utils";
@@ -68,7 +69,7 @@ function SourceBadge({ state }) {
 function AppShell({ state, storageError, children }) {
   const { pathname } = useLocation();
   return <SidebarProvider>
-    <AppSidebar />
+    <AppSidebar state={state} update={update} />
     <SidebarInset className="bg-slate-50">
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
         <SidebarTrigger className="h-6 w-6 [&_svg]:size-3.5" />
@@ -81,13 +82,31 @@ function AppShell({ state, storageError, children }) {
   </SidebarProvider>;
 }
 
-function AppSidebar() {
+function AppSidebar({ state, update }) {
   const { pathname } = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
+  const toast = useToast();
+  const fileRef = useRef(null);
+  const importSource = async (event) => {
+    const file = event.target.files?.[0]; event.target.value = "";
+    if (!file) return;
+    try {
+      const { inventory, ...source } = await readInventoryFile(file);
+      update((current) => ({ ...current, inventory, ...source }));
+      toast(`Source updated from ${source.sourceName}. Started audits keep their own snapshot.`, { variant: "success" });
+    } catch (error) {
+      toast(error.message || "Could not read this inventory file. The current source was not changed.", { variant: "error", duration: 6000 });
+    }
+  };
   return <Sidebar collapsible="icon">
     <SidebarHeader><div className="flex items-center gap-3"><div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-sky-600 text-sm font-bold text-white">IA</div><div className="min-w-0 group-data-[collapsible=icon]:hidden"><strong className="block truncate text-sm tracking-wide">INVENTORY AUDIT</strong><p className="truncate text-xs text-slate-500">Store operations</p></div></div></SidebarHeader>
     <SidebarContent>
       <SidebarGroup><SidebarGroupLabel>Navigate</SidebarGroupLabel><SidebarGroupContent><SidebarMenu>{navigation.map(([to, label, Icon]) => <SidebarMenuItem key={to}><SidebarMenuButton asChild tooltip={label} isActive={pathname === to || pathname.startsWith(`${to}/`)}><NavLink to={to} onClick={() => isMobile && setOpenMobile(false)}><Icon /><span>{label}</span></NavLink></SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu></SidebarGroupContent></SidebarGroup>
+      <SidebarGroup><SidebarGroupLabel>Inventory source</SidebarGroupLabel><SidebarGroupContent><SidebarMenu><SidebarMenuItem>
+        <SidebarMenuButton tooltip="Upload DY inventory by location" onClick={() => fileRef.current?.click()}><FileUp /><span>Upload inventory</span></SidebarMenuButton>
+        <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" aria-label="Upload inventory by location file" onChange={importSource} />
+      </SidebarMenuItem></SidebarMenu>
+      <p className="truncate px-2 pt-1 text-xs text-slate-500 group-data-[collapsible=icon]:hidden" title={state.sourceName}>{state.sourceName ? `${state.inventory.length.toLocaleString()} rows · ${state.sourceName}` : "No source loaded"}</p></SidebarGroupContent></SidebarGroup>
     </SidebarContent>
     <SidebarFooter className="group-data-[collapsible=icon]:hidden"><p className="rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600"><b className="block text-slate-800">iPad-ready workflow</b>Import, build an audit, scan by location, then export results.</p></SidebarFooter>
     <SidebarRail />
@@ -110,7 +129,7 @@ function AuditBuilder({ state, update }) {
       setImportError(error.message || "Could not read this inventory file.");
     }
   };
-  const createAudits = () => { update((current) => ({ ...current, audits: [...chosen.map((category, index) => buildAudit(current.inventory, category, undefined, index)), ...current.audits] })); navigate("/dashboard"); };  return <div className="space-y-6"><div><p className="text-slate-500">Import a workbook and choose the categories to audit.</p></div><div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="note"><Info className="mt-0.5 h-4 w-4 shrink-0" /><p><b>Manual redos only.</b> Regular monthly audits are started from Monthly status or the Calendar. Use this page only to redo an audit by hand.</p></div>
+  const createAudits = () => { update((current) => ({ ...current, audits: [...chosen.map((category, index) => buildAudit(current.inventory, category, undefined, index, current)), ...current.audits] })); navigate("/dashboard"); };  return <div className="space-y-6"><div><p className="text-slate-500">Import a workbook and choose the categories to audit.</p></div><div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="note"><Info className="mt-0.5 h-4 w-4 shrink-0" /><p><b>Manual redos only.</b> Regular monthly audits are started from Monthly status or the Calendar. Use this page only to redo an audit by hand.</p></div>
     {importError && <p role="alert" className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900">{importError}</p>}
     {!state.inventory.length ? <Card><CardContent className="grid min-h-64 place-items-center p-8 text-center"><div><FileUp className="mx-auto h-10 w-10 text-sky-600" /><h3 className="mt-4 font-semibold">No workbook loaded yet</h3><p className="mt-1 max-w-md text-sm text-slate-500">Import your inventory workbook to automatically group items by case code or category.</p><Button className="mt-5" onClick={() => fileRef.current.click()}>Import workbook</Button><input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={importFile} /></div></CardContent></Card> : <Card><CardHeader><CardTitle>Choose categories</CardTitle><CardDescription>{state.inventory.length.toLocaleString()} inventory rows loaded from {state.sourceName}.</CardDescription></CardHeader><CardContent className="space-y-5"><div className="relative max-w-xl"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><Input value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9 pr-10" placeholder="Search case codes, e.g. bridal, mens, silver ice" aria-label="Search case codes" /><TooltipProvider delayDuration={100}><Tooltip><TooltipTrigger asChild><button type="button" className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded text-slate-400 hover:text-slate-700" aria-label="Search tips"><Info className="h-4 w-4" /></button></TooltipTrigger><TooltipContent side="bottom" align="end" className="max-w-xs text-xs"><p className="font-semibold">Search tips</p><p>Type part of a case code to filter the list.</p><p>Separate several searches with commas to show them together, e.g. <b>bridal, mens, silver ice</b>.</p></TooltipContent></Tooltip></TooltipProvider></div><div className="space-y-6">{groupCodes(categories.map(([category]) => category)).map(([group, codes]) => <section key={group}><div className="mb-2"><h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{group} <span className="font-normal">({codes.length})</span></h4></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{codes.map((category) => { const items = byCategory.get(category); return <button key={category} onClick={() => setChosen((current) => current.includes(category) ? current.filter((value) => value !== category) : [...current, category])} className={`rounded-lg border p-4 text-left transition ${chosen.includes(category) ? "border-sky-600 bg-sky-50" : "border-slate-200 hover:border-slate-400"}`}><p className="font-semibold uppercase">{category}</p><p className="mt-1 text-sm text-slate-500">{items.length} rows · {items.reduce((sum, item) => sum + item.quantity, 0)} units</p></button>; })}</div></section>)}</div><div className="flex items-center justify-between"><p className="text-sm text-slate-500">{chosen.length ? `${chosen.length} categories selected` : "Select one or more categories."}</p><Button disabled={!chosen.length} onClick={createAudits}>Create selected audits</Button></div></CardContent></Card>}</div>;
 }
@@ -151,5 +170,5 @@ function SettingsPage({ state, update }) {
 
 export default function App() {
   const [state, update, storageError] = useAuditState();
-  return <AppShell state={state} storageError={storageError}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell>;
+  return <ToastProvider><AppShell state={state} storageError={storageError}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell></ToastProvider>;
 }

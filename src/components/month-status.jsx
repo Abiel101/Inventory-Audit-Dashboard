@@ -69,7 +69,7 @@ export function MonthStatus({ state, update }) {
   const byCode = new Map(rows.map((row) => [row.code, row]));
 
   const startAudit = (code) => {
-    const audit = buildAudit(state.inventory, code);
+    const audit = buildAudit(state.inventory, code, undefined, 0, state);
     if (!audit.items.length) return;
     update((current) => ({ ...current, audits: [audit, ...current.audits] }));
     navigate(`/workspace/${audit.id}`);

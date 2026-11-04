@@ -107,13 +107,13 @@ export function AuditCalendar({ state, update }) {
   };
   const move = (code, key) => { if (!key) return; saveSchedule({ ...schedule, [code]: key }); goTo(key); };
 
-  const openAudit = (code, sourceInventory) => {
+  const openAudit = (code, sourceInventory, sourceMeta = state) => {
     const related = auditsForMonth(code, selected);
     const open = related.find((audit) => audit.status !== "completed");
     const closed = related.find((audit) => audit.status === "completed");
     const existing = open ?? closed;
     if (existing) return navigate(`/workspace/${existing.id}`);
-    const audit = buildAudit(sourceInventory, code);
+    const audit = buildAudit(sourceInventory, code, undefined, 0, sourceMeta);
     if (!audit.items.length) return setNotice(`No inventory rows found for case code ${code.toUpperCase()}. Upload an inventory source that includes it.`);
     audit.scheduledDate = selected;
     update((current) => ({ ...current, audits: [audit, ...current.audits] }));
@@ -134,7 +134,7 @@ export function AuditCalendar({ state, update }) {
       update((current) => ({ ...current, inventory: nextInventory, ...source }));
       const check = sourceFreshness(nextName, true, todayKey, dateKey(new Date(source.sourceModifiedAt || source.sourceUploadedAt)));
       setNotice(check.status === "fresh" ? `Inventory updated from ${nextName}.` : check.status === "stale" ? `Loaded ${nextName}, but it is dated ${longDate(check.sourceDate)}, not today.` : `Loaded ${nextName}, but no date was found in the file name.`);
-      if (pendingStart) { const code = pendingStart; setPendingStart(null); openAudit(code, nextInventory); }
+      if (pendingStart) { const code = pendingStart; setPendingStart(null); openAudit(code, nextInventory, source); }
     } catch (error) {
       setNotice(error.message || "Could not read this inventory file. The current inventory was not changed.");
     }

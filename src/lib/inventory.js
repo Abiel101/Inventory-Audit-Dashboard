@@ -122,6 +122,7 @@ export function groupCodes(codes) {
   return [...groups];
 }
 
-export function buildAudit(inventory, category, name, index = 0) {
-  return { id: `audit-${Date.now()}-${index}`, name: name || `${category} audit`, category, items: inventory.filter((item) => categoryOf(item) === category), scans: [], completedLocations: [], status: "in-progress", createdAt: new Date().toISOString(), completedAt: null };
+// Items are copied into the audit so later source uploads never change a started audit; "source" records which upload the copy came from.
+export function buildAudit(inventory, category, name, index = 0, source = {}) {
+  return { snapshot: { sourceName: source.sourceName ?? "", sourceUploadedAt: source.sourceUploadedAt ?? "", takenAt: new Date().toISOString() }, id: `audit-${Date.now()}-${index}`, name: name || `${category} audit`, category, items: inventory.filter((item) => categoryOf(item) === category).map((item) => ({ ...item })), scans: [], completedLocations: [], status: "in-progress", createdAt: new Date().toISOString(), completedAt: null };
 }

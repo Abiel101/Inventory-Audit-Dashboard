@@ -17,12 +17,14 @@ const COLORS = {
 const fill = (argb) => ({ type: "pattern", pattern: "solid", fgColor: { argb } });
 const border = { top: { style: "thin", color: { argb: COLORS.line } }, bottom: { style: "thin", color: { argb: COLORS.line } }, left: { style: "thin", color: { argb: COLORS.line } }, right: { style: "thin", color: { argb: COLORS.line } } };
 
+export const caseAbbreviation = (category) => String(category ?? "").split(/\s*[-–—]\s*/)[0].trim().toUpperCase();
+
 export function exportFilename(audit, date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
   const day = `${pad(date.getMonth() + 1)}.${pad(date.getDate())}.${String(date.getFullYear()).slice(-2)}`;
   const time = `${pad(date.getHours() % 12 || 12)}.${pad(date.getMinutes())} ${date.getHours() < 12 ? "AM" : "PM"}`;
   const clean = (value) => String(value ?? "").trim().replace(/[\\/:*?"<>|]+/g, "");
-  return `${[clean(audit.category), clean(audit.completedBy || audit.initials), day, time].filter(Boolean).join(" - ").toUpperCase()}.xlsx`;
+  return `${[clean(caseAbbreviation(audit.category)), clean(audit.completedBy || audit.initials), day, time].filter(Boolean).join(" - ").toUpperCase()}.xlsx`;
 }
 
 function styleHeader(sheet, colors) {
@@ -50,10 +52,11 @@ export async function exportAuditWorkbook(audit, { compareKey }) {
   const expectedRows = [...tally.expected];
   const itemLast = Math.max(expectedRows.length + 1, 2);
   const scanLast = Math.max(audit.scans.length + 1, 2);
+  const descriptionWidth = Math.min(Math.max(...audit.items.map((item) => String(item.description ?? "").length), ...audit.scans.map((scan) => String(scan.description ?? "").length), 20) + 2, 120);
   const lookup = (sku) => audit.items.find((entry) => entry.sku === sku);
 
   items.columns = [
-    { header: "SKU", width: 18 }, { header: "Description", width: 44 }, { header: "Style", width: 16 },
+    { header: "SKU", width: 18 }, { header: "Description", width: descriptionWidth }, { header: "Style", width: 16 },
     { header: "Expected", width: 11 }, { header: "Scanned", width: 11 }, { header: "Variance", width: 11 },
     { header: "Status", width: 14 }, { header: "Notes", width: 40 },
   ];
@@ -76,7 +79,7 @@ export async function exportAuditWorkbook(audit, { compareKey }) {
   items.autoFilter = { from: "A1", to: `H${itemLast}` };
 
   scanned.columns = [
-    { header: "SKU", width: 18 }, { header: "Description", width: 44 }, { header: "Style", width: 16 },
+    { header: "SKU", width: 18 }, { header: "Description", width: descriptionWidth }, { header: "Style", width: 16 },
     { header: "Location", width: 18 }, { header: "Scanned", width: 11 }, { header: "Date / Time", width: 20 },
     { header: "Expected", width: 11 }, { header: "Audit total", width: 12 }, { header: "Result", width: 18 },
   ];
@@ -106,7 +109,7 @@ export async function exportAuditWorkbook(audit, { compareKey }) {
   info.views = [{ showGridLines: false }];
   info.mergeCells("A1:B1");
   const title = info.getCell("A1");
-  title.value = `Audit · ${String(audit.category).toUpperCase()}`;
+  title.value = `Audit · ${caseAbbreviation(audit.category)}`;
   title.fill = fill(COLORS.ink);
   title.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
   title.alignment = { vertical: "middle", indent: 1 };
@@ -140,7 +143,7 @@ export async function exportAuditWorkbook(audit, { compareKey }) {
 
   section("Audit details", COLORS.sky);
   field("Audit", audit.name);
-  field("Case code", String(audit.category).toUpperCase());
+  field("Case code", caseAbbreviation(audit.category));
   field("Status", audit.status === "completed" ? "Closed" : "In progress");
   field("Associate initials", audit.completedBy || audit.initials || "");
   field("Started", audit.startedAt ? new Date(audit.startedAt) : "", "mm/dd/yyyy hh:mm");

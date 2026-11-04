@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AuditPreview } from "@/components/audit-preview";
 import { DeleteGesture } from "@/components/slide-to-delete";
 import { buildAudit, categoryOf, groupCodes } from "@/lib/inventory";
 import { auditProgress, cn, dateKey } from "@/lib/utils";
@@ -36,6 +37,7 @@ export function MonthStatus({ state, update }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(null);
+  const [previewId, setPreviewId] = useState(null);
   const [schedule] = useState(() => readJSON(SCHEDULE_KEY, {}));
   const [allNotes, setAllNotes] = useState(() => readJSON(NOTES_KEY, {}));
   const [draft, setDraft] = useState({ type: issueTypes[0], text: "" });
@@ -114,12 +116,12 @@ export function MonthStatus({ state, update }) {
           const Gesture = row.status === "progress" ? DeleteGesture : Plain;
           return <div key={code}>
             <Gesture label={code} onDelete={() => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== row.audit.id) }))}>
-            <div className="flex flex-wrap items-center gap-3 p-3 md:px-4">
+            <div className={cn("flex flex-wrap items-center gap-3 p-3 md:px-4", row.status === "progress" && "cursor-pointer hover:bg-slate-50")} {...(row.status === "progress" ? { role: "button", tabIndex: 0, "aria-label": `Preview ${code} audit`, onClick: () => setPreviewId(row.audit.id), onKeyDown: (event) => event.target === event.currentTarget && (event.key === "Enter" || event.key === " ") && setPreviewId(row.audit.id) } : {})}>
               <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", meta.chip)}><Icon className={cn("h-4 w-4", row.status === "progress" && "animate-spin")} /></span>
               <div className="min-w-0 flex-1"><p className="truncate font-semibold uppercase">{code}</p><p className="text-xs text-slate-500">{[row.status === "scheduled" && row.scheduledOn && `Scheduled ${new Date(`${row.scheduledOn}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`, row.audit && `${row.progress}% scanned`, row.completedAt && row.status !== "progress" && `Closed ${new Date(row.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}${row.completedBy ? ` by ${row.completedBy}` : ""}`].filter(Boolean).join(" · ") || "No activity yet this month"}</p></div>
               <Badge className={cn("border-transparent", meta.chip)}>{meta.label}</Badge>
               {row.notes.length > 0 && <Badge variant="warning">{row.notes.length} {row.notes.length === 1 ? "issue" : "issues"}</Badge>}
-              <div className="flex gap-2">
+              <div className="flex gap-2" onClick={(event) => event.stopPropagation()}>
                 {(row.status === "notStarted" || row.status === "scheduled") && <Button size="sm" onClick={() => startAudit(code)}><Play className="h-3.5 w-3.5" />Start</Button>}
                 {row.status === "progress" && <Button size="sm" onClick={() => navigate(`/workspace/${row.audit.id}`)}>Continue</Button>}
                 {(row.status === "complete" || row.status === "issues") && row.audit && <Button size="sm" variant="outline" onClick={() => navigate(`/workspace/${row.audit.id}`)}>View</Button>}
@@ -138,5 +140,6 @@ export function MonthStatus({ state, update }) {
           </div>; })}</CardContent></Card>
       </section>) : <p className="text-sm text-slate-500">No case codes match this filter.</p>}</div>
     </>}
+    <AuditPreview audit={state.audits.find((audit) => audit.id === previewId)} onClose={() => setPreviewId(null)} />
   </div>;
 }

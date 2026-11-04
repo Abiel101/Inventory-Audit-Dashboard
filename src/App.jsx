@@ -68,18 +68,31 @@ function SourceBadge({ state }) {
   return <Badge variant={variant} className="max-w-[55vw] truncate" title={hover}>Source: {state.sourceName}{detail ? ` · ${detail}` : ""}</Badge>;
 }
 
+// Keeps the sidebar closed on tablet-sized and portrait screens (e.g. iPad) so content gets the full width.
+function CollapseOnTablet() {
+  const { setOpen } = useSidebar();
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1023px)");
+    const collapse = () => query.matches && setOpen(false);
+    query.addEventListener("change", collapse);
+    return () => query.removeEventListener("change", collapse);
+  }, []);
+  return null;
+}
+
 function AppShell({ state, update, storageError, children }) {
   const { pathname } = useLocation();
-  return <SidebarProvider>
+  return <SidebarProvider defaultOpen={false}>
+    <CollapseOnTablet />
     <AppSidebar state={state} update={update} />
-    <SidebarInset className="bg-slate-50">
+    <SidebarInset className="min-w-0 overflow-x-hidden bg-slate-50">
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
         <SidebarTrigger className="h-6 w-6 [&_svg]:size-3.5" />
         <div className="min-w-0 flex-1"><h1 id="page-title" tabIndex={-1} className="truncate text-xl font-bold">{pageTitle(pathname)}</h1></div>
         <SourceBadge state={state} />
       </header>
       {storageError && <p role="alert" className="border-b border-amber-300 bg-amber-50 px-5 py-3 text-sm text-amber-900">The latest changes could not be saved in this browser (storage may be full). They will be lost when this tab closes; export any needed audits and free browser storage before continuing.</p>}
-      <div key={pathname} className="mx-auto w-full max-w-7xl p-5 md:p-8">{children}</div>
+      <div key={pathname} className="mx-auto w-full min-w-0 max-w-7xl p-3 sm:p-4 lg:p-8">{children}</div>
     </SidebarInset>
   </SidebarProvider>;
 }

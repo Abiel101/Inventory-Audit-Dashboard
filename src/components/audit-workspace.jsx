@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { DataTable } from "@/components/data-table";
 import { auditProgress, auditTally, cn, formatDate, identifiersMatch, scanKey } from "@/lib/utils";
 import { categoryOf, readInventoryFile } from "@/lib/inventory";
-import { exportAuditWorkbook } from "@/lib/export";
+import { caseAbbreviation, exportAuditWorkbook } from "@/lib/export";
 
 const compareKey = (value) => { const key = scanKey(value); return /^\d+$/.test(key) ? key.replace(/^0+(?=\d)/, "") : key; };
 
@@ -46,6 +46,9 @@ export function AuditWorkspace({ state, update }) {
   const [notice, setNotice] = useState("");
   const [uploaded, setUploaded] = useState(null);
   const [uploadError, setUploadError] = useState("");
+  const [inputMode, setInputMode] = useState("sku");
+  const [unlocking, setUnlocking] = useState(false);
+  const [unlockCode, setUnlockCode] = useState("");
   const [noteDraft, setNoteDraft] = useState(audit?.finalNote ?? "");
 
   useEffect(() => {
@@ -59,6 +62,8 @@ export function AuditWorkspace({ state, update }) {
   const tally = useMemo(() => (audit ? auditTally(audit) : null), [audit]);
   if (!audit) return <Empty title="No audit selected" detail="Start an audit from the dashboard or calendar to begin scanning." />;
 
+  const displayName = String(audit.name).startsWith(audit.category) ? String(audit.name).replace(audit.category, caseAbbreviation(audit.category)) : audit.name;
+  const byStyle = inputMode === "style";
   const closed = audit.status === "completed";
   const phase = closed ? "closed" : audit.phase ?? (audit.scans.length ? "paused" : "ready");
   const progress = auditProgress(audit);
@@ -71,7 +76,7 @@ export function AuditWorkspace({ state, update }) {
   const start = () => { if (!cleanInitials) return; patch({ phase: "running", initials: cleanInitials, startedAt: audit.startedAt ?? new Date().toISOString() }); setNotice(""); };
   const saveAndClose = () => { patch({ phase: "paused" }); navigate("/dashboard"); requestAnimationFrame(() => document.getElementById("page-title")?.focus()); };
   const finish = () => { if (!cleanInitials) return; patch({ status: "completed", phase: "closed", initials: cleanInitials, completedBy: cleanInitials, completedAt: new Date().toISOString() }); setConfirming(false); setTab("scan"); requestAnimationFrame(() => document.getElementById("workspace-title")?.focus()); };
-  const reopen = () => { if (window.prompt("Enter the code to edit this completed audit") !== "0808") return toast("Incorrect code", { variant: "error" }); patch({ status: "in-progress", phase: "running", completedAt: null, completedBy: null }); setTab("scan"); };
+  const reopen = () => { if (unlockCode.trim() !== "0808") return toast("Incorrect code", { variant: "error" }); setUnlocking(false); setUnlockCode(""); patch({ status: "in-progress", phase: "running", completedAt: null, completedBy: null }); setTab("scan"); };
   const snapshot = audit.snapshot ?? { sourceName: "", sourceUploadedAt: "", takenAt: audit.createdAt };
   const snapshotLabel = `Snapshot of ${snapshot.sourceName || "inventory source"} taken ${new Date(snapshot.takenAt || audit.createdAt).toLocaleString()}`;
   const refreshItems = () => {
@@ -86,7 +91,7 @@ export function AuditWorkspace({ state, update }) {
 
   const addScan = () => {
     if (!locationName || !sku.trim()) return;
-    const reference = audit.items.find((item) => identifiersMatch(item.sku, sku)) ?? audit.items.find((item) => identifiersMatch(item.style, sku));
+    const reference = byStyle ? audit.items.find((item) => identifiersMatch(item.style, sku)) : audit.items.find((item) => identifiersMatch(item.sku, sku)) ?? audit.items.find((item) => identifiersMatch(item.style, sku));
     patch({ scans: [...audit.scans, { id: crypto.randomUUID(), sku: reference?.sku ?? sku.trim(), description: reference?.description ?? "", style: reference?.style ?? "", qty: 1, section: audit.sectionsCompleted ?? 0, location: locationName, timestamp: new Date().toISOString() }] });
     setSku("");
   };
@@ -128,7 +133,7 @@ export function AuditWorkspace({ state, update }) {
     { accessorKey: "description", header: "Description", meta: "wide", cell: ({ getValue }) => getValue() ? <Tooltip><TooltipTrigger asChild><span className="block w-[16rem] max-w-[16rem] cursor-default truncate whitespace-nowrap">{getValue()}</span></TooltipTrigger><TooltipContent className="max-w-md">{getValue()}</TooltipContent></Tooltip> : null },
     { accessorKey: "style", header: "Style" },
     { accessorKey: "location", header: "Location" },
-    { id: "case", header: "Case code", accessorFn: (scan) => tally.status(scan) === "extra" ? caseFor(scan) ?? "Unknown" : audit.category, cell: ({ row, getValue }) => tally.status(row.original) === "extra" ? <span className="font-semibold uppercase">{caseFor(row.original) ? `In ${getValue()}` : "Not in any inventory case"}</span> : <span className="uppercase">{getValue()}</span> },
+    { id: "case", header: "Case code", accessorFn: (scan) => tally.status(scan) === "extra" ? caseFor(scan) ? caseAbbreviation(caseFor(scan)) : "Unknown" : caseAbbreviation(audit.category), cell: ({ row, getValue }) => tally.status(row.original) === "extra" ? <span className="font-semibold uppercase">{caseFor(row.original) ? `In ${getValue()}` : "Not in any inventory case"}</span> : <span className="uppercase">{getValue()}</span> },
     { accessorKey: "qty", header: "Scanned" },
     { id: "total", header: "Audit total", accessorFn: (scan) => tally.totalFor(scan).total, cell: ({ row }) => { const { total, expected } = tally.totalFor(row.original); return expected === null ? `${total} / —` : `${total} / ${expected}`; } },
     { id: "result", header: "Result", accessorFn: (scan) => tally.status(scan), cell: ({ getValue }) => <Badge variant={resultVariant[getValue()]}>{resultLabel[getValue()]}</Badge> },
@@ -140,26 +145,26 @@ export function AuditWorkspace({ state, update }) {
 
   const view = closed && tab === "scan" ? "items" : tab;
   const tabList = closed ? [["items", "Audit"], ["research", "Research"]] : [["scan", "Scan"], ["items", "Audit"], ["research", "Research"]];
-  const tabs = <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-1 text-sm" role="tablist">
-    {tabList.map(([value, label]) => <button key={value} role="tab" aria-selected={view === value} onClick={() => value === "research" && !closed ? toast("Not available until audit is completed", { variant: "error" }) : setTab(value)} className={cn("flex items-center gap-1.5 rounded-md px-4 py-1.5 font-medium", view === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{value === "research" && <FlaskConical className="h-4 w-4" />}{label}</button>)}
+  const tabs = <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-xs" role="tablist">
+    {tabList.map(([value, label]) => <button key={value} role="tab" aria-selected={view === value} onClick={() => value === "research" && !closed ? toast("Not available until audit is completed", { variant: "error" }) : setTab(value)} className={cn("flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium", view === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{value === "research" && <FlaskConical className="h-3.5 w-3.5" />}{label}</button>)}
   </div>;
 
   const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
 
   const sidebar = <div>
-      <Card><CardHeader><CardTitle>Completed sections</CardTitle></CardHeader><CardContent className="space-y-2 text-sm">
+      <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle></CardHeader><CardContent className="space-y-1 p-3 pt-0 text-[11px] leading-tight">
         {locationSummary.length ? locationSummary.map(([name, units]) => <div key={name} className="flex items-center justify-between gap-2"><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant="success">Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></div>) : <p className="text-slate-500">No sections scanned yet.</p>}
       </CardContent></Card>
     </div>;
 
   const scanPanel = <div className="space-y-5">
-      {phase === "running" && <Card><CardHeader className="p-4 pb-2"><CardTitle className="text-base">Scan items</CardTitle><CardDescription className="text-xs">Scan each item individually; every scan counts as one unit.</CardDescription></CardHeader><CardContent className="p-4 pt-0">
+      {phase === "running" && <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Scan items</CardTitle><CardDescription className="text-[11px]">Scan each item individually; every scan counts as one unit.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs">
         <div className="grid gap-2 md:grid-cols-3">
-          <select aria-label="Location" className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm" value={locationName} onChange={(event) => setLocationName(event.target.value)}><option value="">Select a location...</option>{state.locations.map((value) => <option key={value}>{value}</option>)}</select>
-          <Input autoFocus value={sku} onChange={(event) => setSku(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addScan()} placeholder="Scan or type SKU" />
-          <Button disabled={!locationName || !sku.trim()} onClick={addScan}>Add SKU</Button>
+          <select aria-label="Location" className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs" value={locationName} onChange={(event) => setLocationName(event.target.value)}><option value="">Select a location...</option>{state.locations.map((value) => <option key={value}>{value}</option>)}</select>
+          <Input autoFocus className="h-8 text-xs" inputMode={byStyle ? "text" : "numeric"} value={sku} onChange={(event) => setSku(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addScan()} placeholder={byStyle ? "Scan or type style number" : "Scan or type SKU"} />
+          <Button size="sm" className="h-8 text-xs" disabled={!locationName || !sku.trim()} onClick={addScan}>{byStyle ? "Add style" : "Add SKU"}</Button>
         </div>
-        <div className="mt-2"><Button size="sm" variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button></div>
+        <div className="mt-2 flex flex-wrap items-center gap-2"><Button size="sm" className="h-8 text-xs" variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button><div className="flex rounded-md border border-slate-300 bg-white p-0.5 text-xs" role="group" aria-label="Input type">{[["sku", "SKU"], ["style", "Style #"]].map(([value, label]) => <button key={value} type="button" aria-pressed={inputMode === value} onClick={() => setInputMode(value)} className={cn("rounded px-2.5 py-1 font-medium", inputMode === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{label}</button>)}</div></div>
       </CardContent></Card>}
       <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable columns={columns} data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
     </div>;
@@ -236,7 +241,7 @@ export function AuditWorkspace({ state, update }) {
         <SheetTitle className="sr-only">Audit in progress</SheetTitle>
         <SheetDescription className="sr-only">Scan inventory in the active audit, then save progress or complete the audit.</SheetDescription>
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-5 py-3">
-        <div className="min-w-0 flex-1"><Badge variant="warning">Audit in progress</Badge><h2 className="mt-1 truncate text-xl font-bold uppercase">{audit.name}</h2><p className="text-xs text-slate-500"><span className="uppercase">{audit.category}</span> · Associate {audit.initials}</p></div>
+        <div className="min-w-0 flex-1"><Badge variant="warning">Audit in progress</Badge><h2 className="mt-1 truncate text-xl font-bold uppercase">{displayName}</h2><p className="text-xs text-slate-500"><span className="uppercase">{caseAbbreviation(audit.category)}</span> · Associate {audit.initials}</p></div>
         {confirming ? <div className="flex flex-wrap items-end gap-2">{initialsField("Associate initials")}<Button disabled={!cleanInitials} onClick={finish}><CheckCircle2 className="h-4 w-4" />Confirm complete</Button><Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button></div>
           : <div className="flex flex-wrap gap-2">{updateButton()}<Button variant="outline" onClick={saveAndClose}><Save className="h-4 w-4" />Close &amp; save progress</Button><Button onClick={() => setConfirming(true)}><CheckCircle2 className="h-4 w-4" />Complete audit</Button></div>}
       </div>
@@ -246,7 +251,7 @@ export function AuditWorkspace({ state, update }) {
   }
 
   return <div className="space-y-6">
-    <div className="flex flex-wrap items-start justify-between gap-4"><div><Badge variant={closed ? "success" : "warning"}>{closed ? "Audit closed" : phase === "paused" ? "Progress saved" : "Ready to start"}</Badge><h2 id="workspace-title" tabIndex={-1} className="mt-3 text-2xl font-bold uppercase">{audit.name}</h2><p className="mt-1 text-slate-500"><span className="uppercase">{audit.category}</span> · {audit.items.length} reference SKUs · {snapshotLabel}{audit.initials ? ` · Associate ${closed ? audit.completedBy ?? audit.initials : audit.initials}` : ""}</p></div>{closed && <div className="flex gap-2"><Button onClick={reopen}><Pencil className="h-4 w-4" />Edit audit</Button><Button variant="outline" onClick={exportAudit}><Download className="h-4 w-4" />Export results</Button></div>}</div>
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><Badge variant={closed ? "success" : "warning"}>{closed ? "Audit closed" : phase === "paused" ? "Progress saved" : "Ready to start"}</Badge><h2 id="workspace-title" tabIndex={-1} className="mt-3 text-2xl font-bold uppercase">{displayName}</h2><p className="mt-1 text-slate-500"><span className="uppercase">{caseAbbreviation(audit.category)}</span> · {audit.items.length} reference SKUs · {snapshotLabel}{audit.initials ? ` · Associate ${closed ? audit.completedBy ?? audit.initials : audit.initials}` : ""}</p></div>{closed && <div className="flex flex-wrap items-center gap-2">{unlocking ? <><Input autoFocus type="password" inputMode="numeric" className="h-9 w-36" value={unlockCode} placeholder="Manager code" aria-label="Manager code" onChange={(event) => setUnlockCode(event.target.value)} onKeyDown={(event) => event.key === "Enter" && reopen()} /><Button onClick={reopen}><Pencil className="h-4 w-4" />Unlock</Button><Button variant="ghost" onClick={() => { setUnlocking(false); setUnlockCode(""); }}>Cancel</Button></> : <Button onClick={() => setUnlocking(true)}><Pencil className="h-4 w-4" />Edit audit</Button>}<Button variant="outline" onClick={exportAudit}><Download className="h-4 w-4" />Export results</Button></div>}</div>
     {notice && <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm" role="status">{notice}</div>}
     {!closed && <Card><CardHeader><CardTitle>{phase === "paused" ? "Resume audit" : "Start audit"}</CardTitle><CardDescription>{phase === "paused" ? "Your progress is saved. This audit keeps its own snapshot of the inventory; use the update button only if you want the latest source." : "This audit uses a snapshot of the inventory taken when it was started, so new source uploads won't change it. Enter the associate's initials, then start. The workspace stays focused until you complete or close the audit."}</CardDescription></CardHeader><CardContent className="flex flex-wrap items-end gap-3">
       {initialsField("Associate initials")}

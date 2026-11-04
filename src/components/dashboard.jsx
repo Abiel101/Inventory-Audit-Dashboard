@@ -81,7 +81,7 @@ export function Dashboard({ state, update }) {
 
   return <div className="space-y-6">
     <p className="text-slate-500">What's scheduled today, what's still open, and what was finished recently.</p>
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 min-[560px]:grid-cols-2 lg:gap-4 xl:grid-cols-4">
       <Stat label="Completed this month" value={`${completedThisMonth.size} / ${codes.size}`} detail={`${remaining} not completed`} icon={CheckCircle2} tone="green" />
       <Stat label="In progress" value={inProgress.length} icon={ClipboardList} tone="yellow" />
       <Stat label="Reference SKUs" value={state.inventory.length.toLocaleString()} icon={PackageSearch} tone="cyan" />

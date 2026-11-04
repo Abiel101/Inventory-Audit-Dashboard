@@ -233,7 +233,7 @@ export function AuditWorkspace({ state, update }) {
     <DataTable columns={researchColumns} data={comparison} searchPlaceholder="Search SKUs..." rowClassName={(r) => r.changed ? "bg-amber-50 hover:bg-amber-50" : ""} />
   </CardContent></Card>;
 
-  const content = tab === "items" ? <div className="flex min-w-0 flex-col gap-3 pb-6"><div className="w-fit">{tabs}</div>{progressBar}{itemsPanel}</div> : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{tab === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{tab === "scan" ? scanPanel : tab === "items" ? itemsPanel : researchPanel}</div></div>;
+  const content = phase === "paused" ? <div className="flex min-w-0 flex-col gap-3 pb-6">{progressBar}{itemsPanel}</div> : tab === "items" ? <div className="flex min-w-0 flex-col gap-3 pb-6"><div className="w-fit">{tabs}</div>{progressBar}{itemsPanel}</div> : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{tab === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{tab === "scan" ? scanPanel : tab === "items" ? itemsPanel : researchPanel}</div></div>;
 
   const initialsField = (label) => <label className="grid gap-1 text-sm font-medium">{label}<Input className="w-48 uppercase" maxLength={5} value={initials} onChange={(event) => setInitials(event.target.value)} placeholder="e.g. AB" /></label>;
 

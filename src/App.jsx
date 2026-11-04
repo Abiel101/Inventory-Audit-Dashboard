@@ -35,7 +35,9 @@ function useAuditState() {
     try {
       const saved = { ...initialState, ...JSON.parse(localStorage.getItem(storageKey)) };
       const isLegacyList = saved.locations.length === legacyLocations.length && legacyLocations.every((value, index) => saved.locations[index] === value);
-      return isLegacyList ? { ...saved, locations: defaultLocations } : saved;
+      if (isLegacyList) return { ...saved, locations: defaultLocations };
+      if (!saved.bopisAdded) return { ...saved, bopisAdded: true, locations: saved.locations.some((value) => value.toLowerCase() === "bopis") ? saved.locations : [...saved.locations, "BOPIS"] };
+      return saved;
     } catch { return initialState; }
   });
   const stateRef = useRef(state);

@@ -18,6 +18,7 @@ export const defaultLocations = [
   "Vault ICM Bin",
   "Vault Retags",
   "Vault",
+  "BOPIS",
   ...["Adam", "Mandy", "Jose", "Roman", "Donovan", "Saima", "Larkin", "Virginia", "Dennis", "Roberto", "Sunita", "Christopher"].map((name) => `BA bin: ${name}`),
 ];
 

@@ -115,7 +115,7 @@ function AppSidebar({ state, update }) {
   };
   return <Sidebar collapsible="icon">
     <SidebarHeader><div className="flex items-center gap-3"><div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-sky-600 text-sm font-bold text-white">IA</div><div className="min-w-0 group-data-[collapsible=icon]:hidden"><strong className="block truncate text-sm tracking-wide">INVENTORY AUDIT</strong><p className="truncate text-xs text-slate-500">Store operations</p></div></div></SidebarHeader>
-    <SidebarContent>
+    <SidebarContent className="overflow-hidden">
       <SidebarGroup><SidebarGroupLabel>Navigate</SidebarGroupLabel><SidebarGroupContent><SidebarMenu>{navigation.map(([to, label, Icon]) => <SidebarMenuItem key={to}><SidebarMenuButton asChild tooltip={label} isActive={pathname === to || pathname.startsWith(`${to}/`)}><NavLink to={to} onClick={() => isMobile && setOpenMobile(false)}><Icon /><span>{label}</span></NavLink></SidebarMenuButton></SidebarMenuItem>)}</SidebarMenu></SidebarGroupContent></SidebarGroup>
       <SidebarGroup><SidebarGroupLabel>Inventory source</SidebarGroupLabel><SidebarGroupContent><SidebarMenu><SidebarMenuItem>
         <SidebarMenuButton tooltip="Upload DY inventory by location" onClick={() => fileRef.current?.click()}><FileUp /><span>Upload inventory</span></SidebarMenuButton>

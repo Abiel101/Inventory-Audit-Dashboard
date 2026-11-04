@@ -160,15 +160,15 @@ export function AuditWorkspace({ state, update }) {
     {[["scan", "Scan"], ["research", "Research"]].map(([value, label]) => <button key={value} role="tab" aria-selected={tab === value} onClick={() => value === "research" && !closed ? toast("Not available until audit is completed", { variant: "error" }) : setTab(value)} className={cn("flex items-center gap-1.5 rounded-md px-4 py-1.5 font-medium", tab === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{value === "research" && <FlaskConical className="h-4 w-4" />}{label}</button>)}
   </div>;
 
-  const progressBar = <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
+  const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
 
-  const scanPanel = <div className="grid items-start gap-5 lg:grid-cols-[18rem_1fr]">
-    <div>
+  const sidebar = <div>
       <Card><CardHeader><CardTitle>Completed sections</CardTitle></CardHeader><CardContent className="space-y-2 text-sm">
         {locationSummary.length ? locationSummary.map(([name, units]) => <div key={name} className="flex items-center justify-between gap-2"><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant="success">Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></div>) : <p className="text-slate-500">No sections scanned yet.</p>}
       </CardContent></Card>
-    </div>
-    <div className="space-y-5">
+    </div>;
+
+  const scanPanel = <div className="space-y-5">
       {phase === "running" && <Card><CardHeader><CardTitle>Scan items</CardTitle><CardDescription>Scan each item individually; every scan counts as one unit.</CardDescription></CardHeader><CardContent>
         <div className="grid gap-3 md:grid-cols-3">
           <select aria-label="Location" className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm" value={locationName} onChange={(event) => setLocationName(event.target.value)}><option value="">Select a location...</option>{state.locations.map((value) => <option key={value}>{value}</option>)}</select>
@@ -178,8 +178,7 @@ export function AuditWorkspace({ state, update }) {
         <div className="mt-3"><Button variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button></div>
       </CardContent></Card>}
       <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle>Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent><TooltipProvider delayDuration={100}><DataTable columns={columns} data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
-    </div>
-  </div>;
+    </div>;
 
   const reference = compareId === "uploaded" ? uploaded : others.find((item) => item.id === compareId) ? (() => { const past = others.find((item) => item.id === compareId); return { id: past.id, label: `${past.name.toUpperCase()} · ${formatDate(past.createdAt)}`, items: past.items, scans: past.scans }; })() : null;
   const comparison = (() => {
@@ -218,7 +217,7 @@ export function AuditWorkspace({ state, update }) {
     <DataTable columns={researchColumns} data={comparison} searchPlaceholder="Search SKUs..." rowClassName={(r) => r.changed ? "bg-amber-50 hover:bg-amber-50" : ""} />
   </CardContent></Card>;
 
-  const content = <div className="space-y-5"><div className="flex flex-wrap items-center gap-3">{tabs}{progressBar}</div>{tab === "scan" ? scanPanel : researchPanel}</div>;
+  const content = <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{tab === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5">{progressBar}{tab === "scan" ? scanPanel : researchPanel}</div></div>;
 
   const initialsField = (label) => <label className="grid gap-1 text-sm font-medium">{label}<Input className="w-48 uppercase" maxLength={5} value={initials} onChange={(event) => setInitials(event.target.value)} placeholder="e.g. AB" /></label>;
 

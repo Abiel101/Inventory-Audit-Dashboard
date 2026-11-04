@@ -4,6 +4,7 @@ import { AlertTriangle, CalendarDays, CheckCircle2, CircleDashed, ClipboardList,
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SlideToDelete } from "@/components/slide-to-delete";
 import { buildAudit, categoryOf } from "@/lib/inventory";
 import { auditProgress, cn, dateKey } from "@/lib/utils";
 
@@ -37,13 +38,14 @@ function Section({ title, description, count, empty, children }) {
   </section>;
 }
 
-function Row({ kind, title, detail, action }) {
+function Row({ kind, title, detail, action, extra }) {
   const meta = chips[kind]; const Icon = meta.icon;
   return <div className="flex flex-wrap items-center gap-3 p-3 md:px-4">
     <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", meta.chip)}><Icon className={cn("h-4 w-4", kind === "progress" && "animate-spin")} /></span>
     <div className="min-w-0 flex-1"><p className="truncate font-semibold uppercase">{title}</p><p className="text-xs text-slate-500">{detail}</p></div>
     <Badge className={cn("border-transparent", meta.chip)}>{meta.label}</Badge>
     {action}
+    {extra && <div className="flex w-full justify-end">{extra}</div>}
   </div>;
 }
 
@@ -73,6 +75,7 @@ export function Dashboard({ state, update }) {
     update((current) => ({ ...current, audits: [audit, ...current.audits] }));
     navigate(`/workspace/${audit.id}`);
   };
+  const deleteAudit = (id) => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== id) }));
   const open = (audit, label, outline) => <Button size="sm" variant={outline ? "outline" : "default"} onClick={() => navigate(`/workspace/${audit.id}`)}>{label}</Button>;
 
   return <div className="space-y-6">
@@ -93,7 +96,7 @@ export function Dashboard({ state, update }) {
     </Section>
 
     <Section title="In progress" count={inProgress.length} empty="No audits running right now.">
-      {inProgress.map((audit) => <Row key={audit.id} kind="progress" title={audit.category || audit.name} detail={`${auditProgress(audit)}% scanned · started ${shortDate(audit.startedAt || audit.createdAt)}${audit.initials ? ` by ${audit.initials}` : ""}`} action={open(audit, "Continue")} />)}
+      {inProgress.map((audit) => <Row key={audit.id} kind="progress" title={audit.category || audit.name} detail={`${auditProgress(audit)}% scanned · started ${shortDate(audit.startedAt || audit.createdAt)}${audit.initials ? ` by ${audit.initials}` : ""}`} action={open(audit, "Continue")} extra={<SlideToDelete label={audit.category || audit.name} onDelete={() => deleteAudit(audit.id)} />} />)}
     </Section>
 
     <Section title="Not completed" description="Closed before every item was found" count={notCompleted.length} empty="Nothing left unfinished.">

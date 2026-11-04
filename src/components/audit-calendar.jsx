@@ -79,6 +79,8 @@ export function AuditCalendar({ state, update }) {
     return scans.length || closed ? [{ audit, scans: scans.length, units: scans.reduce((total, scan) => total + (Number(scan.qty) || 0), 0), locations: [...new Set(scans.map((scan) => scan.location))], closed }] : [];
   });
 
+  const closedOn = (key) => audits.filter((audit) => audit.status === "completed" && audit.completedAt && dateKey(new Date(audit.completedAt)) === key);
+
   const byDay = useMemo(() => Object.entries(schedule).reduce((groups, [code, key]) => { (groups[key] ??= []).push(code); return groups; }, {}), [schedule]);
   const gridStart = new Date(month.getFullYear(), month.getMonth(), 1 - month.getDay());
   const cells = Array.from({ length: 42 }, (_, index) => new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index));
@@ -169,11 +171,13 @@ export function AuditCalendar({ state, update }) {
         <div className="grid grid-cols-7 gap-1">{weekdays.map((day) => <span key={day} className="py-1 text-center text-xs font-medium text-slate-500">{day}</span>)}</div>
         <div className="grid grid-cols-7 gap-1">{cells.map((date) => {
           const key = dateKey(date); const codes = byDay[key] ?? []; const hasActivity = dayActivity(key).length > 0;
+          const done = closedOn(key).filter((audit, index, list) => list.findIndex((other) => other.category === audit.category) === index);
+          const shown = [...codes.map((code) => ({ code, status: codeStatus(code, key) })), ...done.filter((audit) => !codes.includes(audit.category)).map((audit) => ({ code: audit.category, status: auditProgress(audit) >= 100 ? "complete" : "research" }))];
           return <button key={key} type="button" onClick={() => { setSelected(key); setDayOpen(scheduling); setPendingStart(null); }} className={cn("flex min-h-[58px] flex-col items-stretch gap-0.5 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 text-left hover:border-sky-500 md:min-h-[96px] md:p-1.5", date.getMonth() !== month.getMonth() && "opacity-45", key === todayKey && "border-sky-600", key === selected && "outline outline-2 outline-sky-600")}>
             <b className={cn("text-xs", key === todayKey && "text-sky-700")}>{date.getDate()}</b>
-            {codes.slice(0, 3).map((code) => <Chip key={code} code={code} status={codeStatus(code, key)} />)}
-            {codes.length > 3 && <small className="text-[10px] text-slate-500">+{codes.length - 3} more</small>}
-            {hasActivity && !codes.length && <small className="text-[10px] text-slate-500">activity</small>}
+            {shown.slice(0, 3).map(({ code, status }) => <Chip key={code} code={code} status={status} />)}
+            {shown.length > 3 && <small className="text-[10px] text-slate-500">+{shown.length - 3} more</small>}
+            {hasActivity && !shown.length && <small className="text-[10px] text-slate-500">activity</small>}
           </button>;
         })}</div>
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">{Object.entries(statusLabel).map(([status, label]) => <span key={status} className="flex items-center gap-1.5"><i className={cn("inline-block h-2.5 w-2.5 rounded-sm", statusStyle[status])} />{status === "complete" ? "Complete (100%)" : status === "research" ? "Closed · needs research (<100%)" : label}</span>)}</div>

@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { SlideToDelete } from "@/components/slide-to-delete";
+import { DeleteGesture } from "@/components/slide-to-delete";
 import { buildAudit, categoryOf, groupCodes } from "@/lib/inventory";
 import { auditProgress, cn, dateKey } from "@/lib/utils";
 
+const Plain = ({ children }) => children;
 const SCHEDULE_KEY = "inventory-audit-schedule";
 const NOTES_KEY = "inventory-audit-month-notes";
 
@@ -110,7 +111,9 @@ export function MonthStatus({ state, update }) {
       <div className="space-y-6">{groups.length ? groups.map(([group, codes]) => <section key={group}>
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">{group} <span className="font-normal">({codes.length})</span></h3>
         <Card><CardContent className="divide-y divide-slate-200 p-0">{codes.map((code) => { const row = byCode.get(code); const meta = statuses[row.status]; const Icon = meta.icon; const expanded = open === code;
+          const Gesture = row.status === "progress" ? DeleteGesture : Plain;
           return <div key={code}>
+            <Gesture label={code} onDelete={() => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== row.audit.id) }))}>
             <div className="flex flex-wrap items-center gap-3 p-3 md:px-4">
               <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", meta.chip)}><Icon className={cn("h-4 w-4", row.status === "progress" && "animate-spin")} /></span>
               <div className="min-w-0 flex-1"><p className="truncate font-semibold uppercase">{code}</p><p className="text-xs text-slate-500">{[row.status === "scheduled" && row.scheduledOn && `Scheduled ${new Date(`${row.scheduledOn}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`, row.audit && `${row.progress}% scanned`, row.completedAt && row.status !== "progress" && `Closed ${new Date(row.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}${row.completedBy ? ` by ${row.completedBy}` : ""}`].filter(Boolean).join(" · ") || "No activity yet this month"}</p></div>
@@ -122,8 +125,8 @@ export function MonthStatus({ state, update }) {
                 {(row.status === "complete" || row.status === "issues") && row.audit && <Button size="sm" variant="outline" onClick={() => navigate(`/workspace/${row.audit.id}`)}>View</Button>}
                 <Button size="sm" variant={expanded ? "default" : "outline"} aria-expanded={expanded} onClick={() => setOpen(expanded ? null : code)}><NotebookPen className="h-3.5 w-3.5" />Notes</Button>
               </div>
-              {row.status === "progress" && <div className="flex w-full justify-end"><SlideToDelete label={code} onDelete={() => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== row.audit.id) }))} /></div>}
             </div>
+            </Gesture>
             {expanded && <div className="space-y-3 border-t border-slate-200 bg-slate-50 p-4">
               {row.notes.length ? row.notes.map((note) => <div key={note.id} className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm"><Badge variant="warning" className="shrink-0">{note.type}</Badge><div className="min-w-0 flex-1"><p className="whitespace-pre-wrap break-words">{note.text}</p><p className="mt-1 text-xs text-slate-500">{new Date(note.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p></div><Button variant="ghost" size="icon" aria-label="Delete note" onClick={() => removeNote(code, note.id)}><Trash2 className="h-4 w-4" /></Button></div>) : <p className="text-sm text-slate-500">No issues logged for {monthLabel(month)}. Log an IMOD, a LOSS, or anything else under Other.</p>}
               <div className="grid gap-2 md:grid-cols-[12rem_1fr_auto]">

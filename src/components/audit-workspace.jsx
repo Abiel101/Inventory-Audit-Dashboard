@@ -46,6 +46,8 @@ export function AuditWorkspace({ state, update }) {
   const [notice, setNotice] = useState("");
   const [uploaded, setUploaded] = useState(null);
   const [uploadError, setUploadError] = useState("");
+  const [slugDraft, setSlugDraft] = useState(audit?.slug ?? "");
+  const [noteDraft, setNoteDraft] = useState(audit?.finalNote ?? "");
 
   useEffect(() => {
     if (!audit) return;
@@ -100,6 +102,8 @@ export function AuditWorkspace({ state, update }) {
     const summaryRows = [
       { Field: "Audit", Value: audit.name },
       { Field: "Category", Value: audit.category },
+      { Field: "Slug", Value: audit.slug ?? "" },
+      { Field: "Final note", Value: audit.finalNote ?? "" },
       { Field: "Status", Value: "Closed" },
       { Field: "Progress", Value: `${progress}%` },
       { Field: "Completed", Value: audit.completedAt ?? "" },
@@ -108,7 +112,7 @@ export function AuditWorkspace({ state, update }) {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryRows), "Summary");
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(auditRows), "Audit");
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(scanRows), "Scan log");
-    const filename = audit.name.trim().replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "audit";
+    const filename = (audit.slug || audit.name).trim().replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "audit";
     XLSX.writeFile(workbook, `${filename}-results.xlsx`);
   };
   const completeSection = () => {
@@ -157,8 +161,10 @@ export function AuditWorkspace({ state, update }) {
   const locationSummary = [...audit.scans.reduce((map, scan) => map.set(scan.location, (map.get(scan.location) ?? 0) + (Number(scan.qty) || 0)), new Map())];
   const others = state.audits.filter((item) => item.id !== audit.id && item.category === audit.category);
 
+  const view = closed && tab === "scan" ? "items" : tab;
+  const tabList = closed ? [["items", "Audit"], ["research", "Research"]] : [["scan", "Scan"], ["items", "Audit"], ["research", "Research"]];
   const tabs = <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-1 text-sm" role="tablist">
-    {[["scan", "Scan"], ["items", "Audit"], ["research", "Research"]].map(([value, label]) => <button key={value} role="tab" aria-selected={tab === value} onClick={() => value === "research" && !closed ? toast("Not available until audit is completed", { variant: "error" }) : setTab(value)} className={cn("flex items-center gap-1.5 rounded-md px-4 py-1.5 font-medium", tab === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{value === "research" && <FlaskConical className="h-4 w-4" />}{label}</button>)}
+    {tabList.map(([value, label]) => <button key={value} role="tab" aria-selected={view === value} onClick={() => value === "research" && !closed ? toast("Not available until audit is completed", { variant: "error" }) : setTab(value)} className={cn("flex items-center gap-1.5 rounded-md px-4 py-1.5 font-medium", view === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{value === "research" && <FlaskConical className="h-4 w-4" />}{label}</button>)}
   </div>;
 
   const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
@@ -222,7 +228,15 @@ export function AuditWorkspace({ state, update }) {
   ];
   const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={itemColumns} data={itemRows} searchPlaceholder="Search audit items..." rowClassName={(row) => row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
 
-  const researchPanel = <Card><CardHeader><div className="flex items-center gap-2"><CardTitle>Research</CardTitle><Badge variant="secondary">Beta</Badge></div><CardDescription>Add notes on specific items below, or compare this audit with a previous audit of the same case code ({String(audit.category).toUpperCase()}) to spot product that moved or was sold incorrectly. Notes are saved with the audit.</CardDescription></CardHeader><CardContent className="space-y-4">
+  const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const saveFinal = () => { const slug = slugify(slugDraft); setSlugDraft(slug); patch({ slug, finalNote: noteDraft.trim() }); toast("Final note saved", { variant: "success" }); };
+  const finalPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Final note</CardTitle><CardDescription className="text-xs">Give this audit a slug and a closing note. Review and update them here before exporting.</CardDescription></CardHeader><CardContent className="grid gap-3 p-3 pt-0 text-sm md:grid-cols-[16rem_minmax(0,1fr)_auto] md:items-end">
+    <label className="grid gap-1 font-medium">Slug<Input value={slugDraft} onChange={(event) => setSlugDraft(event.target.value)} placeholder="e.g. 2026-11-case-a" /></label>
+    <label className="grid gap-1 font-medium">Final note<textarea className="min-h-16 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Summary, discrepancies, follow-ups…" /></label>
+    <Button onClick={saveFinal} disabled={slugify(slugDraft) === (audit.slug ?? "") && noteDraft.trim() === (audit.finalNote ?? "")}>Save</Button>
+  </CardContent></Card>;
+
+  const researchPanel = <Card><CardHeader><div className="flex items-center gap-2"><CardTitle>Research</CardTitle><Badge variant="secondary">Beta</Badge></div><CardDescription>Add notes on specific items below, or compare this audit with a previous audit of the same case code ({String(audit.category).toUpperCase()}) to spot product that moved or was sold incorrectly. Notes are saved with the audit.</CardDescription></CardHeader><CardContent className="space-y-4 text-sm">
     <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
       <div className="rounded-md border border-slate-200 p-3 text-sm"><p className="text-xs text-slate-500">This audit</p><b className="uppercase">{audit.name}</b></div>
       <select aria-label="Compare with" className="h-auto rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={compareId} onChange={(event) => setCompareId(event.target.value)}><option value="">Select a previous audit...</option>{uploaded && <option value="uploaded">Uploaded: {uploaded.label}</option>}{others.map((item) => <option key={item.id} value={item.id}>{item.name.toUpperCase()} · {formatDate(item.createdAt)}</option>)}</select>
@@ -233,7 +247,11 @@ export function AuditWorkspace({ state, update }) {
     <DataTable columns={researchColumns} data={comparison} searchPlaceholder="Search SKUs..." rowClassName={(r) => r.changed ? "bg-amber-50 hover:bg-amber-50" : ""} />
   </CardContent></Card>;
 
-  const content = phase === "paused" ? <div className="flex min-w-0 flex-col gap-3 pb-6">{progressBar}{itemsPanel}</div> : tab === "items" ? <div className="flex min-w-0 flex-col gap-3 pb-6"><div className="w-fit">{tabs}</div>{progressBar}{itemsPanel}</div> : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{tab === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{tab === "scan" ? scanPanel : tab === "items" ? itemsPanel : researchPanel}</div></div>;
+  const fullWidth = (panel, extra = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{!closed && phase === "paused" ? null : <div className="w-fit">{tabs}</div>}{progressBar}{panel}{extra}</div>;
+  const content = phase === "paused" ? fullWidth(itemsPanel)
+    : closed ? (view === "research" ? fullWidth(researchPanel) : fullWidth(itemsPanel, finalPanel))
+    : view === "items" ? fullWidth(itemsPanel)
+    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{view === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{view === "scan" ? scanPanel : researchPanel}</div></div>;
 
   const initialsField = (label) => <label className="grid gap-1 text-sm font-medium">{label}<Input className="w-48 uppercase" maxLength={5} value={initials} onChange={(event) => setInitials(event.target.value)} placeholder="e.g. AB" /></label>;
 

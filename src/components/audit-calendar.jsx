@@ -90,6 +90,7 @@ export function AuditCalendar({ state, update }) {
   const goTo = (key) => { setSelected(key); setDayOpen(true); const date = parseKey(key); setMonth(new Date(date.getFullYear(), date.getMonth(), 1)); };
   const shiftMonth = (delta) => setMonth(new Date(month.getFullYear(), month.getMonth() + delta, 1));
   const goToday = () => { setMonth(new Date(today.getFullYear(), today.getMonth(), 1)); setSelected(todayKey); };
+  const shiftDay = (delta) => { const date = parseKey(selected); goTo(dateKey(new Date(date.getFullYear(), date.getMonth(), date.getDate() + delta))); };
   const closeDay = () => { setDayOpen(false); setPendingStart(null); };
 
   const dayCodes = Object.keys(schedule).filter((code) => schedule[code] === selected);
@@ -164,7 +165,7 @@ export function AuditCalendar({ state, update }) {
     </div>}
     {notice && <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm" role="status"><span>{notice}</span><Button variant="ghost" size="icon" aria-label="Dismiss" onClick={() => setNotice("")}><X className="h-4 w-4" /></Button></div>}
 
-    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(18rem,1fr)]">
+    <div className="grid items-start gap-5">
       <Card className={cn(scheduling && "ring-2 ring-sky-500")}><CardContent className="p-4 md:p-5">
         <div className="mb-4 flex items-center gap-2">
           <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => shiftMonth(-1)}><ChevronLeft className="h-4 w-4" /></Button>
@@ -177,7 +178,7 @@ export function AuditCalendar({ state, update }) {
           const key = dateKey(date); const codes = byDay[key] ?? []; const hasActivity = dayActivity(key).length > 0;
           const done = closedOn(key).filter((audit, index, list) => list.findIndex((other) => other.category === audit.category) === index);
           const shown = [...codes.map((code) => ({ code, status: codeStatus(code, key) })), ...done.filter((audit) => !codes.includes(audit.category)).map((audit) => ({ code: audit.category, status: auditProgress(audit) >= 100 ? "complete" : "research" }))];
-          return <button key={key} type="button" onClick={() => { setSelected(key); setDayOpen(scheduling); setPendingStart(null); }} className={cn("flex min-h-[58px] flex-col items-stretch gap-0.5 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 text-left hover:border-sky-500 md:min-h-[96px] md:p-1.5", date.getMonth() !== month.getMonth() && "opacity-45", key === todayKey && "border-sky-600", key === selected && "outline outline-2 outline-sky-600")}>
+          return <button key={key} type="button" onClick={() => { setSelected(key); setDayOpen(true); setPendingStart(null); }} className={cn("flex min-h-[58px] flex-col items-stretch gap-0.5 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 text-left hover:border-sky-500 md:min-h-[96px] md:p-1.5", date.getMonth() !== month.getMonth() && "opacity-45", key === todayKey && "border-sky-600", key === selected && "outline outline-2 outline-sky-600")}>
             <b className={cn("text-xs", key === todayKey && "text-sky-700")}>{date.getDate()}</b>
             {shown.slice(0, 3).map(({ code, status }) => <Chip key={code} code={code} status={status} />)}
             {shown.length > 3 && <small className="text-[10px] text-slate-500">+{shown.length - 3} more</small>}
@@ -186,31 +187,18 @@ export function AuditCalendar({ state, update }) {
         })}</div>
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">{Object.entries(statusLabel).map(([status, label]) => <span key={status} className="flex items-center gap-1.5"><i className={cn("inline-block h-2.5 w-2.5 rounded-sm", statusStyle[status])} />{status === "complete" ? "Complete (100%)" : status === "research" ? "Closed · needs research (<100%)" : label}</span>)}</div>
       </CardContent></Card>
-      <Card><CardHeader><div className="flex items-center justify-between"><div><CardTitle>{selected === todayKey ? "Today" : parseKey(selected).toLocaleDateString("en-US", { weekday: "long" })}</CardTitle><p className="mt-1 text-xs text-slate-500">{longDate(selected)}</p></div><Badge>{dayCodes.length}</Badge></div></CardHeader><CardContent className="max-h-[40rem] space-y-4 overflow-y-auto">
-        {!scheduling && pendingStart && <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
+    </div>
+
+    <Sheet open={dayOpen} onOpenChange={(open) => { if (!open) closeDay(); }}>
+      <SheetContent side="right" className="w-full max-w-md overflow-y-auto border-l border-slate-200 bg-white p-5 shadow-xl [&>button]:hidden">
+        <div className="flex items-start justify-between gap-3"><div className="flex items-center gap-1"><Button variant="outline" size="icon" aria-label="Previous day" onClick={() => shiftDay(-1)}><ChevronLeft className="h-4 w-4" /></Button><Button variant="outline" size="icon" aria-label="Next day" onClick={() => shiftDay(1)}><ChevronRight className="h-4 w-4" /></Button></div><div className="min-w-0 flex-1"><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{scheduling ? "Scheduling" : "Selected day"}</p><SheetTitle className="mt-1 text-lg font-semibold">{parseKey(selected).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</SheetTitle></div><Button variant="outline" size="icon" aria-label="Close" onClick={closeDay}><X className="h-4 w-4" /></Button></div>
+        <SheetDescription className="sr-only">Choose and manage case codes scheduled for this day.</SheetDescription>
+
+        {!scheduling && pendingStart && <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
           <p className="font-semibold">Update the inventory file first?</p>
           <p className="mt-1">{freshnessMessage}</p>
           <div className="mt-3 flex flex-wrap gap-2"><Button size="sm" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" />Upload updated file</Button><Button size="sm" variant="outline" onClick={() => { const code = pendingStart; setPendingStart(null); openAudit(code, inventory); }}>Start anyway</Button><Button size="sm" variant="ghost" onClick={() => setPendingStart(null)}>Cancel</Button></div>
         </div>}
-        <div className="space-y-2">{dayCodes.length ? dayCodes.map((code) => {
-          const status = codeStatus(code, selected); const related = auditsForMonth(code, selected); const currentAudit = related.find((audit) => audit.status !== "completed") ?? related.filter((audit) => audit.status === "completed").sort((left, right) => String(right.completedAt || right.createdAt).localeCompare(String(left.completedAt || left.createdAt)))[0]; const pct = currentAudit ? auditProgress(currentAudit) : 0;
-          const label = status === "progress" ? "Continue" : status === "complete" || status === "research" ? "View" : "Start";
-          return <div key={code} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2.5">
-            <span className={cn("min-w-0 flex-1 break-words rounded px-2 py-1 text-xs font-semibold uppercase", statusStyle[status])} title={statusLabel[status]}>{code}</span>
-            <span className="w-10 text-right text-xs font-semibold tabular-nums text-slate-600">{pct}%</span>
-            <Button size="sm" variant={status === "complete" || status === "research" ? "outline" : "default"} onClick={() => requestStart(code)}>{(status === "scheduled" || status === "overdue") && <Play className="h-3.5 w-3.5" />}{label}</Button>
-          </div>;
-        }) : <p className="text-sm text-slate-500">Nothing scheduled {selected === todayKey ? "today" : "this day"}. Use Schedule to assign case codes.</p>}</div>
-        <div><h4 className="text-sm font-semibold">What was done</h4>
-          <div className="mt-1 divide-y divide-slate-200">{activity.length ? activity.map(({ audit, scans, units, locations, closed }) => <div key={audit.id} className="grid gap-1 py-2 text-sm"><b className="uppercase">{audit.name}</b><span className="text-slate-500">{scans} scans · {units} units{locations.length ? ` · ${locations.join(", ")}` : ""}</span>{closed && <Badge variant={auditProgress(audit) >= 100 ? "success" : "warning"} className="w-fit">Closed at {auditProgress(audit)}%</Badge>}</div>) : <p className="py-2 text-sm text-slate-500">No audit activity recorded.</p>}</div></div>
-      </CardContent></Card>
-    </div>
-
-    <Sheet open={dayOpen && scheduling} onOpenChange={(open) => { if (!open) closeDay(); }}>
-      <SheetContent side="right" className="w-full max-w-md overflow-y-auto border-l border-slate-200 bg-white p-5 shadow-xl [&>button]:hidden">
-        <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-medium uppercase tracking-wide text-slate-500">{scheduling ? "Scheduling" : "Selected day"}</p><SheetTitle className="mt-1 text-lg font-semibold">{parseKey(selected).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</SheetTitle></div><Button variant="outline" size="icon" aria-label="Close" onClick={closeDay}><X className="h-4 w-4" /></Button></div>
-        <SheetDescription className="sr-only">Choose and manage case codes scheduled for this day.</SheetDescription>
-
         {scheduling ? <>
           <div className="mt-5 flex items-center justify-between"><h4 className="text-sm font-semibold">Scheduled case codes</h4>{dayCodes.length > 0 && <Button variant="outline" size="sm" onClick={clearDay}>Clear day</Button>}</div>
           <div className="mt-2 space-y-2">{dayCodes.length ? dayCodes.map((code) => <div key={code} className="flex flex-wrap items-center gap-2"><Chip code={code} status={codeStatus(code, selected)} className="max-w-[9rem]" /><small className="text-slate-500">{statusLabel[codeStatus(code, selected)]}</small><input type="date" value={selected} onChange={(event) => move(code, event.target.value)} aria-label={`Reschedule ${code}`} className="ml-auto h-8 rounded-md border border-slate-300 bg-white px-2 text-xs" /><Button variant="outline" size="sm" aria-label={`Unschedule ${code}`} onClick={() => unschedule(code)}>×</Button></div>) : <p className="text-sm text-slate-500">Nothing scheduled this day.</p>}</div>

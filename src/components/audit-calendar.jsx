@@ -1,3 +1,4 @@
+import { AuditPreview } from "@/components/audit-preview";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, CalendarPlus, Check, ChevronLeft, ChevronRight, Play, Upload, X } from "lucide-react";
@@ -43,6 +44,7 @@ export function AuditCalendar({ state, update }) {
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selected, setSelected] = useState(todayKey);
   const [dayOpen, setDayOpen] = useState(false);
+  const [previewId, setPreviewId] = useState(null);
   const [scheduling, setScheduling] = useState(false);
   const [checked, setChecked] = useState(() => new Set());
   const [query, setQuery] = useState("");
@@ -123,6 +125,8 @@ export function AuditCalendar({ state, update }) {
   };
 
   const requestStart = (code) => {
+    const running = auditsForMonth(code, selected).find((audit) => audit.status !== "completed");
+    if (running) { setPreviewId(running.id); return; }
     const hasAudit = auditsForMonth(code, selected).length > 0;
     if (needsUpdate && !hasAudit) { setPendingStart(code); return; }
     openAudit(code, inventory);
@@ -232,5 +236,6 @@ export function AuditCalendar({ state, update }) {
         <div className="mt-2 divide-y divide-slate-200">{activity.length ? activity.map(({ audit, scans, units, locations, closed }) => <div key={audit.id} className="grid gap-1 py-2 text-sm"><b className="uppercase">{audit.name}</b><span className="text-slate-500">{scans} scans · {units} units{locations.length ? ` · ${locations.join(", ")}` : ""}</span>{closed && <Badge variant={auditProgress(audit) >= 100 ? "success" : "warning"} className="w-fit">Closed at {auditProgress(audit)}%{auditProgress(audit) < 100 ? " · needs research" : ""}</Badge>}</div>) : <p className="py-2 text-sm text-slate-500">No audit activity recorded.</p>}</div>
       </SheetContent>
     </Sheet>
+    <AuditPreview audit={audits.find((audit) => audit.id === previewId)} onClose={() => setPreviewId(null)} />
   </div>;
 }

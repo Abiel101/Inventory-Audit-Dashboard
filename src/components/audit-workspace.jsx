@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import * as XLSX from "xlsx";
 import { CheckCircle2, Download, FlaskConical, Pencil, Play, RefreshCw, Save, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { DataTable } from "@/components/data-table";
 import { auditProgress, auditTally, cn, formatDate, identifiersMatch, scanKey } from "@/lib/utils";
 import { categoryOf, readInventoryFile } from "@/lib/inventory";
+import { exportAuditWorkbook } from "@/lib/export";
 
 const compareKey = (value) => { const key = scanKey(value); return /^\d+$/.test(key) ? key.replace(/^0+(?=\d)/, "") : key; };
 
@@ -46,7 +46,6 @@ export function AuditWorkspace({ state, update }) {
   const [notice, setNotice] = useState("");
   const [uploaded, setUploaded] = useState(null);
   const [uploadError, setUploadError] = useState("");
-  const [slugDraft, setSlugDraft] = useState(audit?.slug ?? "");
   const [noteDraft, setNoteDraft] = useState(audit?.finalNote ?? "");
 
   useEffect(() => {
@@ -92,29 +91,7 @@ export function AuditWorkspace({ state, update }) {
     setSku("");
   };
   const removeScan = (scan) => patch({ scans: audit.scans.filter((item) => item.id !== scan.id), completedLocations: audit.completedLocations.filter((location) => location !== scan.location) });
-  const exportAudit = () => {
-    const workbook = XLSX.utils.book_new();
-    const auditRows = [...tally.expected].map(([sku, expected]) => {
-      const scanned = tally.scanned.get(sku) ?? 0;
-      return { SKU: sku, Expected: expected, Scanned: scanned, Variance: expected - scanned, Notes: audit.itemNotes?.[compareKey(sku)] ?? "" };
-    });
-    const scanRows = audit.scans.map((scan) => ({ SKU: scan.sku, Description: scan.description, Style: scan.style, Quantity: scan.qty, Location: scan.location, Timestamp: scan.timestamp, Result: tally.status(scan) }));
-    const summaryRows = [
-      { Field: "Audit", Value: audit.name },
-      { Field: "Category", Value: audit.category },
-      { Field: "Slug", Value: audit.slug ?? "" },
-      { Field: "Final note", Value: audit.finalNote ?? "" },
-      { Field: "Status", Value: "Closed" },
-      { Field: "Progress", Value: `${progress}%` },
-      { Field: "Completed", Value: audit.completedAt ?? "" },
-      { Field: "Completed by", Value: audit.completedBy ?? audit.initials ?? "" },
-    ];
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryRows), "Summary");
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(auditRows), "Audit");
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(scanRows), "Scan log");
-    const filename = (audit.slug || audit.name).trim().replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "audit";
-    XLSX.writeFile(workbook, `${filename}-results.xlsx`);
-  };
+  const exportAudit = () => exportAuditWorkbook(audit, { compareKey }).catch((error) => toast(error.message || "Could not export this audit.", { variant: "error" }));
   const completeSection = () => {
     if (!locationName || !audit.scans.some((scan) => scan.location === locationName)) return;
     patch({ completedLocations: [...new Set([...audit.completedLocations, locationName])], sectionsCompleted: (audit.sectionsCompleted ?? 0) + 1 });
@@ -228,12 +205,10 @@ export function AuditWorkspace({ state, update }) {
   ];
   const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={itemColumns} data={itemRows} searchPlaceholder="Search audit items..." rowClassName={(row) => row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
 
-  const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  const saveFinal = () => { const slug = slugify(slugDraft); setSlugDraft(slug); patch({ slug, finalNote: noteDraft.trim() }); toast("Final note saved", { variant: "success" }); };
-  const finalPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Final note</CardTitle><CardDescription className="text-xs">Give this audit a slug and a closing note. Review and update them here before exporting.</CardDescription></CardHeader><CardContent className="grid gap-3 p-3 pt-0 text-sm md:grid-cols-[16rem_minmax(0,1fr)_auto] md:items-end">
-    <label className="grid gap-1 font-medium">Slug<Input value={slugDraft} onChange={(event) => setSlugDraft(event.target.value)} placeholder="e.g. 2026-11-case-a" /></label>
+  const saveFinal = () => { patch({ finalNote: noteDraft.trim() }); toast("Final note saved", { variant: "success" }); };
+  const finalPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Final note</CardTitle><CardDescription className="text-xs">Add a closing note. It appears on the Audit Info sheet of the export; review and update it here first.</CardDescription></CardHeader><CardContent className="grid gap-3 p-3 pt-0 text-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
     <label className="grid gap-1 font-medium">Final note<textarea className="min-h-16 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Summary, discrepancies, follow-ups…" /></label>
-    <Button onClick={saveFinal} disabled={slugify(slugDraft) === (audit.slug ?? "") && noteDraft.trim() === (audit.finalNote ?? "")}>Save</Button>
+    <Button onClick={saveFinal} disabled={noteDraft.trim() === (audit.finalNote ?? "")}>Save</Button>
   </CardContent></Card>;
 
   const researchPanel = <Card><CardHeader><div className="flex items-center gap-2"><CardTitle>Research</CardTitle><Badge variant="secondary">Beta</Badge></div><CardDescription>Add notes on specific items below, or compare this audit with a previous audit of the same case code ({String(audit.category).toUpperCase()}) to spot product that moved or was sold incorrectly. Notes are saved with the audit.</CardDescription></CardHeader><CardContent className="space-y-4 text-sm">

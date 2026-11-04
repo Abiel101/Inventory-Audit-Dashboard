@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { SlideToDelete } from "@/components/slide-to-delete";
 import { buildAudit, categoryOf, groupCodes } from "@/lib/inventory";
 import { auditProgress, cn, dateKey } from "@/lib/utils";
 
@@ -121,6 +122,7 @@ export function MonthStatus({ state, update }) {
                 {(row.status === "complete" || row.status === "issues") && row.audit && <Button size="sm" variant="outline" onClick={() => navigate(`/workspace/${row.audit.id}`)}>View</Button>}
                 <Button size="sm" variant={expanded ? "default" : "outline"} aria-expanded={expanded} onClick={() => setOpen(expanded ? null : code)}><NotebookPen className="h-3.5 w-3.5" />Notes</Button>
               </div>
+              {row.status === "progress" && <div className="flex w-full justify-end"><SlideToDelete label={code} onDelete={() => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== row.audit.id) }))} /></div>}
             </div>
             {expanded && <div className="space-y-3 border-t border-slate-200 bg-slate-50 p-4">
               {row.notes.length ? row.notes.map((note) => <div key={note.id} className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm"><Badge variant="warning" className="shrink-0">{note.type}</Badge><div className="min-w-0 flex-1"><p className="whitespace-pre-wrap break-words">{note.text}</p><p className="mt-1 text-xs text-slate-500">{new Date(note.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p></div><Button variant="ghost" size="icon" aria-label="Delete note" onClick={() => removeNote(code, note.id)}><Trash2 className="h-4 w-4" /></Button></div>) : <p className="text-sm text-slate-500">No issues logged for {monthLabel(month)}. Log an IMOD, a LOSS, or anything else under Other.</p>}

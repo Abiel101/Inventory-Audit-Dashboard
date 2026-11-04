@@ -11,6 +11,7 @@ const COLORS = {
   met: "FFD1FAE5",
   extra: "FFFECDD3",
   band: "FFF1F5F9",
+  tint: { "FF0284C7": "FFE0F2FE", "FF059669": "FFD1FAE5", "FFD97706": "FFFEF3C7" },
   line: "FFCBD5E1",
 };
 const fill = (argb) => ({ type: "pattern", pattern: "solid", fgColor: { argb } });
@@ -26,12 +27,12 @@ export function exportFilename(audit, date = new Date()) {
 
 function styleHeader(sheet, colors) {
   const row = sheet.getRow(1);
-  row.height = 24;
+  row.height = 28;
   colors.forEach((color, index) => {
     const cell = row.getCell(index + 1);
     cell.fill = fill(color);
-    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    cell.alignment = { vertical: "middle", horizontal: "center" };
+    cell.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
+    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
     cell.border = border;
   });
   sheet.views = [{ state: "frozen", ySplit: 1 }];
@@ -56,7 +57,7 @@ export async function exportAuditWorkbook(audit, { compareKey }) {
     { header: "Expected", width: 11 }, { header: "Scanned", width: 11 }, { header: "Variance", width: 11 },
     { header: "Status", width: 14 }, { header: "Notes", width: 40 },
   ];
-  styleHeader(items, [COLORS.sky, COLORS.sky, COLORS.sky, COLORS.emerald, COLORS.emerald, COLORS.emerald, COLORS.amber, COLORS.slate]);
+  styleHeader(items, [COLORS.ink, COLORS.sky, COLORS.indigo, COLORS.emerald, COLORS.sky, COLORS.rose, COLORS.amber, COLORS.slate]);
   expectedRows.forEach(([sku, expected], index) => {
     const n = index + 2;
     const found = tally.scanned.get(sku) ?? 0;
@@ -79,7 +80,7 @@ export async function exportAuditWorkbook(audit, { compareKey }) {
     { header: "Location", width: 18 }, { header: "Scanned", width: 11 }, { header: "Date / Time", width: 20 },
     { header: "Expected", width: 11 }, { header: "Audit total", width: 12 }, { header: "Result", width: 18 },
   ];
-  styleHeader(scanned, [COLORS.sky, COLORS.sky, COLORS.sky, COLORS.indigo, COLORS.emerald, COLORS.indigo, COLORS.emerald, COLORS.emerald, COLORS.amber]);
+  styleHeader(scanned, [COLORS.ink, COLORS.sky, COLORS.indigo, COLORS.slate, COLORS.emerald, COLORS.sky, COLORS.rose, COLORS.amber, COLORS.indigo]);
   audit.scans.forEach((scan, index) => {
     const n = index + 2;
     const { total, expected } = tally.totalFor(scan);
@@ -101,27 +102,37 @@ export async function exportAuditWorkbook(audit, { compareKey }) {
 
   const expectedUnits = expectedRows.reduce((sum, [, value]) => sum + value, 0);
   const foundUnits = [...tally.scanned.values()].reduce((sum, value) => sum + value, 0);
-  info.columns = [{ width: 24 }, { width: 70 }];
+  info.columns = [{ width: 26 }, { width: 72 }];
+  info.views = [{ showGridLines: false }];
   info.mergeCells("A1:B1");
   const title = info.getCell("A1");
   title.value = `Audit · ${String(audit.category).toUpperCase()}`;
   title.fill = fill(COLORS.ink);
   title.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
   title.alignment = { vertical: "middle", indent: 1 };
-  info.getRow(1).height = 30;
+  title.font = { bold: true, size: 16, color: { argb: "FFFFFFFF" } };
+  info.getRow(1).height = 36;
 
+  let accent = COLORS.sky;
   const section = (label, color) => {
-    const row = info.addRow([label, ""]);
+    info.addRow([]).height = 8;
+    accent = color;
+    const row = info.addRow([label.toUpperCase(), ""]);
     info.mergeCells(`A${row.number}:B${row.number}`);
+    row.height = 24;
     row.getCell(1).fill = fill(color);
-    row.getCell(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+    row.getCell(1).font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
+    row.getCell(1).alignment = { vertical: "middle", indent: 1 };
     return row;
   };
   const field = (label, value, numFmt) => {
     const row = info.addRow([label, value]);
-    row.getCell(1).font = { bold: true };
-    row.getCell(1).fill = fill(COLORS.band);
-    row.getCell(2).alignment = { horizontal: "left", vertical: "top", wrapText: true };
+    row.height = 20;
+    row.getCell(1).font = { bold: true, color: { argb: accent } };
+    row.getCell(1).fill = fill(COLORS.tint[accent]);
+    row.getCell(1).alignment = { vertical: "middle", indent: 1 };
+    row.getCell(2).font = { size: 11, color: { argb: COLORS.ink } };
+    row.getCell(2).alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
     if (numFmt) row.getCell(2).numFmt = numFmt;
     row.eachCell((cell) => { cell.border = border; });
     return row;
@@ -147,7 +158,8 @@ export async function exportAuditWorkbook(audit, { compareKey }) {
   section("Notes", COLORS.amber);
   const notes = info.addRow([audit.finalNote ?? "", ""]);
   info.mergeCells(`A${notes.number}:B${notes.number}`);
-  notes.getCell(1).alignment = { vertical: "top", wrapText: true };
+  notes.getCell(1).alignment = { vertical: "top", wrapText: true, indent: 1 };
+  notes.getCell(1).fill = fill("FFFFFBEB");
   notes.height = Math.max(60, Math.ceil(String(audit.finalNote ?? "").length / 90) * 16 + 12);
   notes.getCell(1).border = border;
 

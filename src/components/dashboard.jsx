@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, CalendarDays, CheckCircle2, CircleDashed, ClipboardList, Loader2, PackageSearch, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SlideToDelete } from "@/components/slide-to-delete";
+import { AuditPreview } from "@/components/audit-preview";
+import { DeleteGesture } from "@/components/slide-to-delete";
 import { buildAudit, categoryOf } from "@/lib/inventory";
 import { auditProgress, cn, dateKey } from "@/lib/utils";
 
@@ -38,19 +39,19 @@ function Section({ title, description, count, empty, children }) {
   </section>;
 }
 
-function Row({ kind, title, detail, action, extra }) {
+function Row({ kind, title, detail, action, onPreview }) {
   const meta = chips[kind]; const Icon = meta.icon;
-  return <div className="flex flex-wrap items-center gap-3 p-3 md:px-4">
+  return <div className={cn("flex flex-wrap items-center gap-3 p-3 md:px-4", onPreview && "cursor-pointer hover:bg-slate-50")} {...(onPreview ? { role: "button", tabIndex: 0, "aria-label": `Preview ${title} audit`, onClick: onPreview, onKeyDown: (event) => event.target === event.currentTarget && (event.key === "Enter" || event.key === " ") && onPreview() } : {})}>
     <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", meta.chip)}><Icon className={cn("h-4 w-4", kind === "progress" && "animate-spin")} /></span>
     <div className="min-w-0 flex-1"><p className="truncate font-semibold uppercase">{title}</p><p className="text-xs text-slate-500">{detail}</p></div>
     <Badge className={cn("border-transparent", meta.chip)}>{meta.label}</Badge>
-    {action}
-    {extra && <div className="flex w-full justify-end">{extra}</div>}
+    <div onClick={(event) => event.stopPropagation()}>{action}</div>
   </div>;
 }
 
 export function Dashboard({ state, update }) {
   const navigate = useNavigate();
+  const [previewId, setPreviewId] = useState(null);
   const now = new Date();
   const today = dateKey(now);
   const month = today.slice(0, 7);
@@ -90,13 +91,13 @@ export function Dashboard({ state, update }) {
     <Section title="Scheduled today" description={now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} count={todayCodes.length} empty="Nothing scheduled for today. Use Schedule on the calendar.">
       {todayCodes.map((code) => {
         const audit = auditFor(code); const done = audit?.status === "completed"; const running = audit && !done;
-        return <Row key={code} kind={done ? "complete" : running ? "progress" : "todo"} title={code} detail={audit ? `${auditProgress(audit)}% scanned` : "No activity yet"}
+        return <Row key={code} onPreview={running ? () => setPreviewId(audit.id) : undefined} kind={done ? "complete" : running ? "progress" : "todo"} title={code} detail={audit ? `${auditProgress(audit)}% scanned` : "No activity yet"}
           action={done ? open(audit, "View", true) : running ? open(audit, "Continue") : <Button size="sm" onClick={() => start(code)}><Play className="h-3.5 w-3.5" />Start</Button>} />;
       })}
     </Section>
 
-    <Section title="In progress" count={inProgress.length} empty="No audits running right now.">
-      {inProgress.map((audit) => <Row key={audit.id} kind="progress" title={audit.category || audit.name} detail={`${auditProgress(audit)}% scanned · started ${shortDate(audit.startedAt || audit.createdAt)}${audit.initials ? ` by ${audit.initials}` : ""}`} action={open(audit, "Continue")} extra={<SlideToDelete label={audit.category || audit.name} onDelete={() => deleteAudit(audit.id)} />} />)}
+    <Section title="In progress" description="Right-click or swipe left to delete" count={inProgress.length} empty="No audits running right now.">
+      {inProgress.map((audit) => <DeleteGesture key={audit.id} label={audit.category || audit.name} onDelete={() => deleteAudit(audit.id)}><Row onPreview={() => setPreviewId(audit.id)} kind="progress" title={audit.category || audit.name} detail={`${auditProgress(audit)}% scanned · started ${shortDate(audit.startedAt || audit.createdAt)}${audit.initials ? ` by ${audit.initials}` : ""}`} action={open(audit, "Continue")} /></DeleteGesture>)}
     </Section>
 
     <Section title="Not completed" description="Closed before every item was found" count={notCompleted.length} empty="Nothing left unfinished.">
@@ -106,5 +107,6 @@ export function Dashboard({ state, update }) {
     <Section title="Recently completed" count={recentlyCompleted.length} empty="No completed audits yet.">
       {recentlyCompleted.map((audit) => <Row key={audit.id} kind="complete" title={audit.category || audit.name} detail={`Completed ${audit.completedAt ? shortDate(audit.completedAt) : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""} · 100% scanned`} action={open(audit, "View", true)} />)}
     </Section>
+    <AuditPreview audit={state.audits.find((audit) => audit.id === previewId)} onClose={() => setPreviewId(null)} />
   </div>;
 }

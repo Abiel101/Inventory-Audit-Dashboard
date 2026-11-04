@@ -19,7 +19,7 @@ const border = { top: { style: "thin", color: { argb: COLORS.line } }, bottom: {
 export function exportFilename(audit, date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
   const day = `${pad(date.getMonth() + 1)}.${pad(date.getDate())}.${String(date.getFullYear()).slice(-2)}`;
-  const time = `${pad(date.getHours())}.${pad(date.getMinutes())}`;
+  const time = `${pad(date.getHours() % 12 || 12)}.${pad(date.getMinutes())} ${date.getHours() < 12 ? "AM" : "PM"}`;
   const clean = (value) => String(value ?? "").trim().replace(/[\\/:*?"<>|]+/g, "");
   return `${[clean(audit.category), clean(audit.completedBy || audit.initials), day, time].filter(Boolean).join(" - ").toUpperCase()}.xlsx`;
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleDashed, Info, Loader2, NotebookPen, Play, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, Info, Loader2, Play, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,11 +9,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { AuditPreview } from "@/components/audit-preview";
 import { DeleteGesture } from "@/components/slide-to-delete";
 import { buildAudit, categoryOf, groupCodes } from "@/lib/inventory";
-import { auditProgress, cn, dateKey } from "@/lib/utils";
+import { auditProgress, auditTally, cn, dateKey } from "@/lib/utils";
 
 const Plain = ({ children }) => children;
 const SCHEDULE_KEY = "inventory-audit-schedule";
-const NOTES_KEY = "inventory-audit-month-notes";
 
 const statuses = {
   notStarted: { label: "Not started", icon: CircleDashed, chip: "bg-slate-100 text-slate-700", bar: "bg-slate-400" },
@@ -23,7 +22,6 @@ const statuses = {
   issues: { label: "Closed with issues", icon: AlertTriangle, chip: "bg-orange-200 text-orange-900", bar: "bg-orange-500" },
 };
 const order = Object.keys(statuses);
-const issueTypes = ["IMOD", "LOSS", "Other"];
 
 const readJSON = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
 const monthLabel = (key) => new Date(`${key}-01T00:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -39,17 +37,11 @@ export function MonthStatus({ state, update }) {
   const [open, setOpen] = useState(null);
   const [previewId, setPreviewId] = useState(null);
   const [schedule] = useState(() => readJSON(SCHEDULE_KEY, {}));
-  const [allNotes, setAllNotes] = useState(() => readJSON(NOTES_KEY, {}));
-  const [draft, setDraft] = useState({ type: issueTypes[0], text: "" });
-
-  const monthNotes = allNotes[month] ?? {};
-  const saveNotes = (next) => { setAllNotes(next); localStorage.setItem(NOTES_KEY, JSON.stringify(next)); };
 
   const rows = useMemo(() => {
     const codes = new Set([...state.inventory.map(categoryOf), ...state.audits.map((audit) => audit.category), ...Object.keys(schedule)]);
     return [...codes].map((code) => {
       const audits = state.audits.filter((audit) => audit.category === code && (audit.scheduledDate ? audit.scheduledDate.slice(0, 7) === month : inMonth(audit.createdAt, month) || inMonth(audit.startedAt, month) || inMonth(audit.completedAt, month)));
-      const notes = monthNotes[code] ?? [];
       const running = audits.find((audit) => audit.status !== "completed");
       const closed = audits.filter((audit) => audit.status === "completed");
       const latest = running ?? closed.sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)))[0];
@@ -57,11 +49,11 @@ export function MonthStatus({ state, update }) {
       const scheduledOn = schedule[code]?.startsWith(month) ? schedule[code] : null;
       let status = "notStarted";
       if (running) status = "progress";
-      else if (closed.length) status = progress >= 100 && !notes.length ? "complete" : "issues";
+      else if (closed.length) status = progress >= 100 ? "complete" : "issues";
       else if (scheduledOn) status = "scheduled";
-      return { code, status, audit: latest, progress, scheduledOn, notes, completedBy: latest?.completedBy, completedAt: latest?.completedAt };
+      return { code, status, audit: latest, progress, scheduledOn, completedBy: latest?.completedBy, completedAt: latest?.completedAt };
     });
-  }, [state.inventory, state.audits, schedule, month, monthNotes]);
+  }, [state.inventory, state.audits, schedule, month]);
 
   const counts = Object.fromEntries(order.map((status) => [status, rows.filter((row) => row.status === status).length]));
   const done = counts.complete + counts.issues;
@@ -78,13 +70,14 @@ export function MonthStatus({ state, update }) {
     update((current) => ({ ...current, audits: [audit, ...current.audits] }));
     navigate(`/workspace/${audit.id}`);
   };
-  const addNote = (code) => {
-    if (!draft.text.trim()) return;
-    const note = { id: crypto.randomUUID(), type: draft.type, text: draft.text.trim(), createdAt: new Date().toISOString() };
-    saveNotes({ ...allNotes, [month]: { ...monthNotes, [code]: [...(monthNotes[code] ?? []), note] } });
-    setDraft({ ...draft, text: "" });
+  const resultsOf = (audit) => {
+    const { expected, scanned, extra } = auditTally(audit);
+    const sum = (map) => [...map.values()].reduce((total, value) => total + value, 0);
+    const found = [...expected].reduce((total, [sku, value]) => total + Math.min(value, scanned.get(sku) ?? 0), 0);
+    const need = sum(expected);
+    return { skus: expected.size, need, found, missing: need - found, extra: sum(extra) };
   };
-  const removeNote = (code, id) => saveNotes({ ...allNotes, [month]: { ...monthNotes, [code]: (monthNotes[code] ?? []).filter((note) => note.id !== id) } });
+  const stamp = (value) => value ? new Date(value).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—";
 
   return <div className="space-y-6">
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -112,7 +105,7 @@ export function MonthStatus({ state, update }) {
 
       <div className="space-y-6">{groups.length ? groups.map(([group, codes]) => <section key={group}>
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">{group} <span className="font-normal">({codes.length})</span></h3>
-        <Card><CardContent className="divide-y divide-slate-200 p-0">{codes.map((code) => { const row = byCode.get(code); const meta = statuses[row.status]; const Icon = meta.icon; const expanded = open === code;
+        <Card><CardContent className="divide-y divide-slate-200 p-0">{codes.map((code) => { const row = byCode.get(code); const meta = statuses[row.status]; const Icon = meta.icon; const closedRow = (row.status === "complete" || row.status === "issues") && row.audit; const expanded = closedRow && open === code;
           const Gesture = row.status === "progress" ? DeleteGesture : Plain;
           return <div key={code}>
             <Gesture label={code} onDelete={() => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== row.audit.id) }))}>
@@ -120,23 +113,19 @@ export function MonthStatus({ state, update }) {
               <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", meta.chip)}><Icon className={cn("h-4 w-4", row.status === "progress" && "animate-spin")} /></span>
               <div className="min-w-0 flex-1"><p className="truncate font-semibold uppercase">{code}</p><p className="text-xs text-slate-500">{[row.status === "scheduled" && row.scheduledOn && `Scheduled ${new Date(`${row.scheduledOn}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`, row.audit && `${row.progress}% scanned`, row.completedAt && row.status !== "progress" && `Closed ${new Date(row.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}${row.completedBy ? ` by ${row.completedBy}` : ""}`].filter(Boolean).join(" · ") || "No activity yet this month"}</p></div>
               <Badge className={cn("border-transparent", meta.chip)}>{meta.label}</Badge>
-              {row.notes.length > 0 && <Badge variant="warning">{row.notes.length} {row.notes.length === 1 ? "issue" : "issues"}</Badge>}
               <div className="flex gap-2" onClick={(event) => event.stopPropagation()}>
                 {(row.status === "notStarted" || row.status === "scheduled") && <Button size="sm" onClick={() => startAudit(code)}><Play className="h-3.5 w-3.5" />Start</Button>}
                 {row.status === "progress" && <Button size="sm" onClick={() => navigate(`/workspace/${row.audit.id}`)}>Continue</Button>}
                 {(row.status === "complete" || row.status === "issues") && row.audit && <Button size="sm" variant="outline" onClick={() => navigate(`/workspace/${row.audit.id}`)}>View</Button>}
-                <Button size="sm" variant={expanded ? "default" : "outline"} aria-expanded={expanded} onClick={() => setOpen(expanded ? null : code)}><NotebookPen className="h-3.5 w-3.5" />Notes</Button>
+                <Button size="sm" variant={expanded ? "default" : "outline"} aria-expanded={expanded} disabled={!closedRow} title={closedRow ? undefined : "Available once the audit is completed"} onClick={() => setOpen(expanded ? null : code)}>Details<ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} /></Button>
               </div>
             </div>
             </Gesture>
-            {expanded && <div className="space-y-3 border-t border-slate-200 bg-slate-50 p-4">
-              {row.notes.length ? row.notes.map((note) => <div key={note.id} className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm"><Badge variant="warning" className="shrink-0">{note.type}</Badge><div className="min-w-0 flex-1"><p className="whitespace-pre-wrap break-words">{note.text}</p><p className="mt-1 text-xs text-slate-500">{new Date(note.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p></div><Button variant="ghost" size="icon" aria-label="Delete note" onClick={() => removeNote(code, note.id)}><Trash2 className="h-4 w-4" /></Button></div>) : <p className="text-sm text-slate-500">No issues logged for {monthLabel(month)}. Log an IMOD, a LOSS, or anything else under Other.</p>}
-              <div className="grid gap-2 md:grid-cols-[12rem_1fr_auto]">
-                <select aria-label="Issue type" className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value })}>{issueTypes.map((type) => <option key={type}>{type}</option>)}</select>
-                <Input value={draft.text} onChange={(event) => setDraft({ ...draft, text: event.target.value })} onKeyDown={(event) => event.key === "Enter" && addNote(code)} placeholder={draft.type === "Other" ? "Add any other notes…" : draft.type === "IMOD" ? "SKU and what was modded…" : "SKU, quantity, claim number…"} aria-label="Issue details" />
-                <Button disabled={!draft.text.trim()} onClick={() => addNote(code)}>Add note</Button>
-              </div>
-            </div>}
+            {expanded && (() => { const audit = row.audit; const result = resultsOf(audit); const cells = [["Audit", audit.name], ["Closed by", audit.completedBy || audit.initials || "—"], ["Started", stamp(audit.startedAt)], ["Completed", stamp(audit.completedAt)], ["Inventory source", audit.snapshot?.sourceName || "—"], ["Progress", `${row.progress}%`], ["SKUs in audit", result.skus.toLocaleString()], ["Units expected", result.need.toLocaleString()], ["Units scanned", result.found.toLocaleString()], ["Units missing", result.missing.toLocaleString()], ["Scans not in audit", result.extra.toLocaleString()]];
+              return <div className="space-y-3 border-t border-slate-200 bg-slate-50 p-4">
+                <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">{cells.map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-xs text-slate-500">{label}</dt><dd className="truncate font-medium" title={String(value)}>{value}</dd></div>)}</dl>
+                <div><p className="text-xs text-slate-500">Final note</p><p className="whitespace-pre-wrap break-words text-sm">{audit.finalNote || "No final note was added."}</p></div>
+              </div>; })()}
           </div>; })}</CardContent></Card>
       </section>) : <p className="text-sm text-slate-500">No case codes match this filter.</p>}</div>
     </>}

@@ -66,7 +66,7 @@ function SourceBadge({ state }) {
   return <Badge variant={variant} className="max-w-[55vw] truncate" title={hover}>Source: {state.sourceName}{detail ? ` · ${detail}` : ""}</Badge>;
 }
 
-function AppShell({ state, storageError, children }) {
+function AppShell({ state, update, storageError, children }) {
   const { pathname } = useLocation();
   return <SidebarProvider>
     <AppSidebar state={state} update={update} />
@@ -170,5 +170,5 @@ function SettingsPage({ state, update }) {
 
 export default function App() {
   const [state, update, storageError] = useAuditState();
-  return <ToastProvider><AppShell state={state} storageError={storageError}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell></ToastProvider>;
+  return <ToastProvider><AppShell state={state} update={update} storageError={storageError}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell></ToastProvider>;
 }

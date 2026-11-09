@@ -48,7 +48,6 @@ function ItemDetails({ item, images = [], onAddImages, onRemoveImage, pinned, on
   return <div className="flex flex-col gap-5">
     <div className={pinned ? "flex items-center justify-between gap-1" : "absolute left-4 top-1.5 flex items-center"}>
       {onPin && <Button variant="ghost" size="sm" onClick={onPin} aria-pressed={pinned}>{pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}{pinned ? "Unpin" : "Pin to side"}</Button>}
-      {pinned && <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Close pinned item" onClick={onClose}><X className="h-4 w-4" /></Button>}
     </div>
     {images.length ? images.map((src, index) => <div key={index} className="relative"><img src={src} alt={`${item.sku} ${index + 1}`} className="max-h-72 w-full rounded-lg border border-slate-200 bg-white object-contain" />{onRemoveImage && <Button variant="secondary" size="icon" className="absolute right-2 top-2 h-7 w-7" aria-label="Remove image" onClick={() => onRemoveImage(index)}><X className="h-4 w-4" /></Button>}</div>) : <Skeleton className="h-28 w-full rounded-lg" aria-label="Item image placeholder" />}
     {onAddImages && <div className="text-right"><input ref={fileRef} type="file" accept="image/*" multiple className="sr-only" aria-label="Add item images" onChange={(event) => { onAddImages([...event.target.files]); event.target.value = ""; }} /><Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}><ImagePlus className="h-4 w-4" />Add image</Button></div>}
@@ -70,7 +69,7 @@ const PlainDescription = (props) => <p {...props} />;
 
 export function ItemSheet({ item, onClose, pinned, onPin, ...imageProps }) {
   if (pinned) {
-    return <aside aria-label="Pinned item" className="fixed inset-y-0 right-0 z-[60] w-80 overflow-y-auto border-l border-slate-200 bg-white p-4 shadow-lg">
+    return <aside aria-label="Pinned item" className="sticky top-0 max-h-screen w-80 shrink-0 self-start overflow-y-auto rounded-lg border border-slate-200 bg-white p-4">
       {item ? <ItemDetails item={item} pinned onPin={onPin} onClose={onClose} Title={PlainTitle} Description={PlainDescription} {...imageProps} />
         : <div className="flex flex-col gap-3"><div className="flex justify-end"><Button variant="ghost" size="sm" onClick={onPin}><PinOff className="h-4 w-4" />Unpin</Button></div><Skeleton className="h-28 w-full rounded-lg" /><p className="text-right text-sm text-slate-500">Tap an item to see it here.</p></div>}
     </aside>;

@@ -50,6 +50,8 @@ export function AuditWorkspace({ state, update }) {
   const [unlocking, setUnlocking] = useState(false);
   const [unlockCode, setUnlockCode] = useState("");
   const [noteDraft, setNoteDraft] = useState(audit?.finalNote ?? "");
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!audit) return;
@@ -96,7 +98,17 @@ export function AuditWorkspace({ state, update }) {
     setSku("");
   };
   const removeScan = (scan) => patch({ scans: audit.scans.filter((item) => item.id !== scan.id), completedLocations: audit.completedLocations.filter((location) => location !== scan.location) });
-  const exportAudit = () => exportAuditWorkbook(audit, { compareKey }).catch((error) => toast(error.message || "Could not export this audit.", { variant: "error" }));
+  const exportAudit = async (format) => {
+    setExporting(true);
+    try {
+      await exportAuditWorkbook(audit, { compareKey, format });
+      setExportOpen(false);
+    } catch (error) {
+      toast(error.message || "Could not export this audit.", { variant: "error" });
+    } finally {
+      setExporting(false);
+    }
+  };
   const completeSection = () => {
     if (!locationName || !audit.scans.some((scan) => scan.location === locationName)) return;
     patch({ completedLocations: [...new Set([...audit.completedLocations, locationName])], sectionsCompleted: (audit.sectionsCompleted ?? 0) + 1 });
@@ -251,7 +263,18 @@ export function AuditWorkspace({ state, update }) {
   }
 
   return <div className="space-y-6">
-    <div className="flex flex-wrap items-start justify-between gap-4"><div><Badge variant={closed ? "success" : "warning"}>{closed ? "Audit closed" : phase === "paused" ? "Progress saved" : "Ready to start"}</Badge><h2 id="workspace-title" tabIndex={-1} className="mt-3 text-2xl font-bold uppercase">{displayName}</h2><p className="mt-1 text-slate-500"><span className="uppercase">{caseAbbreviation(audit.category)}</span> · {audit.items.length} reference SKUs · {snapshotLabel}{audit.initials ? ` · Associate ${closed ? audit.completedBy ?? audit.initials : audit.initials}` : ""}</p></div>{closed && <div className="flex flex-wrap items-center gap-2">{unlocking ? <><Input autoFocus type="password" inputMode="numeric" className="h-9 w-36" value={unlockCode} placeholder="Manager code" aria-label="Manager code" onChange={(event) => setUnlockCode(event.target.value)} onKeyDown={(event) => event.key === "Enter" && reopen()} /><Button onClick={reopen}><Pencil className="h-4 w-4" />Unlock</Button><Button variant="ghost" onClick={() => { setUnlocking(false); setUnlockCode(""); }}>Cancel</Button></> : <Button onClick={() => setUnlocking(true)}><Pencil className="h-4 w-4" />Edit audit</Button>}<Button variant="outline" onClick={exportAudit}><Download className="h-4 w-4" />Export results</Button></div>}</div>
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><Badge variant={closed ? "success" : "warning"}>{closed ? "Audit closed" : phase === "paused" ? "Progress saved" : "Ready to start"}</Badge><h2 id="workspace-title" tabIndex={-1} className="mt-3 text-2xl font-bold uppercase">{displayName}</h2><p className="mt-1 text-slate-500"><span className="uppercase">{caseAbbreviation(audit.category)}</span> · {audit.items.length} reference SKUs · {snapshotLabel}{audit.initials ? ` · Associate ${closed ? audit.completedBy ?? audit.initials : audit.initials}` : ""}</p></div>{closed && <div className="flex flex-wrap items-center gap-2">{unlocking ? <><Input autoFocus type="password" inputMode="numeric" className="h-9 w-36" value={unlockCode} placeholder="Manager code" aria-label="Manager code" onChange={(event) => setUnlockCode(event.target.value)} onKeyDown={(event) => event.key === "Enter" && reopen()} /><Button onClick={reopen}><Pencil className="h-4 w-4" />Unlock</Button><Button variant="ghost" onClick={() => { setUnlocking(false); setUnlockCode(""); }}>Cancel</Button></> : <Button onClick={() => setUnlocking(true)}><Pencil className="h-4 w-4" />Edit audit</Button>}<Button variant="outline" onClick={() => setExportOpen(true)}><Download className="h-4 w-4" />Export results</Button></div>}</div>
+    <Sheet open={exportOpen} onOpenChange={setExportOpen}>
+      <SheetContent>
+        <SheetTitle>Choose export format</SheetTitle>
+        <SheetDescription className="mt-2">Both formats use the same filename. Choose the version your reviewer needs.</SheetDescription>
+        <div className="mt-6 grid gap-3">
+          <Button disabled={exporting} onClick={() => exportAudit("new")}>New version</Button>
+          <Button variant="outline" disabled={exporting} onClick={() => exportAudit("twc")}>TWC (old version)</Button>
+          <p className="text-sm text-slate-500">TWC uses the original Scan and Audit layout, with locations marked beside the scans.</p>
+        </div>
+      </SheetContent>
+    </Sheet>
     {notice && <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm" role="status">{notice}</div>}
     {!closed && <Card><CardHeader><CardTitle>{phase === "paused" ? "Resume audit" : "Start audit"}</CardTitle><CardDescription>{phase === "paused" ? "Your progress is saved. This audit keeps its own snapshot of the inventory; use the update button only if you want the latest source." : "This audit uses a snapshot of the inventory taken when it was started, so new source uploads won't change it. Enter the associate's initials, then start. The workspace stays focused until you complete or close the audit."}</CardDescription></CardHeader><CardContent className="flex flex-wrap items-end gap-3">
       {initialsField("Associate initials")}

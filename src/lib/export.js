@@ -1,4 +1,5 @@
 import { auditProgress, auditTally } from "@/lib/utils";
+import { createTwcWorkbook } from "@/lib/export-twc";
 
 const COLORS = {
   ink: "FF0F172A",
@@ -40,10 +41,15 @@ function styleHeader(sheet, colors) {
   sheet.views = [{ state: "frozen", ySplit: 1 }];
 }
 
-export async function exportAuditWorkbook(audit, { compareKey }) {
+export async function exportAuditWorkbook(audit, { compareKey, format = "new" }) {
   const ExcelJS = (await import("exceljs")).default;
-  const tally = auditTally(audit);
   const when = new Date(audit.completedAt || Date.now());
+  if (format === "twc") {
+    await downloadWorkbook(createTwcWorkbook(ExcelJS, audit, { compareKey }), audit, when);
+    return;
+  }
+  if (format !== "new") throw new Error("Unknown export format.");
+  const tally = auditTally(audit);
   const workbook = new ExcelJS.Workbook();
   const info = workbook.addWorksheet("Audit Info", { properties: { tabColor: { argb: COLORS.ink } } });
   const scanned = workbook.addWorksheet("Scanned", { properties: { tabColor: { argb: COLORS.sky } } });
@@ -166,6 +172,10 @@ export async function exportAuditWorkbook(audit, { compareKey }) {
   notes.height = Math.max(60, Math.ceil(String(audit.finalNote ?? "").length / 90) * 16 + 12);
   notes.getCell(1).border = border;
 
+  await downloadWorkbook(workbook, audit, when);
+}
+
+async function downloadWorkbook(workbook, audit, when) {
   const buffer = await workbook.xlsx.writeBuffer();
   const url = URL.createObjectURL(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
   const link = document.createElement("a");

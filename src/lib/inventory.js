@@ -14,6 +14,8 @@ const headerAliases = {
   style: [["style number", 120], ["style #", 118], ["style", 110], ["clu", 105], ["model number", 95], ["model", 80], ["design", 70]],
   quantity: [["on hand", 120], ["on hand qty", 118], ["quantity", 105], ["qty", 100], ["total qty", 90], ["inventory qty", 90], ["count", 80]],
   category: [["case code", 120], ["casecode", 118], ["case category", 115], ["audit category", 112], ["location category", 110], ["category", 100], ["case", 70], ["group", 60]],
+  price: [["sale price", 120], ["sell price", 118], ["retail price", 115], ["price", 100]],
+  salesFloor: [["sales floor", 120], ["available to sell", 115], ["ats", 100]],
 };
 const normalizedAliases = Object.fromEntries(Object.entries(headerAliases).map(([field, aliases]) => [field, aliases.map(([alias, score]) => [normalizeHeader(alias), score])]));
 
@@ -61,8 +63,16 @@ export async function readInventoryFile(file) {
   const { rows, dataIndex, columns } = candidate;
   const inventory = rows.slice(dataIndex).map((row, index) => {
     const get = (field) => columns[field] < 0 ? "" : row[columns[field]] ?? "";
+    const sku = String(get("sku")).trim();
     const quantity = Number(String(get("quantity")).replace(/,/g, "").trim()) || 0;
-    return { id: `row-${index}`, sku: String(get("sku")).trim(), description: String(get("description")).trim(), style: String(get("style")).trim(), quantity, category: String(get("category")).trim() };
+    const optionalNumber = (field) => {
+      const raw = String(get(field)).replace(/[$,]/g, "").trim();
+      const value = Number(raw);
+      if (!raw) return null;
+      if (!Number.isFinite(value) && sku) throw new Error(`Invalid ${field === "price" ? "sale price" : "sales-floor quantity"} for SKU ${sku}.`);
+      return Number.isFinite(value) ? value : null;
+    };
+    return { id: `row-${index}`, sku, description: String(get("description")).trim(), style: String(get("style")).trim(), quantity, category: String(get("category")).trim(), price: optionalNumber("price"), salesFloor: optionalNumber("salesFloor") };
   }).filter((item) => item.sku);
   if (!inventory.length) throw new Error("No inventory rows with item numbers or SKUs were found below the workbook headers.");
   return { inventory, sourceName: file.name, sourceUploadedAt: new Date().toISOString(), sourceModifiedAt: file.lastModified ? new Date(file.lastModified).toISOString() : "" };

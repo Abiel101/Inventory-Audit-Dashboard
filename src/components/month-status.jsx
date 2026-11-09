@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, Info, Loader2, Play, Search } from "lucide-react";
+import { AlertTriangle, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleDashed, Info, Loader2, Play, Search, FlaskConical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -120,16 +120,20 @@ export function MonthStatus({ state, update }) {
               <div className="flex gap-2" onClick={(event) => event.stopPropagation()}>
                 {(row.status === "notStarted" || row.status === "scheduled") && <Button size="sm" onClick={() => startAudit(code)}><Play className="h-3.5 w-3.5" />Start</Button>}
                 {row.status === "progress" && <Button size="sm" onClick={() => navigate(`/workspace/${row.audit.id}`)}>Continue</Button>}
-                {(row.status === "complete" || row.status === "issues") && row.audit && <Button size="sm" variant="outline" onClick={() => navigate(`/workspace/${row.audit.id}`)}>View</Button>}
+                {(row.status === "complete" || row.status === "issues") && row.audit && <>
+                  <Button size="sm" variant="outline" onClick={() => navigate(`/workspace/${row.audit.id}`)}>View</Button>
+                  {row.audit.research ? <Button size="sm" variant="outline" onClick={() => navigate("/research")}><FlaskConical className="h-3.5 w-3.5" />In research</Button>
+                    : <Button size="sm" variant="outline" onClick={() => update((current) => ({ ...current, audits: current.audits.map((audit) => audit.id === row.audit.id ? { ...audit, research: "queued" } : audit) }))}><FlaskConical className="h-3.5 w-3.5" />Add to research</Button>}
+                </>}
                 <Button size="sm" variant={expanded ? "default" : "outline"} aria-expanded={expanded} disabled={!closedRow} title={closedRow ? undefined : "Available once the audit is completed"} onClick={() => setOpen(expanded ? null : code)}>Details<ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} /></Button>
               </div>
             </div>
             </Gesture>
-            {expanded && (() => { const audit = row.audit; const result = resultsOf(audit); const cells = [["Audit", audit.name], ["Closed by", audit.completedBy || audit.initials || "—"], ["Started", stamp(audit.startedAt)], ["Completed", stamp(audit.completedAt)], ["Inventory source", audit.snapshot?.sourceName || "—"], ["Progress", `${row.progress}%`], ["SKUs in audit", result.skus.toLocaleString()], ["Units expected", result.need.toLocaleString()], ["Units scanned", result.found.toLocaleString()], ["Units missing", result.missing.toLocaleString()], ["Scans not in audit", result.extra.toLocaleString()]];
-              return <div className="space-y-3 border-t border-slate-200 bg-slate-50 p-4">
+            {closedRow && (() => { const audit = row.audit; const result = resultsOf(audit); const cells = [["Audit", audit.name], ["Closed by", audit.completedBy || audit.initials || "—"], ["Started", stamp(audit.startedAt)], ["Completed", stamp(audit.completedAt)], ["Inventory source", audit.snapshot?.sourceName || "—"], ["Progress", `${row.progress}%`], ["SKUs in audit", result.skus.toLocaleString()], ["Units expected", result.need.toLocaleString()], ["Units scanned", result.found.toLocaleString()], ["Units missing", result.missing.toLocaleString()], ["Scans not in audit", result.extra.toLocaleString()]];
+              return <div className={cn("grid transition-[grid-template-rows,opacity] duration-300 ease-in-out", expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")} aria-hidden={!expanded} inert={!expanded}><div className="overflow-hidden"><div className="space-y-3 border-t border-slate-200 bg-slate-50 p-4">
                 <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">{cells.map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-xs text-slate-500">{label}</dt><dd className="truncate font-medium" title={String(value)}>{value}</dd></div>)}</dl>
                 <div><p className="text-xs text-slate-500">Final note</p><p className="whitespace-pre-wrap break-words text-sm">{audit.finalNote || "No final note was added."}</p></div>
-              </div>; })()}
+              </div></div></div>; })()}
           </div>; })}</CardContent></Card>
       </section>) : <p className="text-sm text-slate-500">No case codes match this filter.</p>}</div>
     </>}

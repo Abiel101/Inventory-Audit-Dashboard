@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { useTransition } from "@/components/ui/transition";
 import { DataTable } from "@/components/data-table";
 import { auditProgress, auditTally, cn, formatDate, identifiersMatch, scanKey } from "@/lib/utils";
-import { ItemSheet, resizeImage } from "@/components/item-sheet";
+import { ItemSheet, PinnedItemCard, resizeImage } from "@/components/item-sheet";
 import { categoryOf, findKnownIssue, readInventoryFile } from "@/lib/inventory";
 import { caseAbbreviation, exportAuditWorkbook } from "@/lib/export";
 
@@ -57,7 +57,7 @@ export function AuditWorkspace({ state, update }) {
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [detail, setDetail] = useState(null);
-  const [pinned, setPinned] = useState(false);
+  const [pinnedEntry, setPinnedEntry] = useState(null);
 
   useEffect(() => {
     if (!audit) return;
@@ -155,20 +155,19 @@ export function AuditWorkspace({ state, update }) {
     } catch (error) { setUploaded(null); setUploadError(error.message); }
   };
 
-  const detailKey = detail ? compareKey(detail.sku) : "";
-  const addImages = async (files) => {
+  const addImagesFor = (key) => async (files) => {
     try {
       const added = await Promise.all(files.filter((file) => file.type.startsWith("image/")).map((file) => resizeImage(file)));
-      if (added.length) update((current) => ({ ...current, audits: current.audits.map((candidate) => candidate.id === audit.id ? { ...candidate, itemImages: { ...candidate.itemImages, [detailKey]: [...(candidate.itemImages?.[detailKey] ?? []), ...added] } } : candidate) }));
+      if (added.length) update((current) => ({ ...current, audits: current.audits.map((candidate) => candidate.id === audit.id ? { ...candidate, itemImages: { ...candidate.itemImages, [key]: [...(candidate.itemImages?.[key] ?? []), ...added] } } : candidate) }));
     } catch (error) { toast(error.message, { variant: "error" }); }
   };
-  const removeImage = (index) => patch({ itemImages: { ...audit.itemImages, [detailKey]: (audit.itemImages?.[detailKey] ?? []).filter((_, position) => position !== index) } });
+  const removeImageFor = (key) => (index) => patch({ itemImages: { ...audit.itemImages, [key]: (audit.itemImages?.[key] ?? []).filter((_, position) => position !== index) } });
   const issueFor = (entry) => findKnownIssue(state.knownIssues, entry);
-  const openDetail = (entry) => {
+  const buildDetail = (entry) => {
     const sku = entry.sku;
     const item = audit.items.find((candidate) => identifiersMatch(candidate.sku, sku)) ?? state.inventory.find((candidate) => identifiersMatch(candidate.sku, sku)) ?? {};
     const scans = audit.scans.filter((scan) => identifiersMatch(scan.sku, sku));
-    setDetail({
+    return {
       ...item,
       sku,
       description: entry.description || item.description || "",
@@ -178,8 +177,17 @@ export function AuditWorkspace({ state, update }) {
       locations: [...new Set(scans.map((scan) => scan.location))].join(", "),
       issue: issueFor({ sku, style: entry.style || item.style }),
       auditNote: audit.itemNotes?.[compareKey(sku)] ?? "",
-    });
+    };
   };
+  const openDetail = (entry) => setDetail(buildDetail(entry));
+  const pinDetail = () => {
+    setPinnedEntry({ sku: detail.sku, description: detail.description, style: detail.style });
+    setDetail(null);
+    toast("Item pinned to the Audit tab", { variant: "success" });
+  };
+  const pinnedDetail = pinnedEntry ? buildDetail(pinnedEntry) : null;
+  const detailKey = detail ? compareKey(detail.sku) : "";
+  const pinnedKey = pinnedDetail ? compareKey(pinnedDetail.sku) : "";
 
   const columns = [
     { accessorKey: "sku", header: "SKU" },
@@ -197,7 +205,7 @@ export function AuditWorkspace({ state, update }) {
   const others = state.audits.filter((item) => item.id !== audit.id && item.category === audit.category);
 
   const view = closed && tab === "scan" ? "items" : tab;
-  const tabList = closed ? [["items", "Audit"], ["research", "Research"]] : [["scan", "Scan"], ["items", "Audit"], ["research", "Research"]];
+  const tabList = closed ? [["items", "Audit"], ["sections", "Sections"], ["research", "Research"]] : [["scan", "Scan"], ["items", "Audit"], ["sections", "Sections"], ["research", "Research"]];
   const tabs = <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-xs" role="tablist">
     {tabList.map(([value, label]) => <button key={value} role="tab" aria-selected={view === value} onClick={() => value === "research" && !closed ? toast("Not available until audit is completed", { variant: "error" }) : setTab(value)} className={cn("flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium", view === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{value === "research" && <FlaskConical className="h-3.5 w-3.5" />}{label}</button>)}
   </div>;
@@ -209,6 +217,11 @@ export function AuditWorkspace({ state, update }) {
         {locationSummary.length ? locationSummary.map(([name, units]) => <button key={name} type="button" disabled={phase !== "running"} onClick={() => reopenSection(name)} title="Select this section to add more scans" className={cn("flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left", phase === "running" && "hover:bg-slate-100", name === locationName && "bg-sky-50 ring-1 ring-sky-300")}><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant="success">Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></button>) : <p className="text-slate-500">No sections scanned yet.</p>}
       </CardContent></Card>
     </div>;
+
+  const completedSections = locationSummary.filter(([name]) => audit.completedLocations.includes(name));
+  const sectionsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle><CardDescription className="text-xs">Only sections marked complete. Available any time, including after the audit is closed.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs">
+    {completedSections.length ? <div className="divide-y divide-slate-200">{completedSections.map(([name, units]) => <div key={name} className="flex items-center justify-between gap-3 py-2"><span className="font-medium">{name}</span><span className="flex items-center gap-3 text-slate-500">{new Set(audit.scans.filter((scan) => scan.location === name).map((scan) => scan.sku)).size} SKUs · {units} units<Badge variant="success">Done</Badge></span></div>)}</div> : <p className="py-4 text-center text-slate-500">No sections have been completed yet.</p>}
+  </CardContent></Card>;
 
   const scanPanel = <div className="space-y-5">
       {phase === "running" && <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Scan items</CardTitle><CardDescription className="text-[11px]">Scan each item individually; every scan counts as one unit.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs">
@@ -280,15 +293,17 @@ export function AuditWorkspace({ state, update }) {
     <DataTable columns={researchColumns} persistKey={`${audit.id}:research`} data={comparison} searchPlaceholder="Search SKUs..." onRowClick={openDetail} rowClassName={(r) => issueFor({ sku: r.sku, style: r.style }) ? issueTone : r.changed ? "bg-amber-50 hover:bg-amber-50" : ""} />
   </CardContent></Card>;
 
-  const fullWidth = (panel, extra = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{!closed && phase === "paused" ? null : <div className="w-fit">{tabs}</div>}{progressBar}{panel}{extra}</div>;
-  const baseContent = phase === "paused" ? fullWidth(itemsPanel)
-    : closed ? (view === "research" ? fullWidth(researchPanel) : fullWidth(itemsPanel, finalPanel))
-    : view === "items" ? fullWidth(itemsPanel)
+  const pinnedCard = pinnedDetail && <PinnedItemCard item={pinnedDetail} onUnpin={() => setPinnedEntry(null)} images={audit.itemImages?.[pinnedKey] ?? []} onAddImages={addImagesFor(pinnedKey)} onRemoveImage={removeImageFor(pinnedKey)} />;
+  const fullWidth = (panel, extra = null, pin = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{!closed && phase === "paused" ? null : <div className="w-fit">{tabs}</div>}{progressBar}{pin}{panel}{extra}</div>;
+  const baseContent = phase === "paused" ? fullWidth(itemsPanel, null, pinnedCard)
+    : closed ? (view === "research" ? fullWidth(researchPanel) : view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, finalPanel, pinnedCard))
+    : view === "items" ? fullWidth(itemsPanel, null, pinnedCard)
+    : view === "sections" ? fullWidth(sectionsPanel)
     : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{view === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{view === "scan" ? scanPanel : researchPanel}</div></div>;
 
   const content = <>
-    <div className={pinned ? "lg:pr-80" : ""}>{baseContent}</div>
-    <ItemSheet item={detail} pinned={pinned} onPin={() => setPinned((value) => !value)} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImages : undefined} onRemoveImage={removeImage} />
+    {baseContent}
+    <ItemSheet item={detail} onPin={pinDetail} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImagesFor(detailKey) : undefined} onRemoveImage={removeImageFor(detailKey)} />
   </>;
 
   const initialsField = (label) => <label className="grid gap-1 text-sm font-medium">{label}<Input className="w-48 uppercase" maxLength={5} value={initials} onChange={(event) => setInitials(event.target.value)} placeholder="e.g. AB" /></label>;

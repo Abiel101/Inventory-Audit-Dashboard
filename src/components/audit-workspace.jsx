@@ -10,7 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/components/ui/toast";
 import { DataTable } from "@/components/data-table";
 import { auditProgress, auditTally, cn, formatDate, identifiersMatch, scanKey } from "@/lib/utils";
-import { categoryOf, readInventoryFile } from "@/lib/inventory";
+import { ItemSheet } from "@/components/item-sheet";
+import { categoryOf, findKnownIssue, readInventoryFile } from "@/lib/inventory";
 import { caseAbbreviation, exportAuditWorkbook } from "@/lib/export";
 
 const compareKey = (value) => { const key = scanKey(value); return /^\d+$/.test(key) ? key.replace(/^0+(?=\d)/, "") : key; };
@@ -22,10 +23,11 @@ const rowTone = {
   over: "",
 };
 const resultLabel = { extra: "Not in audit", match: "Matched", short: "Short", over: "Over" };
+const issueTone = "bg-indigo-100 text-indigo-900 hover:bg-indigo-100";
 const resultVariant = { extra: "destructive", match: "success", short: "warning", over: "warning" };
 
 function NoteInput({ sku, value, onSave }) {
-  return <Input className="h-8 min-w-48" defaultValue={value} placeholder="Add a note" aria-label={`Note for ${sku}`} onBlur={(event) => event.target.value.trim() !== value && onSave(event.target.value)} onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()} />;
+  return <Input className="h-8 min-w-48" defaultValue={value} placeholder="Add a note" aria-label={`Note for ${sku}`} onClick={(event) => event.stopPropagation()} onBlur={(event) => event.target.value.trim() !== value && onSave(event.target.value)} onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()} />;
 }
 
 function Empty({ title, detail }) {
@@ -52,6 +54,7 @@ export function AuditWorkspace({ state, update }) {
   const [noteDraft, setNoteDraft] = useState(audit?.finalNote ?? "");
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [detail, setDetail] = useState(null);
 
   useEffect(() => {
     if (!audit) return;
@@ -141,6 +144,24 @@ export function AuditWorkspace({ state, update }) {
     } catch (error) { setUploaded(null); setUploadError(error.message); }
   };
 
+  const issueFor = (entry) => findKnownIssue(state.knownIssues, entry);
+  const openDetail = (entry) => {
+    const sku = entry.sku;
+    const item = audit.items.find((candidate) => identifiersMatch(candidate.sku, sku)) ?? state.inventory.find((candidate) => identifiersMatch(candidate.sku, sku)) ?? {};
+    const scans = audit.scans.filter((scan) => identifiersMatch(scan.sku, sku));
+    setDetail({
+      ...item,
+      sku,
+      description: entry.description || item.description || "",
+      style: entry.style || item.style || "",
+      expected: tally.expected.get(sku) ?? tally.expected.get(item.sku) ?? null,
+      scanned: scans.reduce((sum, scan) => sum + (Number(scan.qty) || 0), 0),
+      locations: [...new Set(scans.map((scan) => scan.location))].join(", "),
+      issue: issueFor({ sku, style: entry.style || item.style }),
+      auditNote: audit.itemNotes?.[compareKey(sku)] ?? "",
+    });
+  };
+
   const columns = [
     { accessorKey: "sku", header: "SKU" },
     { accessorKey: "description", header: "Description", meta: "wide", cell: ({ getValue }) => getValue() ? <Tooltip><TooltipTrigger asChild><span className="block w-[16rem] max-w-[16rem] cursor-default truncate whitespace-nowrap">{getValue()}</span></TooltipTrigger><TooltipContent className="max-w-md">{getValue()}</TooltipContent></Tooltip> : null },
@@ -150,7 +171,7 @@ export function AuditWorkspace({ state, update }) {
     { accessorKey: "qty", header: "Scanned" },
     { id: "total", header: "Audit total", accessorFn: (scan) => tally.totalFor(scan).total, cell: ({ row }) => { const { total, expected } = tally.totalFor(row.original); return expected === null ? `${total} / —` : `${total} / ${expected}`; } },
     { id: "result", header: "Result", accessorFn: (scan) => tally.status(scan), cell: ({ getValue }) => <Badge variant={resultVariant[getValue()]}>{resultLabel[getValue()]}</Badge> },
-    ...(!closed ? [{ id: "remove", header: "", enableSorting: false, cell: ({ row }) => <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`Remove scan for ${row.original.sku}`} onClick={() => removeScan(row.original)}><X className="h-4 w-4 text-rose-600" /></Button> }] : []),
+    ...(!closed ? [{ id: "remove", header: "", enableSorting: false, cell: ({ row }) => <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`Remove scan for ${row.original.sku}`} onClick={(event) => { event.stopPropagation(); removeScan(row.original); }}><X className="h-4 w-4 text-rose-600" /></Button> }] : []),
   ];
 
   const locationSummary = [...audit.scans.reduce((map, scan) => map.set(scan.location, (map.get(scan.location) ?? 0) + (Number(scan.qty) || 0)), new Map())];
@@ -179,7 +200,7 @@ export function AuditWorkspace({ state, update }) {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2"><Button size="sm" className="h-8 text-xs" variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button><div className="flex rounded-md border border-slate-300 bg-white p-0.5 text-xs" role="group" aria-label="Input type">{[["sku", "SKU"], ["style", "Style #"]].map(([value, label]) => <button key={value} type="button" aria-pressed={inputMode === value} onClick={() => setInputMode(value)} className={cn("rounded px-2.5 py-1 font-medium", inputMode === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{label}</button>)}</div></div>
       </CardContent></Card>}
-      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable columns={columns} data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
+      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable columns={columns} persistKey={`${audit.id}:scan`} data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." onRowClick={openDetail} rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
     </div>;
 
   const reference = compareId === "uploaded" ? uploaded : others.find((item) => item.id === compareId) ? (() => { const past = others.find((item) => item.id === compareId); return { id: past.id, label: `${past.name.toUpperCase()} · ${formatDate(past.createdAt)}`, items: past.items, scans: past.scans }; })() : null;
@@ -194,7 +215,7 @@ export function AuditWorkspace({ state, update }) {
       const nowLocations = [...r.nowLocations].sort().join(", ");
       const beforeLocations = [...r.beforeLocations].sort().join(", ");
       const changed = !!reference && (r.now !== r.before || (reference.scans.length > 0 && (nowLocations !== beforeLocations || r.nowScanned !== r.beforeScanned)));
-      return { ...r, nowLocations: nowLocations || "—", beforeLocations: beforeLocations || "—", changed, note: audit.itemNotes?.[r.id] ?? "" };
+      return { ...r, nowLocations: nowLocations || "—", beforeLocations: beforeLocations || "—", changed, note: audit.itemNotes?.[r.id] ?? "", style: audit.items.find((item) => compareKey(item.sku) === r.id)?.style ?? "", description: audit.items.find((item) => compareKey(item.sku) === r.id)?.description ?? "" };
     });
   })();
   const researchColumns = [
@@ -221,7 +242,7 @@ export function AuditWorkspace({ state, update }) {
     { accessorKey: "scanned", header: "Scanned" },
     { accessorKey: "remaining", header: "Remaining", cell: ({ getValue }) => getValue() ? <Badge variant="warning">{getValue()} missing</Badge> : <Badge variant="success">Found</Badge> },
   ];
-  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={itemColumns} data={itemRows} searchPlaceholder="Search audit items..." rowClassName={(row) => row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
+  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={itemColumns} persistKey={`${audit.id}:items`} data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => issueFor(row) ? issueTone : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
 
   const saveFinal = () => { patch({ finalNote: noteDraft.trim() }); toast("Final note saved", { variant: "success" }); };
   const finalPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Final note</CardTitle><CardDescription className="text-xs">Add a closing note. It appears on the Audit Info sheet of the export; review and update it here first.</CardDescription></CardHeader><CardContent className="grid gap-3 p-3 pt-0 text-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
@@ -237,14 +258,16 @@ export function AuditWorkspace({ state, update }) {
     </div>
     {uploadError && <p role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{uploadError}</p>}
     {!reference && <p className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">Optionally select a previous audit or upload one to compare.{others.length || uploaded ? "" : " No previous audit of this case code exists yet."}</p>}
-    <DataTable columns={researchColumns} data={comparison} searchPlaceholder="Search SKUs..." rowClassName={(r) => r.changed ? "bg-amber-50 hover:bg-amber-50" : ""} />
+    <DataTable columns={researchColumns} persistKey={`${audit.id}:research`} data={comparison} searchPlaceholder="Search SKUs..." onRowClick={openDetail} rowClassName={(r) => issueFor({ sku: r.sku, style: r.style }) ? issueTone : r.changed ? "bg-amber-50 hover:bg-amber-50" : ""} />
   </CardContent></Card>;
 
   const fullWidth = (panel, extra = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{!closed && phase === "paused" ? null : <div className="w-fit">{tabs}</div>}{progressBar}{panel}{extra}</div>;
-  const content = phase === "paused" ? fullWidth(itemsPanel)
+  const baseContent = phase === "paused" ? fullWidth(itemsPanel)
     : closed ? (view === "research" ? fullWidth(researchPanel) : fullWidth(itemsPanel, finalPanel))
     : view === "items" ? fullWidth(itemsPanel)
     : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{view === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{view === "scan" ? scanPanel : researchPanel}</div></div>;
+
+  const content = <>{baseContent}<ItemSheet item={detail} onClose={() => setDetail(null)} /></>;
 
   const initialsField = (label) => <label className="grid gap-1 text-sm font-medium">{label}<Input className="w-48 uppercase" maxLength={5} value={initials} onChange={(event) => setInitials(event.target.value)} placeholder="e.g. AB" /></label>;
 

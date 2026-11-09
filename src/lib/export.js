@@ -1,5 +1,5 @@
 import { auditProgress, auditTally } from "@/lib/utils";
-import { createTwcWorkbook } from "@/lib/export-twc";
+import { createTwcWorkbook, caseNote, LOCATION_FILL, NOTE_FILL } from "@/lib/export-twc";
 
 const COLORS = {
   ink: "FF0F172A",
@@ -41,11 +41,11 @@ function styleHeader(sheet, colors) {
   sheet.views = [{ state: "frozen", ySplit: 1 }];
 }
 
-export async function exportAuditWorkbook(audit, { compareKey, format = "new" }) {
+export async function exportAuditWorkbook(audit, { compareKey, format = "new", caseFor }) {
   const ExcelJS = (await import("exceljs")).default;
   const when = new Date(audit.completedAt || Date.now());
   if (format === "twc") {
-    await downloadWorkbook(createTwcWorkbook(ExcelJS, audit, { compareKey }), audit, when);
+    await downloadWorkbook(createTwcWorkbook(ExcelJS, audit, { compareKey, caseFor }), audit, when);
     return;
   }
   if (format !== "new") throw new Error("Unknown export format.");
@@ -87,9 +87,9 @@ export async function exportAuditWorkbook(audit, { compareKey, format = "new" })
   scanned.columns = [
     { header: "SKU", width: 18 }, { header: "Description", width: descriptionWidth }, { header: "Style", width: 16 },
     { header: "Location", width: 18 }, { header: "Scanned", width: 11 }, { header: "Date / Time", width: 20 },
-    { header: "Expected", width: 11 }, { header: "Audit total", width: 12 }, { header: "Result", width: 18 },
+    { header: "Expected", width: 11 }, { header: "Audit total", width: 12 }, { header: "Result", width: 18 }, { header: "Notes", width: 40 },
   ];
-  styleHeader(scanned, [COLORS.ink, COLORS.sky, COLORS.indigo, COLORS.slate, COLORS.emerald, COLORS.sky, COLORS.rose, COLORS.amber, COLORS.indigo]);
+  styleHeader(scanned, [COLORS.ink, COLORS.sky, COLORS.indigo, COLORS.slate, COLORS.emerald, COLORS.sky, COLORS.rose, COLORS.amber, COLORS.indigo, COLORS.slate]);
   audit.scans.forEach((scan, index) => {
     const n = index + 2;
     const { total, expected } = tally.totalFor(scan);
@@ -100,14 +100,17 @@ export async function exportAuditWorkbook(audit, { compareKey, format = "new" })
       { formula: `IFERROR(INDEX(Audit!$D$2:$D$${itemLast},MATCH(A${n},Audit!$A$2:$A$${itemLast},0)),"")`, result: expected ?? "" },
       { formula: `SUMIF($A$2:$A$${scanLast},A${n},$E$2:$E$${scanLast})`, result: total },
       { formula: `IF(G${n}="","Not in audit",IF(H${n}>=G${n},"Quantity met","Quantity differs"))`, result },
+      [caseNote(audit, scan, caseFor), scan.notes || audit.itemNotes?.[compareKey(scan.sku)]].filter(Boolean).join(" · "),
     ]);
     row.getCell(1).numFmt = "@";
     row.getCell(6).numFmt = "mm/dd/yyyy hh:mm";
     row.eachCell((cell) => { cell.border = border; cell.alignment = { vertical: "middle", wrapText: true }; });
     if (result === "Not in audit") row.fill = fill(COLORS.extra);
     else if (result === "Quantity met") row.fill = fill(COLORS.met);
+    if (row.getCell(10).value) row.getCell(10).fill = NOTE_FILL;
+    row.getCell(4).fill = LOCATION_FILL;
   });
-  scanned.autoFilter = { from: "A1", to: `I${scanLast}` };
+  scanned.autoFilter = { from: "A1", to: `J${scanLast}` };
 
   const expectedUnits = expectedRows.reduce((sum, [, value]) => sum + value, 0);
   const foundUnits = [...tally.scanned.values()].reduce((sum, value) => sum + value, 0);

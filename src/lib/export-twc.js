@@ -7,17 +7,31 @@ const headerFont = { ...font, bold: true, size: 12 };
 const auditFont = { name: "Arial", size: 9, color: { argb: "FF000000" } };
 const numberFormat = "[$-10409]#,##0;-#,##0";
 
-export function createTwcWorkbook(ExcelJS, audit, { compareKey }) {
+export const LOCATION_FILL = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFDB58" } };
+export const NOTE_FILL = { type: "pattern", pattern: "solid", fgColor: { argb: "FFBDD7EE" } };
+
+// Describes where a scanned item belongs when it is not part of this audit's case code.
+export function caseNote(audit, scan, caseFor) {
+  if (audit.items.some((item) => identifiersMatch(item.sku, scan.sku) || (item.style && identifiersMatch(item.style, scan.sku)))) return "";
+  const category = caseFor?.(scan);
+  if (!category) return "Not in any inventory case";
+  if (category === "(BLANK)") return "Blank case code";
+  return `In case ${String(category).split(/\s*[-–—]\s*/)[0].trim().toUpperCase()}`;
+}
+
+export function createTwcWorkbook(ExcelJS, audit, { compareKey, caseFor }) {
   const workbook = new ExcelJS.Workbook();
   workbook.calcProperties.fullCalcOnLoad = true;
   const scanSheet = workbook.addWorksheet("Scan", { properties: { defaultRowHeight: 14.5 } });
   const auditSheet = workbook.addWorksheet("Audit");
-  scanSheet.columns = [16.81640625, 15, 23.7265625, 20.26953125, 10.81640625, 100, 14.7265625].map((width) => ({ width }));
+  scanSheet.columns = [16.81640625, 15, 23.7265625, 20.26953125, 10.81640625, 100, 22, 60].map((width) => ({ width }));
   auditSheet.columns = [2.54296875, 15.453125, 63.54296875, 20.1796875, 23.54296875, 14.453125, 8.54296875, 10.54296875, 8.54296875, 8.7265625, 7.81640625, 28.81640625].map((width) => ({ width }));
   scanSheet.addRow(["Scan UPC", "Not in TWC", "Qty Scanned/On Hand", "Style Number", "Price", "Description"]);
   auditSheet.addRow(["", "UPC", "Description", "Style Number", "Case Code", "Sale Price", "On Hand", "Sales Floor", "Scan Qty", "Variance", "Phy Qty"]);
   scanSheet.getRow(1).height = 15.5;
-  for (let col = 1; col <= 6; col++) {
+  scanSheet.getCell("G1").value = "Location";
+  scanSheet.getCell("H1").value = "Notes";
+  for (let col = 1; col <= 8; col++) {
     const cell = scanSheet.getRow(1).getCell(col);
     cell.font = headerFont;
     cell.border = border;
@@ -31,7 +45,7 @@ export function createTwcWorkbook(ExcelJS, audit, { compareKey }) {
   }
   auditSheet.getCell("L1").value = { formula: "_xlfn.NUMBERVALUE(B1)", result: { error: "#VALUE!" } };
   auditSheet.getCell("L1").numFmt = "0";
-  scanSheet.autoFilter = "A1:F1";
+  scanSheet.autoFilter = "A1:H1";
   auditSheet.autoFilter = `A1:K${Math.max(1, audit.items.length + 1)}`;
 
   const representatives = new Map();
@@ -75,8 +89,18 @@ export function createTwcWorkbook(ExcelJS, audit, { compareKey }) {
       running.set(key, (running.get(key) ?? 0) + 1);
       const note = entry.scan.notes || audit.itemNotes?.[key];
       if (note) row.getCell(1).note = String(note);
+      const side = [caseNote(audit, entry.scan, caseFor), note].filter(Boolean).join(" · ");
+      if (side) {
+        const noteCell = row.getCell(8);
+        noteCell.value = side;
+        noteCell.fill = NOTE_FILL;
+        noteCell.font = { ...font, color: { argb: "FF1F3864" } };
+      }
     } else if (entry?.location) {
-      row.getCell(7).value = entry.location;
+      const locationCell = row.getCell(7);
+      locationCell.value = entry.location;
+      locationCell.fill = LOCATION_FILL;
+      locationCell.font = { ...font, bold: true };
     }
     for (let col = 1; col <= 6; col++) {
       const cell = row.getCell(col);

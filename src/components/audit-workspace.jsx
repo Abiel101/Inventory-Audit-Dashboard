@@ -114,7 +114,7 @@ export function AuditWorkspace({ state, update }) {
   const exportAudit = async (format) => {
     setExporting(true);
     try {
-      await exportAuditWorkbook(audit, { compareKey, format });
+      await exportAuditWorkbook(audit, { compareKey, format, caseFor });
       setExportOpen(false);
     } catch (error) {
       toast(error.message || "Could not export this audit.", { variant: "error" });

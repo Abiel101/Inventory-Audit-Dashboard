@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/toast";
+import { useTransition } from "@/components/ui/transition";
 import { DataTable } from "@/components/data-table";
 import { auditProgress, auditTally, cn, formatDate, identifiersMatch, scanKey } from "@/lib/utils";
 import { ItemSheet, resizeImage } from "@/components/item-sheet";
@@ -42,6 +43,7 @@ export function AuditWorkspace({ state, update }) {
   const [locationName, setLocationName] = useState("");
   const [sku, setSku] = useState("");
   const toast = useToast();
+  const transition = useTransition();
   const [tab, setTab] = useState("scan");
   const [confirming, setConfirming] = useState(false);
   const [compareId, setCompareId] = useState("");
@@ -79,10 +81,10 @@ export function AuditWorkspace({ state, update }) {
 
   const patch = (changes) => update((current) => ({ ...current, audits: current.audits.map((candidate) => candidate.id === audit.id ? { ...candidate, ...changes } : candidate) }));
 
-  const start = () => { if (!cleanInitials) return; patch({ phase: "running", initials: cleanInitials, startedAt: audit.startedAt ?? new Date().toISOString() }); setNotice(""); };
-  const saveAndClose = () => { patch({ phase: "paused" }); navigate("/dashboard"); requestAnimationFrame(() => document.getElementById("page-title")?.focus()); };
-  const finish = () => { if (!cleanInitials) return; patch({ status: "completed", phase: "closed", initials: cleanInitials, completedBy: cleanInitials, completedAt: new Date().toISOString() }); setConfirming(false); setTab("scan"); requestAnimationFrame(() => document.getElementById("workspace-title")?.focus()); };
-  const reopen = () => { if (unlockCode.trim() !== "0808") return toast("Incorrect code", { variant: "error" }); setUnlocking(false); setUnlockCode(""); patch({ status: "in-progress", phase: "running", completedAt: null, completedBy: null }); setTab("scan"); };
+  const start = () => { if (!cleanInitials) return; transition(phase === "paused" ? "Resuming audit" : "Starting audit", () => { patch({ phase: "running", initials: cleanInitials, startedAt: audit.startedAt ?? new Date().toISOString() }); setNotice(""); }, { detail: phase === "paused" ? "Restoring your saved progress…" : "Setting up your scan session…" }); };
+  const saveAndClose = () => transition("Saving progress", () => { patch({ phase: "paused" }); navigate("/dashboard"); requestAnimationFrame(() => document.getElementById("page-title")?.focus()); }, { detail: "Closing audit and returning to dashboard…" });
+  const finish = () => { if (!cleanInitials) return; transition("Completing audit", () => { patch({ status: "completed", phase: "closed", initials: cleanInitials, completedBy: cleanInitials, completedAt: new Date().toISOString() }); setConfirming(false); setTab("scan"); requestAnimationFrame(() => document.getElementById("workspace-title")?.focus()); }, { detail: "Finalizing results and archiving…" }); };
+  const reopen = () => { if (unlockCode.trim() !== "0808") return toast("Incorrect code", { variant: "error" }); setUnlocking(false); setUnlockCode(""); transition("Reopening audit", () => { patch({ status: "in-progress", phase: "running", completedAt: null, completedBy: null }); setTab("scan"); }, { detail: "Restoring audit for editing…" }); };
   const snapshot = audit.snapshot ?? { sourceName: "", sourceUploadedAt: "", takenAt: audit.createdAt };
   const snapshotLabel = `Snapshot of ${snapshot.sourceName || "inventory source"} taken ${new Date(snapshot.takenAt || audit.createdAt).toLocaleString()}`;
   const refreshItems = () => {

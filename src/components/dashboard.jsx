@@ -8,6 +8,7 @@ import { AuditPreview } from "@/components/audit-preview";
 import { DeleteGesture } from "@/components/slide-to-delete";
 import { buildAudit, categoryOf } from "@/lib/inventory";
 import { auditProgress, cn, dateKey } from "@/lib/utils";
+import { useTransition } from "@/components/ui/transition";
 
 export const RECENT_KEY = "inventory-audit-recent";
 const readJSON = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
@@ -51,6 +52,7 @@ function Row({ kind, title, detail, action, onPreview }) {
 
 export function Dashboard({ state, update }) {
   const navigate = useNavigate();
+  const transition = useTransition();
   const [previewId, setPreviewId] = useState(null);
   const now = new Date();
   const today = dateKey(now);
@@ -73,8 +75,10 @@ export function Dashboard({ state, update }) {
   const start = (code) => {
     const audit = buildAudit(state.inventory, code, undefined, 0, state);
     if (!audit.items.length) return;
-    update((current) => ({ ...current, audits: [audit, ...current.audits] }));
-    navigate(`/workspace/${audit.id}`);
+    transition("Starting audit", () => {
+      update((current) => ({ ...current, audits: [audit, ...current.audits] }));
+      navigate(`/workspace/${audit.id}`);
+    }, { detail: "Preparing inventory snapshot…" });
   };
   const deleteAudit = (id) => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== id) }));
   const open = (audit, label, outline) => <Button size="sm" variant={outline ? "outline" : "default"} onClick={() => navigate(`/workspace/${audit.id}`)}>{label}</Button>;

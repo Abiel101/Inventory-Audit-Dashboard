@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ToastProvider, useToast } from "@/components/ui/toast";
+import { TransitionProvider } from "@/components/ui/transition";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DataTable } from "@/components/data-table";
 import { formatDate, identifiersMatch, defaultLocations, themes, applyTheme, getSavedTheme } from "@/lib/utils";
@@ -189,5 +190,5 @@ function SettingsPage({ state, update }) {
 
 export default function App() {
   const [state, update, storageError] = useAuditState();
-  return <ToastProvider><AppShell state={state} update={update} storageError={storageError}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell></ToastProvider>;
+  return <ToastProvider><TransitionProvider><AppShell state={state} update={update} storageError={storageError}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell></TransitionProvider></ToastProvider>;
 }

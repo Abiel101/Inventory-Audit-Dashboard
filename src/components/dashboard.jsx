@@ -66,8 +66,7 @@ export function Dashboard({ state, update }) {
   const remaining = Math.max(codes.size - completedThisMonth.size, 0);
 
   const byClosed = (a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0);
-  const notCompleted = closedAudits.filter((audit) => auditProgress(audit) < 100).sort(byClosed);
-  const recentlyCompleted = closedAudits.filter((audit) => auditProgress(audit) >= 100).sort(byClosed).slice(0, 8);
+  const recentlyCompleted = [...closedAudits].sort(byClosed).slice(0, 3);
 
   const todayCodes = Object.keys(schedule).filter((code) => schedule[code] === today).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
   const auditFor = (code) => state.audits.find((audit) => audit.category === code && audit.status !== "completed") ?? state.audits.find((audit) => audit.category === code && audit.status === "completed" && audit.completedAt && dateKey(new Date(audit.completedAt)) === today);
@@ -104,12 +103,8 @@ export function Dashboard({ state, update }) {
       {inProgress.map((audit) => <DeleteGesture key={audit.id} label={audit.category || audit.name} onDelete={() => deleteAudit(audit.id)}><Row onPreview={() => setPreviewId(audit.id)} kind="progress" title={audit.category || audit.name} detail={`${auditProgress(audit)}% scanned · started ${shortDate(audit.startedAt || audit.createdAt)}${audit.initials ? ` by ${audit.initials}` : ""}`} action={open(audit, "Continue")} /></DeleteGesture>)}
     </Section>
 
-    <Section title="Not completed" description="Closed before every item was found" count={notCompleted.length} empty="Nothing left unfinished.">
-      {notCompleted.map((audit) => <Row key={audit.id} kind="issues" title={audit.category || audit.name} detail={`Closed at ${auditProgress(audit)}%${audit.completedAt ? ` · ${shortDate(audit.completedAt)}` : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""}`} action={open(audit, "View", true)} />)}
-    </Section>
-
-    <Section title="Recently completed" count={recentlyCompleted.length} empty="No completed audits yet.">
-      {recentlyCompleted.map((audit) => <Row key={audit.id} kind="complete" title={audit.category || audit.name} detail={`Completed ${audit.completedAt ? shortDate(audit.completedAt) : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""} · 100% scanned`} action={open(audit, "View", true)} />)}
+    <Section title="Recently completed" description="Your 3 most recent" count={recentlyCompleted.length} empty="No completed audits yet.">
+      {recentlyCompleted.map((audit) => <Row key={audit.id} kind={auditProgress(audit) < 100 ? "issues" : "complete"} title={audit.category || audit.name} detail={`Completed ${audit.completedAt ? shortDate(audit.completedAt) : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""} · ${auditProgress(audit)}% scanned`} action={open(audit, "View", true)} />)}
     </Section>
     <AuditPreview audit={state.audits.find((audit) => audit.id === previewId)} onClose={() => setPreviewId(null)} />
   </div>;

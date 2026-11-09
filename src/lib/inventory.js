@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { dateKey } from "@/lib/utils";
+import { dateKey, identifiersMatch } from "@/lib/utils";
 
 const normalizeHeader = (value) => String(value ?? "").toLowerCase().replace(/#/g, " number ").replace(/[^a-z0-9]/g, "");
 const headerAliases = {
@@ -135,4 +135,9 @@ export function groupCodes(codes) {
 // Items are copied into the audit so later source uploads never change a started audit; "source" records which upload the copy came from.
 export function buildAudit(inventory, category, name, index = 0, source = {}) {
   return { snapshot: { sourceName: source.sourceName ?? "", sourceUploadedAt: source.sourceUploadedAt ?? "", takenAt: new Date().toISOString() }, id: `audit-${Date.now()}-${index}`, name: name || `${category} audit`, category, items: inventory.filter((item) => categoryOf(item) === category).map((item) => ({ ...item })), scans: [], completedLocations: [], status: "in-progress", createdAt: new Date().toISOString(), completedAt: null };
+}
+
+// Known issues are flagged in advance by management and matched to scanned or expected pieces by SKU or style.
+export function findKnownIssue(issues = [], { sku, style } = {}) {
+  return issues.find((issue) => (issue.sku && identifiersMatch(issue.sku, sku)) || (issue.style && (identifiersMatch(issue.style, style) || identifiersMatch(issue.style, sku)))) ?? null;
 }

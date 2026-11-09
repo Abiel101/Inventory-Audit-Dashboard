@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, Download, FlaskConical, Pencil, Play, RefreshCw, Save, Upload, X } from "lucide-react";
+import { CheckCircle2, Download, Pencil, Play, RefreshCw, Save, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,9 +10,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/components/ui/toast";
 import { useTransition } from "@/components/ui/transition";
 import { DataTable } from "@/components/data-table";
-import { auditProgress, auditTally, cn, formatDate, identifiersMatch, scanKey } from "@/lib/utils";
+import { auditProgress, auditTally, cn, identifiersMatch, scanKey } from "@/lib/utils";
 import { ItemSheet, resizeImage } from "@/components/item-sheet";
-import { categoryOf, findKnownIssue, readInventoryFile } from "@/lib/inventory";
+import { categoryOf, findKnownIssue } from "@/lib/inventory";
 import { caseAbbreviation, exportAuditWorkbook } from "@/lib/export";
 
 const compareKey = (value) => { const key = scanKey(value); return /^\d+$/.test(key) ? key.replace(/^0+(?=\d)/, "") : key; };
@@ -26,10 +26,6 @@ const rowTone = {
 const resultLabel = { extra: "Not in audit", match: "Matched", short: "Short", over: "Over" };
 const issueTone = "bg-indigo-100 text-indigo-900 hover:bg-indigo-100";
 const resultVariant = { extra: "destructive", match: "success", short: "warning", over: "warning" };
-
-function NoteInput({ sku, value, onSave }) {
-  return <Input className="h-8 min-w-48" defaultValue={value} placeholder="Add a note" aria-label={`Note for ${sku}`} onClick={(event) => event.stopPropagation()} onBlur={(event) => event.target.value.trim() !== value && onSave(event.target.value)} onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()} />;
-}
 
 function Empty({ title, detail }) {
   return <Card className="border-dashed"><CardContent className="p-8 text-center"><p className="font-semibold">{title}</p><p className="mt-1 text-sm text-slate-500">{detail}</p></CardContent></Card>;
@@ -46,10 +42,7 @@ export function AuditWorkspace({ state, update }) {
   const transition = useTransition();
   const [tab, setTab] = useState("scan");
   const [confirming, setConfirming] = useState(false);
-  const [compareId, setCompareId] = useState("");
   const [notice, setNotice] = useState("");
-  const [uploaded, setUploaded] = useState(null);
-  const [uploadError, setUploadError] = useState("");
   const [inputMode, setInputMode] = useState("sku");
   const [unlocking, setUnlocking] = useState(false);
   const [unlockCode, setUnlockCode] = useState("");
@@ -95,7 +88,6 @@ export function AuditWorkspace({ state, update }) {
     toast(`Audit updated from ${state.sourceName}: ${items.length} reference SKUs.`, { variant: "success" });
   };
   const updateButton = (size) => <Button variant="outline" size={size} title={snapshotLabel} onClick={refreshItems}><RefreshCw className="h-4 w-4" />Update audit with current source</Button>;
-  const setItemNote = (key, text) => patch({ itemNotes: { ...audit.itemNotes, [key]: text.trim() } });
 
   const addScan = () => {
     if (!locationName || !sku.trim()) return;
@@ -137,24 +129,6 @@ export function AuditWorkspace({ state, update }) {
     return match ? categoryOf(match) : null;
   };
 
-  const uploadPast = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    try {
-      const { inventory } = await readInventoryFile(file);
-      const items = inventory.filter((item) => categoryOf(item).trim().toUpperCase() === String(audit.category).trim().toUpperCase());
-      if (!items.length) {
-        const found = [...new Set(inventory.map(categoryOf))].slice(0, 5).join(", ");
-        setUploaded(null);
-        return setUploadError(`${file.name} doesn't match this audit (${String(audit.category).toUpperCase()}). It contains: ${found}. Upload a file for the same case code.`);
-      }
-      setUploadError("");
-      setUploaded({ id: "uploaded", label: file.name, items, scans: [] });
-      setCompareId("uploaded");
-    } catch (error) { setUploaded(null); setUploadError(error.message); }
-  };
-
   const detailKey = detail ? compareKey(detail.sku) : "";
   const addImages = async (files) => {
     try {
@@ -194,12 +168,11 @@ export function AuditWorkspace({ state, update }) {
   ];
 
   const locationSummary = [...audit.scans.reduce((map, scan) => map.set(scan.location, (map.get(scan.location) ?? 0) + (Number(scan.qty) || 0)), new Map())];
-  const others = state.audits.filter((item) => item.id !== audit.id && item.category === audit.category);
 
   const view = closed && tab === "scan" ? "items" : tab;
-  const tabList = closed ? [["items", "Audit"], ["research", "Research"]] : [["scan", "Scan"], ["items", "Audit"], ["research", "Research"]];
+  const tabList = closed ? [["items", "Audit"]] : [["scan", "Scan"], ["items", "Audit"]];
   const tabs = <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-xs" role="tablist">
-    {tabList.map(([value, label]) => <button key={value} role="tab" aria-selected={view === value} onClick={() => value === "research" && !closed ? toast("Not available until audit is completed", { variant: "error" }) : setTab(value)} className={cn("flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium", view === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{value === "research" && <FlaskConical className="h-3.5 w-3.5" />}{label}</button>)}
+    {tabList.map(([value, label]) => <button key={value} role="tab" aria-selected={view === value} onClick={() => setTab(value)} className={cn("flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium", view === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{label}</button>)}
   </div>;
 
   const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
@@ -222,32 +195,6 @@ export function AuditWorkspace({ state, update }) {
       <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable columns={columns} persistKey={`${audit.id}:scan`} data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." onRowClick={openDetail} rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
     </div>;
 
-  const reference = compareId === "uploaded" ? uploaded : others.find((item) => item.id === compareId) ? (() => { const past = others.find((item) => item.id === compareId); return { id: past.id, label: `${past.name.toUpperCase()} · ${formatDate(past.createdAt)}`, items: past.items, scans: past.scans }; })() : null;
-  const comparison = (() => {
-    const rows = new Map();
-    const row = (sku) => { const key = compareKey(sku); if (!rows.has(key)) rows.set(key, { id: key, sku, now: 0, nowScanned: 0, before: 0, beforeScanned: 0, nowLocations: new Set(), beforeLocations: new Set() }); return rows.get(key); };
-    audit.items.forEach((item) => { row(item.sku).now += Number(item.quantity) || 0; });
-    audit.scans.forEach((scan) => { const r = row(scan.sku); r.nowScanned += Number(scan.qty) || 0; r.nowLocations.add(scan.location); });
-    (reference?.items ?? []).forEach((item) => { row(item.sku).before += Number(item.quantity) || 0; });
-    (reference?.scans ?? []).forEach((scan) => { const r = row(scan.sku); r.beforeScanned += Number(scan.qty) || 0; r.beforeLocations.add(scan.location); });
-    return [...rows.values()].map((r) => {
-      const nowLocations = [...r.nowLocations].sort().join(", ");
-      const beforeLocations = [...r.beforeLocations].sort().join(", ");
-      const changed = !!reference && (r.now !== r.before || (reference.scans.length > 0 && (nowLocations !== beforeLocations || r.nowScanned !== r.beforeScanned)));
-      return { ...r, nowLocations: nowLocations || "—", beforeLocations: beforeLocations || "—", changed, note: audit.itemNotes?.[r.id] ?? "", style: audit.items.find((item) => compareKey(item.sku) === r.id)?.style ?? "", description: audit.items.find((item) => compareKey(item.sku) === r.id)?.description ?? "" };
-    });
-  })();
-  const researchColumns = [
-    { accessorKey: "sku", header: "SKU" },
-    { accessorKey: "now", header: "This audit expected" },
-    { accessorKey: "nowScanned", header: "This audit scanned" },
-    { accessorKey: "nowLocations", header: "This audit locations" },
-    ...(reference ? [{ accessorKey: "before", header: "Previous expected" }] : []),
-    ...(reference?.scans.length ? [{ accessorKey: "beforeScanned", header: "Previous scanned" }, { accessorKey: "beforeLocations", header: "Previous locations" }] : []),
-    ...(reference ? [{ id: "change", header: "Change", accessorFn: (r) => r.changed ? "Changed" : "Same", cell: ({ getValue }) => <Badge variant={getValue() === "Same" ? "secondary" : "warning"}>{getValue()}</Badge> }] : []),
-    { accessorKey: "note", header: "Notes", cell: ({ row }) => <NoteInput key={row.original.id} sku={row.original.sku} value={row.original.note} onSave={(text) => setItemNote(row.original.id, text)} /> },
-  ];
-
   const itemRows = [...tally.expected].map(([sku, expected]) => {
     const item = audit.items.find((entry) => entry.sku === sku);
     const scanned = tally.scanned.get(sku) ?? 0;
@@ -269,22 +216,12 @@ export function AuditWorkspace({ state, update }) {
     <Button onClick={saveFinal} disabled={noteDraft.trim() === (audit.finalNote ?? "")}>Save</Button>
   </CardContent></Card>;
 
-  const researchPanel = <Card><CardHeader><div className="flex items-center gap-2"><CardTitle>Research</CardTitle><Badge variant="secondary">Beta</Badge></div><CardDescription>Add notes on specific items below, or compare this audit with a previous audit of the same case code ({String(audit.category).toUpperCase()}) to spot product that moved or was sold incorrectly. Notes are saved with the audit.</CardDescription></CardHeader><CardContent className="space-y-4 text-sm">
-    <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-      <div className="rounded-md border border-slate-200 p-3 text-sm"><p className="text-xs text-slate-500">This audit</p><b className="uppercase">{audit.name}</b></div>
-      <select aria-label="Compare with" className="h-auto rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={compareId} onChange={(event) => setCompareId(event.target.value)}><option value="">Select a previous audit...</option>{uploaded && <option value="uploaded">Uploaded: {uploaded.label}</option>}{others.map((item) => <option key={item.id} value={item.id}>{item.name.toUpperCase()} · {formatDate(item.createdAt)}</option>)}</select>
-      <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-medium hover:bg-slate-100"><Upload className="h-4 w-4" />Upload past audit<input type="file" accept=".xlsx,.xls,.csv" className="sr-only" aria-label="Upload past audit" onChange={uploadPast} /></label>
-    </div>
-    {uploadError && <p role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{uploadError}</p>}
-    {!reference && <p className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">Optionally select a previous audit or upload one to compare.{others.length || uploaded ? "" : " No previous audit of this case code exists yet."}</p>}
-    <DataTable columns={researchColumns} persistKey={`${audit.id}:research`} data={comparison} searchPlaceholder="Search SKUs..." onRowClick={openDetail} rowClassName={(r) => issueFor({ sku: r.sku, style: r.style }) ? issueTone : r.changed ? "bg-amber-50 hover:bg-amber-50" : ""} />
-  </CardContent></Card>;
 
   const fullWidth = (panel, extra = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{!closed && phase === "paused" ? null : <div className="w-fit">{tabs}</div>}{progressBar}{panel}{extra}</div>;
   const baseContent = phase === "paused" ? fullWidth(itemsPanel)
-    : closed ? (view === "research" ? fullWidth(researchPanel) : fullWidth(itemsPanel, finalPanel))
+    : closed ? fullWidth(itemsPanel, finalPanel)
     : view === "items" ? fullWidth(itemsPanel)
-    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{view === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{view === "scan" ? scanPanel : researchPanel}</div></div>;
+    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{view === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{scanPanel}</div></div>;
 
   const content = <>
     <div className={pinned ? "flex items-start gap-4" : ""}>

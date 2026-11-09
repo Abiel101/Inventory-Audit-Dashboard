@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
-import { CalendarDays, CheckCircle2, ClipboardList, FileUp, LayoutDashboard, MapPin, Info, ListChecks, PackageSearch, Plus, Search, Settings, Trash2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, ClipboardList, FileUp, FlaskConical, LayoutDashboard, MapPin, Info, ListChecks, PackageSearch, Plus, Search, Settings, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { AuditCalendar } from "@/components/audit-calendar";
 import { Dashboard } from "@/components/dashboard";
 import { KnownIssues } from "@/components/known-issues";
 import { MonthStatus } from "@/components/month-status";
+import { Research } from "@/components/research";
 import { AuditWorkspace } from "@/components/audit-workspace";
 import { buildAudit, groupCodes, readInventoryFile, sourceAge } from "@/lib/inventory";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarRail, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
@@ -25,9 +26,10 @@ const navigation = [
   ["/workspace", "Audit workspace", ClipboardList],
   ["/calendar", "Calendar", CalendarDays],
   ["/status", "Monthly status", ListChecks],
+  ["/research", "Research", FlaskConical],
   ["/settings", "Settings", Settings],
 ];
-const pageTitles = { "/dashboard": "Audit dashboard", "/audits/new": "Build an audit", "/workspace": "Audit workspace", "/calendar": "Audit calendar", "/status": "Monthly status", "/settings": "Settings" };
+const pageTitles = { "/dashboard": "Audit dashboard", "/audits/new": "Build an audit", "/workspace": "Audit workspace", "/calendar": "Audit calendar", "/status": "Monthly status", "/research": "Research", "/settings": "Settings" };
 const pageTitle = (pathname) => pageTitles[Object.keys(pageTitles).find((path) => pathname === path || pathname.startsWith(`${path}/`))] ?? "Inventory Audit";
 const storageKey = "inventory-audit-react-state";
 const initialState = { inventory: [], audits: [], locations: defaultLocations, sourceName: "", mapping: {} };
@@ -190,5 +192,5 @@ function SettingsPage({ state, update }) {
 
 export default function App() {
   const [state, update, storageError] = useAuditState();
-  return <ToastProvider><TransitionProvider><AppShell state={state} update={update} storageError={storageError}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell></TransitionProvider></ToastProvider>;
+  return <ToastProvider><TransitionProvider><AppShell state={state} update={update} storageError={storageError}><Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard state={state} update={update} />} /><Route path="/audits/new" element={<AuditBuilder state={state} update={update} />} /><Route path="/workspace" element={<Workspace state={state} update={update} />} /><Route path="/workspace/:id" element={<Workspace state={state} update={update} />} /><Route path="/calendar" element={<Calendar state={state} update={update} />} /><Route path="/status" element={<MonthStatus state={state} update={update} />} /><Route path="/research" element={<Research state={state} update={update} />} /><Route path="/research/:id" element={<Research state={state} update={update} />} /><Route path="/settings" element={<SettingsPage state={state} update={update} />} /></Routes></AppShell></TransitionProvider></ToastProvider>;
 }

@@ -10,6 +10,7 @@ import { AuditPreview } from "@/components/audit-preview";
 import { DeleteGesture } from "@/components/slide-to-delete";
 import { buildAudit, categoryOf, groupCodes } from "@/lib/inventory";
 import { auditProgress, auditTally, cn, dateKey } from "@/lib/utils";
+import { useTransition } from "@/components/ui/transition";
 
 const Plain = ({ children }) => children;
 const SCHEDULE_KEY = "inventory-audit-schedule";
@@ -30,6 +31,7 @@ const inMonth = (value, month) => Boolean(value) && dateKey(new Date(value)).sli
 
 export function MonthStatus({ state, update }) {
   const navigate = useNavigate();
+  const transition = useTransition();
   const currentMonth = dateKey(new Date()).slice(0, 7);
   const [month, setMonth] = useState(currentMonth);
   const [filter, setFilter] = useState("all");
@@ -67,8 +69,10 @@ export function MonthStatus({ state, update }) {
   const startAudit = (code) => {
     const audit = buildAudit(state.inventory, code, undefined, 0, state);
     if (!audit.items.length) return;
-    update((current) => ({ ...current, audits: [audit, ...current.audits] }));
-    navigate(`/workspace/${audit.id}`);
+    transition("Starting audit", () => {
+      update((current) => ({ ...current, audits: [audit, ...current.audits] }));
+      navigate(`/workspace/${audit.id}`);
+    }, { detail: "Preparing inventory snapshot…" });
   };
   const resultsOf = (audit) => {
     const { expected, scanned, extra } = auditTally(audit);

@@ -93,7 +93,8 @@ export function AuditWorkspace({ state, update }) {
 
   const addScan = () => {
     if (!locationName || !sku.trim()) return;
-    const reference = byStyle ? audit.items.find((item) => identifiersMatch(item.style, sku)) : audit.items.find((item) => identifiersMatch(item.sku, sku)) ?? audit.items.find((item) => identifiersMatch(item.style, sku));
+    const lookup = (list) => byStyle ? list.find((item) => identifiersMatch(item.style, sku)) : list.find((item) => identifiersMatch(item.sku, sku)) ?? list.find((item) => identifiersMatch(item.style, sku));
+    const reference = lookup(audit.items) ?? lookup(state.inventory ?? []);
     patch({ scans: [...audit.scans, { id: crypto.randomUUID(), sku: reference?.sku ?? sku.trim(), description: reference?.description ?? "", style: reference?.style ?? "", qty: 1, section: audit.sectionsCompleted ?? 0, location: locationName, timestamp: new Date().toISOString() }] });
     setSku("");
   };

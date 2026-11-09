@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/components/ui/toast";
 import { DataTable } from "@/components/data-table";
 import { auditProgress, auditTally, cn, formatDate, identifiersMatch, scanKey } from "@/lib/utils";
-import { ItemSheet } from "@/components/item-sheet";
+import { ItemSheet, resizeImage } from "@/components/item-sheet";
 import { categoryOf, findKnownIssue, readInventoryFile } from "@/lib/inventory";
 import { caseAbbreviation, exportAuditWorkbook } from "@/lib/export";
 
@@ -55,6 +55,7 @@ export function AuditWorkspace({ state, update }) {
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [detail, setDetail] = useState(null);
+  const [pinned, setPinned] = useState(false);
 
   useEffect(() => {
     if (!audit) return;
@@ -144,6 +145,14 @@ export function AuditWorkspace({ state, update }) {
     } catch (error) { setUploaded(null); setUploadError(error.message); }
   };
 
+  const detailKey = detail ? compareKey(detail.sku) : "";
+  const addImages = async (files) => {
+    try {
+      const added = await Promise.all(files.filter((file) => file.type.startsWith("image/")).map((file) => resizeImage(file)));
+      if (added.length) update((current) => ({ ...current, audits: current.audits.map((candidate) => candidate.id === audit.id ? { ...candidate, itemImages: { ...candidate.itemImages, [detailKey]: [...(candidate.itemImages?.[detailKey] ?? []), ...added] } } : candidate) }));
+    } catch (error) { toast(error.message, { variant: "error" }); }
+  };
+  const removeImage = (index) => patch({ itemImages: { ...audit.itemImages, [detailKey]: (audit.itemImages?.[detailKey] ?? []).filter((_, position) => position !== index) } });
   const issueFor = (entry) => findKnownIssue(state.knownIssues, entry);
   const openDetail = (entry) => {
     const sku = entry.sku;
@@ -267,7 +276,10 @@ export function AuditWorkspace({ state, update }) {
     : view === "items" ? fullWidth(itemsPanel)
     : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{view === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{view === "scan" ? scanPanel : researchPanel}</div></div>;
 
-  const content = <>{baseContent}<ItemSheet item={detail} onClose={() => setDetail(null)} /></>;
+  const content = <>
+    <div className={pinned ? "lg:pr-80" : ""}>{baseContent}</div>
+    <ItemSheet item={detail} pinned={pinned} onPin={() => setPinned((value) => !value)} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImages : undefined} onRemoveImage={removeImage} />
+  </>;
 
   const initialsField = (label) => <label className="grid gap-1 text-sm font-medium">{label}<Input className="w-48 uppercase" maxLength={5} value={initials} onChange={(event) => setInitials(event.target.value)} placeholder="e.g. AB" /></label>;
 

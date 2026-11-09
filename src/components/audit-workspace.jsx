@@ -99,8 +99,16 @@ export function AuditWorkspace({ state, update }) {
     if (!locationName || !sku.trim()) return;
     const lookup = (list) => byStyle ? list.find((item) => identifiersMatch(item.style, sku)) : list.find((item) => identifiersMatch(item.sku, sku)) ?? list.find((item) => identifiersMatch(item.style, sku));
     const reference = lookup(audit.items) ?? lookup(state.inventory ?? []);
-    patch({ scans: [...audit.scans, { id: crypto.randomUUID(), sku: reference?.sku ?? sku.trim(), description: reference?.description ?? "", style: reference?.style ?? "", qty: 1, section: audit.sectionsCompleted ?? 0, location: locationName, timestamp: new Date().toISOString() }] });
+    patch({ scans: [...audit.scans, { id: crypto.randomUUID(), sku: reference?.sku ?? sku.trim(), description: reference?.description ?? "", style: reference?.style ?? "", qty: 1, section: audit.scans.find((scan) => scan.location === locationName)?.section ?? audit.sectionsCompleted ?? 0, location: locationName, timestamp: new Date().toISOString() }] });
     setSku("");
+  };
+  const reopenSection = (name) => {
+    if (phase !== "running") return;
+    setLocationName(name);
+    if (audit.completedLocations.includes(name)) {
+      patch({ completedLocations: audit.completedLocations.filter((location) => location !== name) });
+      toast(`Section "${name}" reopened. Add your scans, then complete it again.`, { variant: "success" });
+    }
   };
   const removeScan = (scan) => patch({ scans: audit.scans.filter((item) => item.id !== scan.id), completedLocations: audit.completedLocations.filter((location) => location !== scan.location) });
   const exportAudit = async (format) => {
@@ -196,7 +204,7 @@ export function AuditWorkspace({ state, update }) {
 
   const sidebar = <div>
       <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle></CardHeader><CardContent className="space-y-1 p-3 pt-0 text-[11px] leading-tight">
-        {locationSummary.length ? locationSummary.map(([name, units]) => <div key={name} className="flex items-center justify-between gap-2"><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant="success">Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></div>) : <p className="text-slate-500">No sections scanned yet.</p>}
+        {locationSummary.length ? locationSummary.map(([name, units]) => <button key={name} type="button" disabled={phase !== "running"} onClick={() => reopenSection(name)} title="Select this section to add more scans" className={cn("flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left", phase === "running" && "hover:bg-slate-100", name === locationName && "bg-sky-50 ring-1 ring-sky-300")}><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant="success">Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></button>) : <p className="text-slate-500">No sections scanned yet.</p>}
       </CardContent></Card>
     </div>;
 

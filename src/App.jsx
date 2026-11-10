@@ -14,6 +14,7 @@ import { AuditCalendar } from "@/components/audit-calendar";
 import { Dashboard } from "@/components/dashboard";
 import { KnownIssues } from "@/components/known-issues";
 import { MonthStatus } from "@/components/month-status";
+import { AnimatedTabs } from "@/components/ui/animated-tabs";
 import { Research } from "@/components/research";
 import { AuditWorkspace } from "@/components/audit-workspace";
 import { buildAudit, groupCodes, readInventoryFile, sourceAge } from "@/lib/inventory";
@@ -89,7 +90,7 @@ function AppShell({ state, update, storageError, children }) {
   return <SidebarProvider defaultOpen={false} className="h-svh overflow-hidden">
     <CollapseOnTablet />
     <AppSidebar state={state} update={update} />
-    <SidebarInset className="min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50">
+    <SidebarInset className="min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 [scrollbar-gutter:stable]">
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
         <SidebarTrigger className="h-6 w-6 [&_svg]:size-3.5" />
         <div className="min-w-0 flex-1"><h1 id="page-title" tabIndex={-1} className="truncate text-xl font-bold">{pageTitle(pathname)}</h1></div>
@@ -184,7 +185,7 @@ function SettingsPage({ state, update }) {
     if (window.confirm(`Remove location “${state.locations[index]}” from the dropdown? Existing scan history will be preserved.`)) update((current) => ({ ...current, locations: current.locations.filter((_, position) => position !== index) }));
   };
   return <div className="space-y-6"><div><p className="text-slate-500">Manage audit workspace preferences.</p></div>
-    <div className="flex w-fit gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-sm" role="tablist">{[["general", "General"], ["issues", "Known issues"]].map(([value, label]) => <button key={value} role="tab" aria-selected={settingsTab === value} onClick={() => setSettingsTab(value)} className={`rounded-md px-3 py-1.5 font-medium ${settingsTab === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{label}</button>)}</div>
+    <AnimatedTabs tabs={[["general", "General"], ["issues", "Known issues"]]} value={settingsTab} onChange={setSettingsTab} className="w-64 max-w-full" listClassName="h-9 text-sm" triggerClassName="text-sm" />
     {settingsTab === "issues" ? <KnownIssues state={state} update={update} /> : <>
     <Card><CardHeader><CardTitle>Appearance</CardTitle><CardDescription>Choose a color theme for the dashboard. Your preference is saved on this device.</CardDescription></CardHeader><CardContent><label className="block max-w-xs text-sm font-medium" htmlFor="theme-select">Color theme<select id="theme-select" className="mt-2 h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm" value={theme} onChange={(event) => setTheme(applyTheme(event.target.value))}>{themes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label></CardContent></Card>
     <Card><CardHeader><CardTitle>Audit locations</CardTitle><CardDescription>{state.locations.length} locations appear in the audit workspace dropdown.</CardDescription></CardHeader><CardContent><div className="flex max-w-md gap-2"><Input value={newLocation} onChange={(event) => setNewLocation(event.target.value)} onKeyDown={(event) => event.key === "Enter" && add()} placeholder="Add location or bin name" /><Button onClick={add}>Add</Button></div>{message && <p className="mt-2 text-sm text-slate-500" role="status">{message}</p>}<div className="mt-5 max-h-[32rem] divide-y divide-slate-200 overflow-y-auto">{state.locations.map((location, index) => <div key={location} className="flex items-center justify-between gap-3 py-2.5 text-sm"><span>{location}</span><div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => rename(index)}>Rename</Button><Button variant="ghost" size="icon" aria-label={`Remove ${location}`} onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-rose-600" /></Button></div></div>)}</div></CardContent></Card></>}</div>;

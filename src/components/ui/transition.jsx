@@ -27,7 +27,7 @@ export function TransitionProvider({ children }) {
 
   return <TransitionContext.Provider value={value}>
     {children}
-    {state && <div className={`fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity ease-out ${visible ? "opacity-100" : "opacity-0"}`} style={{ transitionDuration: `${state.phase === "exit" ? EXIT_MS : ENTER_MS}ms` }} role="alert" aria-live="assertive" aria-busy="true">
+    {state && <div className={`fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-2xl backdrop-saturate-50 transition-opacity ease-out ${visible ? "opacity-100" : "opacity-0"}`} style={{ transitionDuration: `${state.phase === "exit" ? EXIT_MS : ENTER_MS}ms` }} role="alert" aria-live="assertive" aria-busy="true">
       <div className={`w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-6 text-center shadow-2xl transition-all ease-out ${visible ? "translate-y-0 scale-100 opacity-100" : state.phase === "exit" ? "-translate-y-6 scale-95 opacity-0" : "translate-y-6 scale-95 opacity-0"}`} style={{ transitionDuration: `${state.phase === "exit" ? EXIT_MS : ENTER_MS}ms` }}>
         <p className="font-semibold text-slate-900">{state.label}</p>
         {state.detail && <p className="mt-1 text-sm text-slate-500">{state.detail}</p>}

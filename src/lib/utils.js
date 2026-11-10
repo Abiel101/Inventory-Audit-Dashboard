@@ -27,6 +27,9 @@ export const themes = [
   { value: "tokyo-night", label: "Tokyo Night", dark: true },
   { value: "github-white", label: "GitHub White", dark: false },
   { value: "nord", label: "Nord", dark: false },
+  { value: "emerald", label: "Emerald", dark: false },
+  { value: "sandstone", label: "Sandstone", dark: false },
+  { value: "mist", label: "Mist", dark: false },
 ];
 export const themeStorageKey = "inventory-audit-theme";
 

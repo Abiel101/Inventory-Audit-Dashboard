@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, Download, Pencil, Play, RefreshCw, Save, X } from "lucide-react";
+import { CheckCircle2, Download, FlaskConical, Pencil, Play, RefreshCw, Save, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { AnimatedTabs } from "@/components/ui/animated-tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/toast";
 import { useTransition } from "@/components/ui/transition";
@@ -169,13 +170,11 @@ export function AuditWorkspace({ state, update }) {
 
   const locationSummary = [...audit.scans.reduce((map, scan) => map.set(scan.location, (map.get(scan.location) ?? 0) + (Number(scan.qty) || 0)), new Map())];
 
-  const view = closed && tab === "scan" ? "items" : tab;
-  const tabList = closed ? [["items", "Audit"]] : [["scan", "Scan"], ["items", "Audit"]];
-  const tabs = <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-xs" role="tablist">
-    {tabList.map(([value, label]) => <button key={value} role="tab" aria-selected={view === value} onClick={() => setTab(value)} className={cn("flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium", view === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{label}</button>)}
-  </div>;
+  const view = closed && tab === "scan" ? "items" : phase === "paused" ? "items" : tab;
+  const tabList = closed ? [["items", "Audit"], ["sections", "Sections"]] : [["scan", "Scan"], ["items", "Audit"], ["sections", "Sections"]];
+  const tabs = <AnimatedTabs id="audit-workspace" tabs={tabList} value={view} onChange={setTab} className="w-[18rem] max-w-full" />;
 
-  const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
+  const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 h-11 rounded-lg bg-slate-900 px-4 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
 
   const sidebar = <div>
       <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle></CardHeader><CardContent className="space-y-1 p-3 pt-0 text-[11px] leading-tight">
@@ -190,9 +189,9 @@ export function AuditWorkspace({ state, update }) {
           <Input autoFocus className="h-8 text-xs" inputMode={byStyle ? "text" : "numeric"} value={sku} onChange={(event) => setSku(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addScan()} placeholder={byStyle ? "Scan or type style number" : "Scan or type SKU"} />
           <Button size="sm" className="h-8 text-xs" disabled={!locationName || !sku.trim()} onClick={addScan}>{byStyle ? "Add style" : "Add SKU"}</Button>
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2"><Button size="sm" className="h-8 text-xs" variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button><div className="flex rounded-md border border-slate-300 bg-white p-0.5 text-xs" role="group" aria-label="Input type">{[["sku", "SKU"], ["style", "Style #"]].map(([value, label]) => <button key={value} type="button" aria-pressed={inputMode === value} onClick={() => setInputMode(value)} className={cn("rounded px-2.5 py-1 font-medium", inputMode === value ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-100")}>{label}</button>)}</div></div>
+        <div className="mt-2 flex flex-wrap items-center gap-2"><Button size="sm" className="h-8 text-xs" variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button><AnimatedTabs tabs={[["sku", "SKU"], ["style", "Style #"]]} value={inputMode} onChange={setInputMode} className="w-44" listClassName="border-slate-300" /></div>
       </CardContent></Card>}
-      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable columns={columns} persistKey={`${audit.id}:scan`} data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." onRowClick={openDetail} rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
+      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable columns={columns} persistKey={`${audit.id}:scan`} data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
     </div>;
 
   const itemRows = [...tally.expected].map(([sku, expected]) => {
@@ -210,6 +209,28 @@ export function AuditWorkspace({ state, update }) {
   ];
   const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={itemColumns} persistKey={`${audit.id}:items`} data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => issueFor(row) ? issueTone : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
 
+  const sectionGroups = [...audit.scans.reduce((map, scan) => {
+    const section = map.get(scan.location) ?? new Map();
+    const row = section.get(scan.sku) ?? { sku: scan.sku, description: scan.description, style: scan.style, qty: 0 };
+    row.qty += Number(scan.qty) || 0;
+    return map.set(scan.location, section.set(scan.sku, row));
+  }, new Map())].map(([name, rows]) => ({ name, rows: [...rows.values()].sort((a, b) => b.qty - a.qty), units: [...rows.values()].reduce((sum, row) => sum + row.qty, 0) }));
+  const sectionColumns = [
+    ["Top stock", (name) => /^\s*[1-5]\d\d\s*$/.test(name)],
+    ["Understock", (name) => /understock/i.test(name)],
+    ["Vault", () => true],
+  ];
+  const sectionsByColumn = sectionColumns.map(([title]) => ({ title, groups: [] }));
+  [...sectionGroups].sort((a, b) => a.name.localeCompare(b.name, "en", { numeric: true })).forEach((group) => sectionsByColumn[sectionColumns.findIndex(([, match]) => match(group.name))].groups.push(group));
+  const sectionsPanel = sectionGroups.length ? <div className="grid items-start gap-4 md:grid-cols-3">
+    {sectionsByColumn.map(({ title, groups }) => <Card key={title}>
+      <CardHeader className="p-3 pb-1"><CardTitle className="text-sm">{title}</CardTitle></CardHeader>
+      <CardContent className="space-y-1 p-3 pt-0 text-[11px] leading-tight">
+        {groups.length ? groups.map(({ name, units }) => <div key={name} className="flex w-full items-center justify-between gap-2 px-1 py-0.5"><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations?.includes(name) ? <Badge variant="success">Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></div>) : <p className="text-slate-500">Nothing scanned here.</p>}
+      </CardContent>
+    </Card>)}
+  </div> : <Empty title="No sections scanned" detail="This audit has no scanned sections." />;
+
   const saveFinal = () => { patch({ finalNote: noteDraft.trim() }); toast("Final note saved", { variant: "success" }); };
   const finalPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Final note</CardTitle><CardDescription className="text-xs">Add a closing note. It appears on the Audit Info sheet of the export; review and update it here first.</CardDescription></CardHeader><CardContent className="grid gap-3 p-3 pt-0 text-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
     <label className="grid gap-1 font-medium">Final note<textarea className="min-h-16 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Summary, discrepancies, follow-ups…" /></label>
@@ -217,16 +238,17 @@ export function AuditWorkspace({ state, update }) {
   </CardContent></Card>;
 
 
-  const fullWidth = (panel, extra = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{!closed && phase === "paused" ? null : <div className="w-fit">{tabs}</div>}{progressBar}{panel}{extra}</div>;
+  const fullWidth = (panel, extra = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{!closed && phase === "paused" ? null : tabs}{panel !== sectionsPanel && progressBar}{panel}{extra}</div>;
   const baseContent = phase === "paused" ? fullWidth(itemsPanel)
-    : closed ? fullWidth(itemsPanel, finalPanel)
+    : closed ? (view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, finalPanel))
     : view === "items" ? fullWidth(itemsPanel)
+    : view === "sections" ? fullWidth(sectionsPanel)
     : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{view === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{scanPanel}</div></div>;
 
   const content = <>
-    <div className={pinned ? "flex items-start gap-4" : ""}>
+    <div className={pinned && view === "items" ? "flex items-start gap-4" : ""}>
     <div className="min-w-0 flex-1">{baseContent}</div>
-    <ItemSheet item={detail} pinned={pinned} onPin={() => setPinned((value) => !value)} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImages : undefined} onRemoveImage={removeImage} />
+    {view === "items" && <ItemSheet item={detail} pinned={pinned} onPin={() => setPinned((value) => !value)} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImages : undefined} onRemoveImage={removeImage} />}
     </div>
   </>;
 
@@ -248,7 +270,7 @@ export function AuditWorkspace({ state, update }) {
   }
 
   return <div className="space-y-6">
-    <div className="flex flex-wrap items-start justify-between gap-4"><div><Badge variant={closed ? "success" : "warning"}>{closed ? "Audit closed" : phase === "paused" ? "Progress saved" : "Ready to start"}</Badge><h2 id="workspace-title" tabIndex={-1} className="mt-3 text-2xl font-bold uppercase">{displayName}</h2><p className="mt-1 text-slate-500"><span className="uppercase">{caseAbbreviation(audit.category)}</span> · {audit.items.length} reference SKUs · {snapshotLabel}{audit.initials ? ` · Associate ${closed ? audit.completedBy ?? audit.initials : audit.initials}` : ""}</p></div>{closed && <div className="flex flex-wrap items-center gap-2">{unlocking ? <><Input autoFocus type="password" inputMode="numeric" className="h-9 w-36" value={unlockCode} placeholder="Manager code" aria-label="Manager code" onChange={(event) => setUnlockCode(event.target.value)} onKeyDown={(event) => event.key === "Enter" && reopen()} /><Button onClick={reopen}><Pencil className="h-4 w-4" />Unlock</Button><Button variant="ghost" onClick={() => { setUnlocking(false); setUnlockCode(""); }}>Cancel</Button></> : <Button onClick={() => setUnlocking(true)}><Pencil className="h-4 w-4" />Edit audit</Button>}<Button variant="outline" onClick={() => setExportOpen(true)}><Download className="h-4 w-4" />Export results</Button></div>}</div>
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><Badge variant={closed ? "success" : "warning"}>{closed ? "Audit closed" : phase === "paused" ? "Progress saved" : "Ready to start"}</Badge><h2 id="workspace-title" tabIndex={-1} className="mt-3 text-2xl font-bold uppercase">{displayName}</h2><p className="mt-1 text-slate-500"><span className="uppercase">{caseAbbreviation(audit.category)}</span> · {audit.items.length} reference SKUs · {snapshotLabel}{audit.initials ? ` · Associate ${closed ? audit.completedBy ?? audit.initials : audit.initials}` : ""}</p></div>{closed && <div className="flex flex-wrap items-center gap-2">{unlocking ? <><Input autoFocus type="password" inputMode="numeric" className="h-9 w-36" value={unlockCode} placeholder="Manager code" aria-label="Manager code" onChange={(event) => setUnlockCode(event.target.value)} onKeyDown={(event) => event.key === "Enter" && reopen()} /><Button onClick={reopen}><Pencil className="h-4 w-4" />Unlock</Button><Button variant="ghost" onClick={() => { setUnlocking(false); setUnlockCode(""); }}>Cancel</Button></> : <Button onClick={() => setUnlocking(true)}><Pencil className="h-4 w-4" />Edit audit</Button>}<Button variant="outline" onClick={() => setExportOpen(true)}><Download className="h-4 w-4" />Export results</Button>{audit.research ? <Button variant="outline" onClick={() => navigate("/research")}><FlaskConical className="h-4 w-4" />In research</Button> : <Button variant="outline" onClick={() => { patch({ research: "queued" }); toast("Added to research", { variant: "success" }); }}><FlaskConical className="h-4 w-4" />Add to research</Button>}</div>}</div>
     <Sheet open={exportOpen} onOpenChange={setExportOpen}>
       <SheetContent>
         <SheetTitle>Choose export format</SheetTitle>

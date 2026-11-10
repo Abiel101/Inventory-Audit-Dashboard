@@ -31,6 +31,39 @@ html[data-theme="nord"] {
   --sky-50: 229 234 242; --sky-100: 218 226 238; --sky-200: 190 205 224; --sky-400: 129 161 193; --sky-500: 109 142 178;
   --sky-600: 94 129 172; --sky-700: 76 108 148; --sky-800: 62 88 122;
 }
+html[data-theme="emerald"] {
+  --surface: 255 255 255;
+  --slate-50: 245 247 246; --slate-100: 232 238 235; --slate-200: 214 223 219; --slate-300: 183 196 190; --slate-400: 132 148 140;
+  --slate-500: 94 110 102; --slate-600: 72 87 80; --slate-700: 52 66 60; --slate-800: 31 43 38; --slate-900: 20 30 26;
+  --sky-50: 236 253 245; --sky-100: 209 250 229; --sky-200: 167 243 208; --sky-400: 52 211 153; --sky-500: 16 185 129;
+  --sky-600: 5 150 105; --sky-700: 4 120 87; --sky-800: 6 95 70;
+}
+html[data-theme="sandstone"] {
+  --surface: 255 253 249;
+  --slate-50: 250 247 241; --slate-100: 243 238 228; --slate-200: 230 222 207; --slate-300: 208 197 177; --slate-400: 160 148 128;
+  --slate-500: 115 105 90; --slate-600: 90 81 68; --slate-700: 68 61 51; --slate-800: 45 40 33; --slate-900: 33 29 24;
+  --sky-50: 255 244 232; --sky-100: 255 232 207; --sky-200: 253 211 165; --sky-400: 240 150 70; --sky-500: 224 124 40;
+  --sky-600: 194 98 22; --sky-700: 154 75 14; --sky-800: 120 58 12;
+}
+html[data-theme="mist"] {
+  --surface: 252 254 254;
+  --slate-50: 241 247 248; --slate-100: 228 238 240; --slate-200: 207 223 227; --slate-300: 176 198 204; --slate-400: 127 154 162;
+  --slate-500: 89 114 122; --slate-600: 68 91 99; --slate-700: 50 70 77; --slate-800: 32 48 54; --slate-900: 21 34 39;
+  --sky-50: 230 248 249; --sky-100: 204 240 243; --sky-200: 160 226 232; --sky-400: 45 190 205; --sky-500: 20 165 184;
+  --sky-600: 13 133 152; --sky-700: 14 106 121; --sky-800: 16 84 96;
+}
+
+/* Status colors shared by dashboard cards/chips; --*-ink is the readable text color on a tinted background. */
+:root {
+  --ok: 16 185 129; --ok-ink: 6 95 70;
+  --warn: 245 158 11; --warn-ink: 120 53 15;
+  --alert: 249 115 22; --alert-ink: 124 45 18;
+}
+html[data-theme="tokyo-night"] {
+  --ok: 158 206 106; --ok-ink: 185 230 140;
+  --warn: 224 175 104; --warn-ink: 240 205 150;
+  --alert: 255 158 100; --alert-ink: 255 190 150;
+}
 
 :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: rgb(var(--slate-900)); background: rgb(var(--slate-50)); }
 * { box-sizing: border-box; }

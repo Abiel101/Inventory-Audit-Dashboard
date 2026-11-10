@@ -15,17 +15,17 @@ const readJSON = (key, fallback) => { try { return JSON.parse(localStorage.getIt
 const shortDate = (value) => new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 const tones = {
-  green: { card: "border-emerald-300 bg-emerald-50", icon: "bg-emerald-200 text-emerald-800", value: "text-emerald-900", label: "text-emerald-800" },
-  yellow: { card: "border-yellow-300 bg-yellow-50", icon: "bg-yellow-200 text-yellow-900", value: "text-yellow-900", label: "text-yellow-800" },
-  cyan: { card: "border-cyan-300 bg-cyan-50", icon: "bg-cyan-200 text-cyan-800", value: "text-cyan-900", label: "text-cyan-800" },
-  indigo: { card: "border-indigo-300 bg-indigo-50", icon: "bg-indigo-200 text-indigo-800", value: "text-indigo-900", label: "text-indigo-800" },
+  green: { card: "border-ok/40 bg-ok/10", icon: "bg-ok/25 text-ok-ink", value: "text-slate-900", label: "text-ok-ink" },
+  yellow: { card: "border-warn/40 bg-warn/10", icon: "bg-warn/25 text-warn-ink", value: "text-slate-900", label: "text-warn-ink" },
+  cyan: { card: "border-sky-400/50 bg-sky-500/10", icon: "bg-sky-500/20 text-sky-700", value: "text-slate-900", label: "text-sky-700" },
+  indigo: { card: "border-slate-300 bg-slate-100", icon: "bg-slate-200 text-slate-700", value: "text-slate-900", label: "text-slate-600" },
 };
 
 const chips = {
-  todo: { label: "Not started", icon: CircleDashed, chip: "bg-indigo-100 text-indigo-800" },
-  progress: { label: "In progress", icon: Loader2, chip: "bg-yellow-200 text-yellow-900" },
-  issues: { label: "Needs follow-up", icon: AlertTriangle, chip: "bg-orange-200 text-orange-900" },
-  complete: { label: "Completed", icon: CheckCircle2, chip: "bg-emerald-100 text-emerald-800" },
+  todo: { label: "Not started", icon: CircleDashed, chip: "bg-sky-500/15 text-sky-700" },
+  progress: { label: "In progress", icon: Loader2, chip: "bg-warn/25 text-warn-ink" },
+  issues: { label: "Needs follow-up", icon: AlertTriangle, chip: "bg-alert/25 text-alert-ink" },
+  complete: { label: "Completed", icon: CheckCircle2, chip: "bg-ok/20 text-ok-ink" },
 };
 
 function Stat({ label, value, detail, icon: Icon, tone }) {

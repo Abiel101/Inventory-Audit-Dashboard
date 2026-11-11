@@ -56,7 +56,23 @@ export function dateKey(date) {
 // Quantities are totalled per audit item across every location, so the same SKU
 // scanned in several locations adds up against the imported quantity.
 export function auditTally(audit) {
-  const find = (value) => audit.items.find((item) => identifiersMatch(item.sku, value)) ?? audit.items.find((item) => identifiersMatch(item.style, value));
+  const normalize = (value) => { const key = scanKey(value); return /^\d+$/.test(key) ? key.replace(/^0+(?=\d)/, "") : key; };
+  const bySku = new Map();
+  const byStyle = new Map();
+  audit.items.forEach((item) => {
+    const sku = normalize(item.sku);
+    if (sku && !bySku.has(sku)) bySku.set(sku, item);
+    const style = normalize(item.style);
+    if (style && !byStyle.has(style)) byStyle.set(style, item);
+  });
+  const found = new Map();
+  const find = (value) => {
+    if (found.has(value)) return found.get(value);
+    const key = normalize(value);
+    const result = key ? bySku.get(key) ?? byStyle.get(key) : undefined;
+    found.set(value, result);
+    return result;
+  };
   const skuKey = (value) => {
     const key = scanKey(value);
     return /^\d+$/.test(key) ? key.replace(/^0+(?=\d)/, "") : key;

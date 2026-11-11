@@ -41,7 +41,7 @@ function styleHeader(sheet, colors) {
   sheet.views = [{ state: "frozen", ySplit: 1 }];
 }
 
-export async function exportAuditWorkbook(audit, { compareKey, format = "new", caseFor }) {
+export async function exportAuditWorkbook(audit, { compareKey, format = "new", caseFor, inventoryFor }) {
   const ExcelJS = (await import("exceljs")).default;
   const when = new Date(audit.completedAt || Date.now());
   if (format === "twc") {
@@ -56,7 +56,16 @@ export async function exportAuditWorkbook(audit, { compareKey, format = "new", c
   const items = workbook.addWorksheet("Audit", { properties: { tabColor: { argb: COLORS.emerald } } });
 
   const expectedRows = [...tally.expected];
-  const itemLast = Math.max(expectedRows.length + 1, 2);
+  const extraRows = [...tally.extra];
+  const expectedLast = Math.max(expectedRows.length + 1, 2);
+  const itemLast = Math.max(expectedRows.length + extraRows.length + 1, 2);
+  const stock = audit.items.reduce((map, entry) => {
+    const key = compareKey(entry.sku);
+    const total = map.get(key) ?? { onHand: 0, availableToSell: null };
+    total.onHand += Number(entry.quantity) || 0;
+    if (entry.salesFloor != null) total.availableToSell = (total.availableToSell ?? 0) + entry.salesFloor;
+    return map.set(key, total);
+  }, new Map());
   const scanLast = Math.max(audit.scans.length + 1, 2);
   const descriptionWidth = Math.min(Math.max(...audit.items.map((item) => String(item.description ?? "").length), ...audit.scans.map((scan) => String(scan.description ?? "").length), 20) + 2, 120);
   const lookup = (sku) => audit.items.find((entry) => entry.sku === sku);
@@ -64,9 +73,10 @@ export async function exportAuditWorkbook(audit, { compareKey, format = "new", c
   items.columns = [
     { header: "SKU", width: 18 }, { header: "Description", width: descriptionWidth }, { header: "Style", width: 16 },
     { header: "Expected", width: 11 }, { header: "Scanned", width: 11 }, { header: "Variance", width: 11 },
-    { header: "Status", width: 14 }, { header: "Notes", width: 40 },
+    { header: "Status", width: 14 },
+    { header: "On hand", width: 11 }, { header: "Available to sell", width: 17 }, { header: "Price", width: 12 }, { header: "Notes", width: 40 },
   ];
-  styleHeader(items, [COLORS.ink, COLORS.sky, COLORS.indigo, COLORS.emerald, COLORS.sky, COLORS.rose, COLORS.amber, COLORS.slate]);
+  styleHeader(items, [COLORS.ink, COLORS.sky, COLORS.indigo, COLORS.emerald, COLORS.sky, COLORS.rose, COLORS.amber, COLORS.emerald, COLORS.sky, COLORS.amber, COLORS.slate]);
   expectedRows.forEach(([sku, expected], index) => {
     const n = index + 2;
     const found = tally.scanned.get(sku) ?? 0;
@@ -76,13 +86,31 @@ export async function exportAuditWorkbook(audit, { compareKey, format = "new", c
       { formula: `SUMIF(Scanned!$A$2:$A$${scanLast},A${n},Scanned!$E$2:$E$${scanLast})`, result: found },
       { formula: `D${n}-E${n}`, result: expected - found },
       { formula: `IF(E${n}>=D${n},"Found",IF(E${n}=0,"Missing","Short"))`, result: found >= expected ? "Found" : found === 0 ? "Missing" : "Short" },
+      stock.get(compareKey(sku))?.onHand ?? "", stock.get(compareKey(sku))?.availableToSell ?? "", item?.price ?? "",
       audit.itemNotes?.[compareKey(sku)] ?? "",
     ]);
     row.eachCell((cell) => { cell.border = border; cell.alignment = { vertical: "middle", wrapText: true }; });
     row.getCell(1).numFmt = "@";
     row.fill = found >= expected ? fill(COLORS.met) : fill("FFFFFFFF");
   });
-  items.autoFilter = { from: "A1", to: `H${itemLast}` };
+  // Scans that match nothing in the audit are listed after the expected items so they are easy to spot.
+  extraRows.forEach(([sku, found], index) => {
+    const n = expectedRows.length + index + 2;
+    const sample = audit.scans.find((scan) => scan.sku === sku);
+    const known = inventoryFor?.(sample) ?? null;
+    const row = items.addRow([
+      sku, sample?.description || known?.description || "", sample?.style || known?.style || "", 0,
+      { formula: `SUMIF(Scanned!$A$2:$A$${scanLast},A${n},Scanned!$E$2:$E$${scanLast})`, result: found },
+      { formula: `D${n}-E${n}`, result: -found },
+      "Not in audit", known ? Number(known.quantity) || 0 : "", known?.salesFloor ?? "", known?.price ?? "",
+      [caseNote(audit, sample, caseFor), audit.itemNotes?.[compareKey(sku)]].filter(Boolean).join(" · "),
+    ]);
+    row.eachCell((cell) => { cell.border = border; cell.alignment = { vertical: "middle", wrapText: true }; });
+    row.getCell(1).numFmt = "@";
+    if (row.getCell(11).value) row.getCell(11).fill = NOTE_FILL;
+    for (let c = 1; c <= 10; c++) row.getCell(c).fill = fill(COLORS.extra);
+  });
+  items.autoFilter = { from: "A1", to: `K${itemLast}` };
 
   scanned.columns = [
     { header: "SKU", width: 18 }, { header: "Description", width: descriptionWidth }, { header: "Style", width: 16 },
@@ -97,7 +125,7 @@ export async function exportAuditWorkbook(audit, { compareKey, format = "new", c
     const result = status === "extra" ? "Not in audit" : total >= expected ? "Quantity met" : "Quantity differs";
     const row = scanned.addRow([
       scan.sku, scan.description, scan.style, scan.location, Number(scan.qty) || 0, new Date(scan.timestamp),
-      { formula: `IFERROR(INDEX(Audit!$D$2:$D$${itemLast},MATCH(A${n},Audit!$A$2:$A$${itemLast},0)),"")`, result: expected ?? "" },
+      { formula: `IFERROR(INDEX(Audit!$D$2:$D$${expectedLast},MATCH(A${n},Audit!$A$2:$A$${expectedLast},0)),"")`, result: expected ?? "" },
       { formula: `SUMIF($A$2:$A$${scanLast},A${n},$E$2:$E$${scanLast})`, result: total },
       { formula: `IF(G${n}="","Not in audit",IF(H${n}>=G${n},"Quantity met","Quantity differs"))`, result },
       [caseNote(audit, scan, caseFor), scan.notes || audit.itemNotes?.[compareKey(scan.sku)]].filter(Boolean).join(" · "),
@@ -153,18 +181,19 @@ export async function exportAuditWorkbook(audit, { compareKey, format = "new", c
   section("Audit details", COLORS.sky);
   field("Audit", audit.name);
   field("Case code", caseAbbreviation(audit.category));
-  field("Status", audit.status === "completed" ? "Closed" : "In progress");
+  const casing = tally.extra.size;
+  field("Status", audit.status !== "completed" ? "In progress" : auditProgress(audit) < 100 ? "Closed with issues · items missing" : casing ? `Complete · ${casing} item${casing === 1 ? "" : "s"} not cased correctly` : "Closed");
   field("Associate initials", audit.completedBy || audit.initials || "");
   field("Started", audit.startedAt ? new Date(audit.startedAt) : "", "mm/dd/yyyy hh:mm");
   field("Completed", audit.completedAt ? new Date(audit.completedAt) : "", "mm/dd/yyyy hh:mm");
   field("Inventory snapshot", audit.snapshot?.sourceName ?? "");
 
   section("Results", COLORS.emerald);
-  field("Progress", { formula: `IFERROR(SUMPRODUCT((Audit!$E$2:$E$${itemLast}>Audit!$D$2:$D$${itemLast})*Audit!$D$2:$D$${itemLast}+(Audit!$E$2:$E$${itemLast}<=Audit!$D$2:$D$${itemLast})*Audit!$E$2:$E$${itemLast})/SUM(Audit!$D$2:$D$${itemLast}),0)`, result: auditProgress(audit) / 100 }, "0%");
-  field("SKUs in audit", { formula: `COUNTA(Audit!$A$2:$A$${itemLast})`, result: expectedRows.length });
-  field("Units expected", { formula: `SUM(Audit!$D$2:$D$${itemLast})`, result: expectedUnits });
-  field("Units scanned", { formula: `SUM(Audit!$E$2:$E$${itemLast})`, result: foundUnits });
-  field("Units missing", { formula: `SUMIF(Audit!$F$2:$F$${itemLast},">0")`, result: expectedRows.reduce((sum, [sku, value]) => sum + Math.max(value - (tally.scanned.get(sku) ?? 0), 0), 0) });
+  field("Progress", { formula: `IFERROR(SUMPRODUCT((Audit!$E$2:$E$${expectedLast}>Audit!$D$2:$D$${expectedLast})*Audit!$D$2:$D$${expectedLast}+(Audit!$E$2:$E$${expectedLast}<=Audit!$D$2:$D$${expectedLast})*Audit!$E$2:$E$${expectedLast})/SUM(Audit!$D$2:$D$${expectedLast}),0)`, result: auditProgress(audit) / 100 }, "0%");
+  field("SKUs in audit", { formula: `COUNTA(Audit!$A$2:$A$${expectedLast})`, result: expectedRows.length });
+  field("Units expected", { formula: `SUM(Audit!$D$2:$D$${expectedLast})`, result: expectedUnits });
+  field("Units scanned", { formula: `SUM(Audit!$E$2:$E$${expectedLast})`, result: foundUnits });
+  field("Units missing", { formula: `SUMIF(Audit!$F$2:$F$${expectedLast},">0")`, result: expectedRows.reduce((sum, [sku, value]) => sum + Math.max(value - (tally.scanned.get(sku) ?? 0), 0), 0) });
   field("Scans not in audit", { formula: `COUNTIF(Scanned!$I$2:$I$${scanLast},"Not in audit")`, result: audit.scans.filter((scan) => tally.status(scan) === "extra").length });
 
   section("Notes", COLORS.amber);

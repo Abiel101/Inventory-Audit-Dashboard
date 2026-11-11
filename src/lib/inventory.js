@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { dateKey, identifiersMatch } from "@/lib/utils";
+import { auditTally, dateKey, identifiersMatch } from "@/lib/utils";
 
 const normalizeHeader = (value) => String(value ?? "").toLowerCase().replace(/#/g, " number ").replace(/[^a-z0-9]/g, "");
 const headerAliases = {
@@ -141,3 +141,6 @@ export function buildAudit(inventory, category, name, index = 0, source = {}) {
 export function findKnownIssue(issues = [], { sku, style } = {}) {
   return issues.find((issue) => (issue.sku && identifiersMatch(issue.sku, sku)) || (issue.style && (identifiersMatch(issue.style, style) || identifiersMatch(issue.style, sku)))) ?? null;
 }
+
+// Scanned SKUs that are not in the audit's case code (cased elsewhere, blank, or unknown).
+export const casingIssueCount = (audit) => auditTally(audit).extra.size;

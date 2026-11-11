@@ -32,13 +32,22 @@ function Empty({ title, detail }) {
   return <Card className="border-dashed"><CardContent className="p-8 text-center"><p className="font-semibold">{title}</p><p className="mt-1 text-sm text-slate-500">{detail}</p></CardContent></Card>;
 }
 
+// Owns the typed value so keystrokes only re-render this input, not the whole audit.
+function ScanInput({ byStyle, disabled, onSubmit }) {
+  const [value, setValue] = useState("");
+  const submit = () => { if (onSubmit(value)) setValue(""); };
+  return <>
+    <Input autoFocus className="h-8 text-xs" inputMode={byStyle ? "text" : "numeric"} value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => event.key === "Enter" && submit()} placeholder={byStyle ? "Scan or type style number" : "Scan or type SKU"} />
+    <Button size="sm" className="h-8 text-xs" disabled={disabled || !value.trim()} onClick={submit}>{byStyle ? "Add style" : "Add SKU"}</Button>
+  </>;
+}
+
 export function AuditWorkspace({ state, update }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const audit = id ? state.audits.find((item) => item.id === id) : state.audits.find((item) => item.status === "in-progress");
   const [initials, setInitials] = useState(audit?.initials ?? "");
   const [locationName, setLocationName] = useState("");
-  const [sku, setSku] = useState("");
   const toast = useToast();
   const transition = useTransition();
   const [tab, setTab] = useState("scan");
@@ -90,12 +99,12 @@ export function AuditWorkspace({ state, update }) {
   };
   const updateButton = (size) => <Button variant="outline" size={size} title={snapshotLabel} onClick={refreshItems}><RefreshCw className="h-4 w-4" />Update audit with current source</Button>;
 
-  const addScan = () => {
-    if (!locationName || !sku.trim()) return;
+  const addScan = (sku) => {
+    if (!locationName || !sku.trim()) return false;
     const lookup = (list) => byStyle ? list.find((item) => identifiersMatch(item.style, sku)) : list.find((item) => identifiersMatch(item.sku, sku)) ?? list.find((item) => identifiersMatch(item.style, sku));
     const reference = lookup(audit.items) ?? lookup(state.inventory ?? []);
     patch({ scans: [...audit.scans, { id: crypto.randomUUID(), sku: reference?.sku ?? sku.trim(), description: reference?.description ?? "", style: reference?.style ?? "", qty: 1, section: audit.scans.find((scan) => scan.location === locationName)?.section ?? audit.sectionsCompleted ?? 0, location: locationName, timestamp: new Date().toISOString() }] });
-    setSku("");
+    return true;
   };
   const reopenSection = (name) => {
     if (phase !== "running") return;
@@ -109,7 +118,7 @@ export function AuditWorkspace({ state, update }) {
   const exportAudit = async (format) => {
     setExporting(true);
     try {
-      await exportAuditWorkbook(audit, { compareKey, format, caseFor });
+      await exportAuditWorkbook(audit, { compareKey, format, caseFor, inventoryFor });
       setExportOpen(false);
     } catch (error) {
       toast(error.message || "Could not export this audit.", { variant: "error" });
@@ -122,11 +131,11 @@ export function AuditWorkspace({ state, update }) {
     patch({ completedLocations: [...new Set([...audit.completedLocations, locationName])], sectionsCompleted: (audit.sectionsCompleted ?? 0) + 1 });
     toast(`Section "${locationName}" has been completed.`, { variant: "success" });
     setLocationName("");
-    setSku("");
   };
 
+  const inventoryFor = (scan) => state.inventory.find((item) => identifiersMatch(item.sku, scan.sku)) ?? state.inventory.find((item) => item.style && identifiersMatch(item.style, scan.sku));
   const caseFor = (scan) => {
-    const match = state.inventory.find((item) => identifiersMatch(item.sku, scan.sku)) ?? state.inventory.find((item) => item.style && identifiersMatch(item.style, scan.sku));
+    const match = inventoryFor(scan);
     return match ? categoryOf(match) : null;
   };
 
@@ -186,28 +195,37 @@ export function AuditWorkspace({ state, update }) {
       {phase === "running" && <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Scan items</CardTitle><CardDescription className="text-[11px]">Scan each item individually; every scan counts as one unit.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs">
         <div className="grid gap-2 md:grid-cols-3">
           <select aria-label="Location" className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs" value={locationName} onChange={(event) => setLocationName(event.target.value)}><option value="">Select a location...</option>{state.locations.map((value) => <option key={value}>{value}</option>)}</select>
-          <Input autoFocus className="h-8 text-xs" inputMode={byStyle ? "text" : "numeric"} value={sku} onChange={(event) => setSku(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addScan()} placeholder={byStyle ? "Scan or type style number" : "Scan or type SKU"} />
-          <Button size="sm" className="h-8 text-xs" disabled={!locationName || !sku.trim()} onClick={addScan}>{byStyle ? "Add style" : "Add SKU"}</Button>
+          <ScanInput byStyle={byStyle} disabled={!locationName} onSubmit={addScan} />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2"><Button size="sm" className="h-8 text-xs" variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button><AnimatedTabs tabs={[["sku", "SKU"], ["style", "Style #"]]} value={inputMode} onChange={setInputMode} className="w-44" listClassName="border-slate-300" /></div>
       </CardContent></Card>}
-      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable columns={columns} persistKey={`${audit.id}:scan`} data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
+      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable columns={columns} persistKey={`${audit.id}:scan`} columnsKey="scan-log" data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
     </div>;
 
+  const stockByKey = audit.items.reduce((map, entry) => {
+    const key = compareKey(entry.sku);
+    const total = map.get(key) ?? { onHand: 0, availableToSell: null };
+    total.onHand += Number(entry.quantity) || 0;
+    if (entry.salesFloor != null) total.availableToSell = (total.availableToSell ?? 0) + entry.salesFloor;
+    return map.set(key, total);
+  }, new Map());
   const itemRows = [...tally.expected].map(([sku, expected]) => {
     const item = audit.items.find((entry) => entry.sku === sku);
+    const stock = stockByKey.get(compareKey(sku));
     const scanned = tally.scanned.get(sku) ?? 0;
-    return { sku, description: item?.description ?? "", style: item?.style ?? "", expected, scanned, remaining: Math.max(expected - scanned, 0) };
+    return { sku, description: item?.description ?? "", style: item?.style ?? "", onHand: stock?.onHand ?? null, availableToSell: stock?.availableToSell ?? null, expected, scanned, remaining: Math.max(expected - scanned, 0) };
   });
   const itemColumns = [
     { accessorKey: "sku", header: "SKU" },
     { accessorKey: "description", header: "Description", meta: "wide" },
     { accessorKey: "style", header: "Style" },
+    { accessorKey: "onHand", header: "On hand", cell: ({ getValue }) => getValue() ?? "—" },
+    { accessorKey: "availableToSell", header: "Available to sell", cell: ({ getValue }) => getValue() ?? "—" },
     { accessorKey: "expected", header: "Expected" },
     { accessorKey: "scanned", header: "Scanned" },
     { accessorKey: "remaining", header: "Remaining", cell: ({ getValue }) => getValue() ? <Badge variant="warning">{getValue()} missing</Badge> : <Badge variant="success">Found</Badge> },
   ];
-  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={itemColumns} persistKey={`${audit.id}:items`} data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => issueFor(row) ? issueTone : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
+  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={itemColumns} persistKey={`${audit.id}:items`} columnsKey="audit-items" data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => issueFor(row) ? issueTone : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
 
   const sectionGroups = [...audit.scans.reduce((map, scan) => {
     const section = map.get(scan.location) ?? new Map();

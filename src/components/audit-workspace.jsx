@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, Download, FlaskConical, Pencil, Play, RefreshCw, Save, X } from "lucide-react";
+import { CheckCircle2, Download, FlaskConical, Pencil, Play, RefreshCw, Save, StickyNote, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -146,6 +146,13 @@ export function AuditWorkspace({ state, update }) {
       if (added.length) update((current) => ({ ...current, audits: current.audits.map((candidate) => candidate.id === audit.id ? { ...candidate, itemImages: { ...candidate.itemImages, [detailKey]: [...(candidate.itemImages?.[detailKey] ?? []), ...added] } } : candidate) }));
     } catch (error) { toast(error.message, { variant: "error" }); }
   };
+  const saveNote = (sku, text) => {
+    const key = compareKey(sku);
+    const notes = { ...audit.itemNotes };
+    if (text.trim()) notes[key] = text.trim(); else delete notes[key];
+    patch({ itemNotes: notes });
+    setDetail((current) => current && compareKey(current.sku) === key ? { ...current, auditNote: text.trim() } : current);
+  };
   const removeImage = (index) => patch({ itemImages: { ...audit.itemImages, [detailKey]: (audit.itemImages?.[detailKey] ?? []).filter((_, position) => position !== index) } });
   const issueFor = (entry) => findKnownIssue(state.knownIssues, entry);
   const openDetail = (entry) => {
@@ -213,7 +220,7 @@ export function AuditWorkspace({ state, update }) {
     const item = audit.items.find((entry) => entry.sku === sku);
     const stock = stockByKey.get(compareKey(sku));
     const scanned = tally.scanned.get(sku) ?? 0;
-    return { sku, description: item?.description ?? "", style: item?.style ?? "", onHand: stock?.onHand ?? null, availableToSell: stock?.availableToSell ?? null, expected, scanned, remaining: Math.max(expected - scanned, 0) };
+    return { sku, note: audit.itemNotes?.[compareKey(sku)] ?? "", description: item?.description ?? "", style: item?.style ?? "", onHand: stock?.onHand ?? null, availableToSell: stock?.availableToSell ?? null, expected, scanned, remaining: Math.max(expected - scanned, 0) };
   });
   const itemColumns = [
     { accessorKey: "sku", header: "SKU" },
@@ -224,8 +231,9 @@ export function AuditWorkspace({ state, update }) {
     { accessorKey: "expected", header: "Expected" },
     { accessorKey: "scanned", header: "Scanned" },
     { accessorKey: "remaining", header: "Remaining", cell: ({ getValue }) => getValue() ? <Badge variant="warning">{getValue()} missing</Badge> : <Badge variant="success">Found</Badge> },
+    { id: "note", header: "", enableSorting: false, cell: ({ row }) => <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`${row.original.note ? "Edit" : "Add"} note for ${row.original.sku}`} title={row.original.note || "Add note"} onClick={(event) => { event.stopPropagation(); openDetail(row.original); }}><StickyNote className={cn("h-4 w-4", row.original.note ? "text-indigo-600" : "text-slate-400")} /></Button> },
   ];
-  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={itemColumns} persistKey={`${audit.id}:items`} columnsKey="audit-items" data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => issueFor(row) ? issueTone : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
+  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={itemColumns} persistKey={`${audit.id}:items`} columnsKey="audit-items" data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => row.note ? "bg-indigo-100 hover:bg-indigo-200" : issueFor(row) ? issueTone : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
 
   const sectionGroups = [...audit.scans.reduce((map, scan) => {
     const section = map.get(scan.location) ?? new Map();
@@ -256,17 +264,17 @@ export function AuditWorkspace({ state, update }) {
   </CardContent></Card>;
 
 
-  const fullWidth = (panel, extra = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{!closed && phase === "paused" ? null : tabs}{panel !== sectionsPanel && progressBar}{panel}{extra}</div>;
+  const fullWidth = (panel, extra = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{panel !== sectionsPanel && progressBar}{!closed && phase === "paused" ? null : tabs}{panel}{extra}</div>;
   const baseContent = phase === "paused" ? fullWidth(itemsPanel)
     : closed ? (view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, finalPanel))
     : view === "items" ? fullWidth(itemsPanel)
     : view === "sections" ? fullWidth(sectionsPanel)
-    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{tabs}{view === "scan" && sidebar}</div><div className="flex min-w-0 flex-col gap-5 pb-24">{progressBar}{scanPanel}</div></div>;
+    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{sidebar}</div><div className="flex min-w-0 flex-col gap-3 pb-24">{progressBar}{tabs}<div className="mt-2">{scanPanel}</div></div></div>;
 
   const content = <>
     <div className={pinned && view === "items" ? "flex items-start gap-4" : ""}>
     <div className="min-w-0 flex-1">{baseContent}</div>
-    {view === "items" && <ItemSheet item={detail} pinned={pinned} onPin={() => setPinned((value) => !value)} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImages : undefined} onRemoveImage={removeImage} />}
+    {view === "items" && <ItemSheet item={detail} pinned={pinned} onPin={() => setPinned((value) => !value)} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImages : undefined} onRemoveImage={removeImage} onSaveNote={detail && !closed ? saveNote : undefined} />}
     </div>
   </>;
 

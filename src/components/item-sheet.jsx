@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { ImagePlus, Pin, PinOff, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ImagePlus, StickyNote, Pin, PinOff, X } from "lucide-react";
 import {
 	Sheet,
 	SheetContent,
@@ -40,10 +40,13 @@ function ItemDetails({
 	pinned,
 	onPin,
 	onClose,
+	onSaveNote,
 	Title,
 	Description,
 }) {
 	const fileRef = useRef(null);
+	const [noteDraft, setNoteDraft] = useState(item?.auditNote ?? "");
+	useEffect(() => setNoteDraft(item?.auditNote ?? ""), [item?.sku, item?.auditNote]);
 	useEffect(() => {
 		if (!item || !onAddImages) return;
 		const paste = (event) => {
@@ -185,13 +188,38 @@ function ItemDetails({
 					<p className="mt-1 whitespace-pre-wrap">{item.issue.note}</p>
 				</div>
 			)}
-			{item.auditNote && (
-				<div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-right text-sm">
-					<p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-						Audit note
-					</p>
-					<p className="mt-1 whitespace-pre-wrap">{item.auditNote}</p>
+			{onSaveNote ? (
+				<div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-right text-sm">
+					<label className="grid gap-2">
+						<span className="flex items-center justify-end gap-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
+							<StickyNote className="h-3.5 w-3.5" />
+							Audit note
+						</span>
+						<textarea
+							className="min-h-20 rounded-md border border-indigo-200 bg-white px-3 py-2 text-left text-sm"
+							value={noteDraft}
+							onChange={(event) => setNoteDraft(event.target.value)}
+							placeholder="Add a note for this item..."
+						/>
+					</label>
+					<Button
+						size="sm"
+						className="mt-2"
+						disabled={noteDraft.trim() === (item.auditNote ?? "")}
+						onClick={() => onSaveNote(item.sku, noteDraft)}
+					>
+						Save note
+					</Button>
 				</div>
+			) : (
+				item.auditNote && (
+					<div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-right text-sm">
+						<p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
+							Audit note
+						</p>
+						<p className="mt-1 whitespace-pre-wrap">{item.auditNote}</p>
+					</div>
+				)
 			)}
 		</div>
 	);

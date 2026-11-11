@@ -47,17 +47,30 @@ function useAuditState() {
   });
   const stateRef = useRef(state);
   const [storageError, setStorageError] = useState(false);
-  const update = (callback) => {
-    const next = callback(stateRef.current);
-    stateRef.current = next;
-    setState(next);
+  const saveTimer = useRef(null);
+  const save = () => {
+    clearTimeout(saveTimer.current);
+    saveTimer.current = null;
     try {
-      localStorage.setItem(storageKey, JSON.stringify(next));
+      localStorage.setItem(storageKey, JSON.stringify(stateRef.current));
       setStorageError(false);
     } catch {
       setStorageError(true);
     }
   };
+  // Serializing the whole state is slow with big inventories, so writes are batched.
+  const update = (callback) => {
+    const next = callback(stateRef.current);
+    stateRef.current = next;
+    setState(next);
+    if (!saveTimer.current) saveTimer.current = setTimeout(save, 800);
+  };
+  useEffect(() => {
+    const flush = () => { if (saveTimer.current) save(); };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", flush);
+    return () => { window.removeEventListener("pagehide", flush); document.removeEventListener("visibilitychange", flush); flush(); };
+  }, []);
   return [state, update, storageError];
 }
 

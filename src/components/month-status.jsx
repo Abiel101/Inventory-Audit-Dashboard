@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AuditPreview } from "@/components/audit-preview";
 import { DeleteGesture } from "@/components/slide-to-delete";
-import { buildAudit, categoryOf, groupCodes } from "@/lib/inventory";
+import { buildAudit, casingIssueCount, categoryOf, groupCodes } from "@/lib/inventory";
 import { auditProgress, auditTally, cn, dateKey } from "@/lib/utils";
 import { useTransition } from "@/components/ui/transition";
 
@@ -20,7 +20,8 @@ const statuses = {
   scheduled: { label: "Scheduled", icon: CalendarDays, chip: "bg-indigo-100 text-indigo-800", bar: "bg-indigo-500" },
   progress: { label: "In progress", icon: Loader2, chip: "bg-yellow-200 text-yellow-900", bar: "bg-yellow-400" },
   complete: { label: "Completed", icon: CheckCircle2, chip: "bg-emerald-100 text-emerald-800", bar: "bg-emerald-500" },
-  issues: { label: "Closed with issues", icon: AlertTriangle, chip: "bg-orange-200 text-orange-900", bar: "bg-orange-500" },
+  casing: { label: "Complete · items not cased correctly", icon: AlertTriangle, chip: "bg-gradient-to-r from-emerald-200 to-sky-200 text-emerald-900", bar: "bg-gradient-to-r from-emerald-500 to-sky-500" },
+  issues: { label: "Closed with issues", icon: AlertTriangle, chip: "bg-yellow-200 text-yellow-900", bar: "bg-yellow-400" },
 };
 const order = Object.keys(statuses);
 
@@ -51,14 +52,14 @@ export function MonthStatus({ state, update }) {
       const scheduledOn = schedule[code]?.startsWith(month) ? schedule[code] : null;
       let status = "notStarted";
       if (running) status = "progress";
-      else if (closed.length) status = progress >= 100 ? "complete" : "issues";
+      else if (closed.length) status = progress < 100 ? "issues" : casingIssueCount(latest) ? "casing" : "complete";
       else if (scheduledOn) status = "scheduled";
       return { code, status, audit: latest, progress, scheduledOn, completedBy: latest?.completedBy, completedAt: latest?.completedAt };
     });
   }, [state.inventory, state.audits, schedule, month]);
 
   const counts = Object.fromEntries(order.map((status) => [status, rows.filter((row) => row.status === status).length]));
-  const done = counts.complete + counts.issues;
+  const done = counts.complete + counts.casing + counts.issues;
   const percent = rows.length ? Math.round((done / rows.length) * 100) : 0;
 
   const terms = query.split(",").map((term) => term.trim().toLowerCase()).filter(Boolean);
@@ -98,7 +99,7 @@ export function MonthStatus({ state, update }) {
       <Card><CardContent className="space-y-4 p-5">
         <div className="flex flex-wrap items-end justify-between gap-2"><div><p className="text-sm text-slate-500">{monthLabel(month)} completion</p><p className="text-3xl font-bold">{done}<span className="text-lg font-medium text-slate-500"> / {rows.length} audits closed</span></p></div><p className="text-3xl font-bold text-sky-700">{percent}%</p></div>
         <div className="flex h-3 overflow-hidden rounded-full bg-slate-100" role="img" aria-label="Status breakdown">{order.slice().reverse().map((status) => counts[status] ? <div key={status} className={statuses[status].bar} style={{ width: `${(counts[status] / rows.length) * 100}%` }} title={`${statuses[status].label}: ${counts[status]}`} /> : null)}</div>
-        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">{order.map((status) => { const Icon = statuses[status].icon; return <button key={status} type="button" onClick={() => setFilter(filter === status ? "all" : status)} className={cn("flex items-center gap-3 rounded-lg border p-3 text-left transition hover:border-sky-500", filter === status ? "border-sky-600 ring-2 ring-sky-500/30" : "border-slate-200")}><span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-md", statuses[status].chip)}><Icon className="h-4 w-4" /></span><span><span className="block text-2xl font-bold leading-none">{counts[status]}</span><span className="text-xs text-slate-500">{statuses[status].label}</span></span></button>; })}</div>
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">{order.map((status) => { const Icon = statuses[status].icon; return <button key={status} type="button" onClick={() => setFilter(filter === status ? "all" : status)} className={cn("flex items-center gap-3 rounded-lg border p-3 text-left transition hover:border-sky-500", filter === status ? "border-sky-600 ring-2 ring-sky-500/30" : "border-slate-200")}><span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-md", statuses[status].chip)}><Icon className="h-4 w-4" /></span><span><span className="block text-2xl font-bold leading-none">{counts[status]}</span><span className="text-xs text-slate-500">{statuses[status].label}</span></span></button>; })}</div>
       </CardContent></Card>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -109,7 +110,7 @@ export function MonthStatus({ state, update }) {
 
       <div className="space-y-6">{groups.length ? groups.map(([group, codes]) => <section key={group}>
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">{group} <span className="font-normal">({codes.length})</span></h3>
-        <Card><CardContent className="divide-y divide-slate-200 p-0">{codes.map((code) => { const row = byCode.get(code); const meta = statuses[row.status]; const Icon = meta.icon; const closedRow = (row.status === "complete" || row.status === "issues") && row.audit; const expanded = closedRow && open === code;
+        <Card><CardContent className="divide-y divide-slate-200 p-0">{codes.map((code) => { const row = byCode.get(code); const meta = statuses[row.status]; const Icon = meta.icon; const closedRow = (row.status === "complete" || row.status === "casing" || row.status === "issues") && row.audit; const expanded = closedRow && open === code;
           const Gesture = row.status === "progress" ? DeleteGesture : Plain;
           return <div key={code}>
             <Gesture label={code} onDelete={() => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== row.audit.id) }))}>
@@ -120,10 +121,11 @@ export function MonthStatus({ state, update }) {
               <div className="flex gap-2" onClick={(event) => event.stopPropagation()}>
                 {(row.status === "notStarted" || row.status === "scheduled") && <Button size="sm" onClick={() => startAudit(code)}><Play className="h-3.5 w-3.5" />Start</Button>}
                 {row.status === "progress" && <Button size="sm" onClick={() => navigate(`/workspace/${row.audit.id}`)}>Continue</Button>}
-                {(row.status === "complete" || row.status === "issues") && row.audit && <>
+                {(row.status === "complete" || row.status === "casing" || row.status === "issues") && row.audit && <>
                   <Button size="sm" variant="outline" onClick={() => navigate(`/workspace/${row.audit.id}`)}>View</Button>
                   {row.audit.research ? <Button size="sm" variant="outline" onClick={() => navigate("/research")}><FlaskConical className="h-3.5 w-3.5" />In research</Button>
-                    : <Button size="sm" variant="outline" onClick={() => update((current) => ({ ...current, audits: current.audits.map((audit) => audit.id === row.audit.id ? { ...audit, research: "queued" } : audit) }))}><FlaskConical className="h-3.5 w-3.5" />Add to research</Button>}
+                    : row.status === "issues" ? <Button size="sm" variant="outline" onClick={() => update((current) => ({ ...current, audits: current.audits.map((audit) => audit.id === row.audit.id ? { ...audit, research: "queued" } : audit) }))}><FlaskConical className="h-3.5 w-3.5" />Add to research</Button>
+                    : null}
                 </>}
                 <Button size="sm" variant={expanded ? "default" : "outline"} aria-expanded={expanded} disabled={!closedRow} title={closedRow ? undefined : "Available once the audit is completed"} onClick={() => setOpen(expanded ? null : code)}>Details<ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} /></Button>
               </div>

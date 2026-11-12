@@ -192,7 +192,8 @@ export async function exportAuditWorkbook(audit, { compareKey, format = "new", c
   field("Progress", { formula: `IFERROR(SUMPRODUCT((Audit!$E$2:$E$${expectedLast}>Audit!$D$2:$D$${expectedLast})*Audit!$D$2:$D$${expectedLast}+(Audit!$E$2:$E$${expectedLast}<=Audit!$D$2:$D$${expectedLast})*Audit!$E$2:$E$${expectedLast})/SUM(Audit!$D$2:$D$${expectedLast}),0)`, result: auditProgress(audit) / 100 }, "0%");
   field("SKUs in audit", { formula: `COUNTA(Audit!$A$2:$A$${expectedLast})`, result: expectedRows.length });
   field("Units expected", { formula: `SUM(Audit!$D$2:$D$${expectedLast})`, result: expectedUnits });
-  field("Units scanned", { formula: `SUM(Audit!$E$2:$E$${expectedLast})`, result: foundUnits });
+  field("Units counted", { formula: `SUM(Scanned!$E$2:$E$${scanLast})`, result: audit.scans.reduce((sum, scan) => sum + (Number(scan.qty) || 0), 0) });
+  field("Units scanned (in audit)", { formula: `SUM(Audit!$E$2:$E$${expectedLast})`, result: foundUnits });
   field("Units missing", { formula: `SUMIF(Audit!$F$2:$F$${expectedLast},">0")`, result: expectedRows.reduce((sum, [sku, value]) => sum + Math.max(value - (tally.scanned.get(sku) ?? 0), 0), 0) });
   field("Scans not in audit", { formula: `COUNTIF(Scanned!$I$2:$I$${scanLast},"Not in audit")`, result: audit.scans.filter((scan) => tally.status(scan) === "extra").length });
 

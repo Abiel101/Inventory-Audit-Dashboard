@@ -30,7 +30,7 @@ test("TWC export preserves the old layout, formulas, counts and locations", asyn
     assert.deepEqual(loaded.worksheets.map((sheet) => sheet.name), ["Scan", "Audit"]);
     const scan = loaded.getWorksheet("Scan");
     const items = loaded.getWorksheet("Audit");
-    assert.deepEqual(scan.getRow(1).values.slice(1), ["Scan UPC", "Not in TWC", "Qty Scanned/On Hand", "Style Number", "Price", "Description"]);
+    assert.deepEqual(scan.getRow(1).values.slice(1), ["Scan UPC", "Not in TWC", "Qty Scanned/On Hand", "Style Number", "Price", "Description", "Location", "Notes", "Units Counted"]);
     assert.deepEqual(items.getRow(1).values.slice(2, 12), ["UPC", "Description", "Style Number", "Case Code", "Sale Price", "On Hand", "Sales Floor", "Scan Qty", "Variance", "Phy Qty"]);
     assert.equal(scan.getColumn(6).width, 100);
     assert.equal(items.getColumn(3).width, 63.54296875);
@@ -124,6 +124,33 @@ test("inventory import retains optional sale price and sales-floor quantities", 
     ]), "Inventory");
     const invalidBuffer = XLSX.write(invalid, { type: "buffer", bookType: "xlsx" });
     await assert.rejects(readInventoryFile({ name: "invalid.xlsx", arrayBuffer: async () => invalidBuffer }), /Invalid sale price for SKU 123/);
+  } finally {
+    await server.close();
+  }
+});
+
+test("exports include units counted and old audits import back", async () => {
+  const { createServer } = await import("vite");
+  const server = await createServer({ server: { middlewareMode: true }, appType: "custom" });
+  try {
+    const { createTwcWorkbook } = await server.ssrLoadModule("/src/lib/export-twc.js");
+    const { readAuditFile } = await server.ssrLoadModule("/src/lib/import-audit.js");
+    const compareKey = (value) => String(value);
+    const audit = {
+      name: "Rings", category: "RG - Rings", items: [{ sku: "123", description: "Ring", style: "S1", category: "RG - Rings", quantity: 3, price: 12.5 }],
+      scans: [{ sku: "123", qty: 2, location: "100" }, { sku: "999", qty: 1, location: "200" }], finalNote: "Recounted",
+    };
+    const workbook = createTwcWorkbook(ExcelJS, audit, { compareKey });
+    assert.equal(workbook.getWorksheet("Scan").getCell("I1").value, "Units Counted");
+    assert.equal(workbook.getWorksheet("Scan").getCell("I2").result, 3);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const file = { name: "RG - AB - 01.02.26 - 3.45 PM.xlsx", arrayBuffer: async () => buffer };
+    const { audit: imported } = await readAuditFile(file);
+    assert.equal(imported.category, "RG - Rings");
+    assert.equal(imported.initials, "AB");
+    assert.equal(imported.items[0].price, 12.5);
+    assert.deepEqual(imported.scans.map(({ sku, qty, location }) => [sku, qty, location]), [["123", 2, "100"], ["999", 1, "200"]]);
+    assert.equal(imported.finalNote, "Recounted");
   } finally {
     await server.close();
   }

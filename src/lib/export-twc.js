@@ -24,14 +24,15 @@ export function createTwcWorkbook(ExcelJS, audit, { compareKey, caseFor }) {
   workbook.calcProperties.fullCalcOnLoad = true;
   const scanSheet = workbook.addWorksheet("Scan", { properties: { defaultRowHeight: 14.5 } });
   const auditSheet = workbook.addWorksheet("Audit");
-  scanSheet.columns = [16.81640625, 15, 23.7265625, 20.26953125, 10.81640625, 100, 22, 60].map((width) => ({ width }));
+  scanSheet.columns = [16.81640625, 15, 23.7265625, 20.26953125, 10.81640625, 100, 22, 60, 18].map((width) => ({ width }));
   auditSheet.columns = [2.54296875, 15.453125, 63.54296875, 20.1796875, 23.54296875, 14.453125, 8.54296875, 10.54296875, 8.54296875, 8.7265625, 7.81640625, 28.81640625].map((width) => ({ width }));
   scanSheet.addRow(["Scan UPC", "Not in TWC", "Qty Scanned/On Hand", "Style Number", "Price", "Description"]);
   auditSheet.addRow(["", "UPC", "Description", "Style Number", "Case Code", "Sale Price", "On Hand", "Sales Floor", "Scan Qty", "Variance", "Phy Qty"]);
   scanSheet.getRow(1).height = 15.5;
   scanSheet.getCell("G1").value = "Location";
   scanSheet.getCell("H1").value = "Notes";
-  for (let col = 1; col <= 8; col++) {
+  scanSheet.getCell("I1").value = "Units Counted";
+  for (let col = 1; col <= 9; col++) {
     const cell = scanSheet.getRow(1).getCell(col);
     cell.font = headerFont;
     cell.border = border;
@@ -115,6 +116,10 @@ export function createTwcWorkbook(ExcelJS, audit, { compareKey, caseFor }) {
     row.getCell(5).value = { formula: `IFERROR(INDEX(Audit!$F$2:$F$${lastAudit},${match}),"-")`, result: item ? (item.price ?? 0) : "-" };
     row.getCell(6).value = { formula: `IFERROR(INDEX(Audit!$C$2:$C$${lastAudit},${match}),"-")`, result: item ? (item.description || "") : "-" };
   }
+  const unitsCell = scanSheet.getCell("I2");
+  unitsCell.value = { formula: `COUNTA($A$2:$A$${lastScan})`, result: scans.reduce((sum, { qty }) => sum + qty, 0) };
+  unitsCell.font = font;
+  unitsCell.alignment = { horizontal: "center" };
   scanSheet.addConditionalFormatting({
     ref: `C2:C${lastScan}`,
     rules: [

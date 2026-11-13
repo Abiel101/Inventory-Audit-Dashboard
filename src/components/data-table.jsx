@@ -1,4 +1,5 @@
 import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
+import { createPortal } from "react-dom";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Columns3, ListOrdered, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -16,7 +17,7 @@ const readHidden = (key, fallback) => {
 };
 
 // columnsKey enables a "Columns" menu; the choice is remembered across audits and sessions.
-export function DataTable({ columns, data, searchPlaceholder = "Search records...", rowClassName, onRowClick, persistKey, columnsKey, defaultHidden = [], fillScreen = false }) {
+export function DataTable({ columns, data, searchPlaceholder = "Search records...", rowClassName, onRowClick, persistKey, columnsKey, defaultHidden = [], fillScreen = false, controlsTarget = null }) {
   const wrapperRef = useRef(null);
   const [fillHeight, setFillHeight] = useState(null);
   const rowsKey = columnsKey ? `inventory-audit-rows:${columnsKey}` : null;
@@ -81,9 +82,7 @@ export function DataTable({ columns, data, searchPlaceholder = "Search records..
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
-  return <div className="space-y-3">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="relative w-full max-w-sm"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><Input value={globalFilter} onChange={(event) => setGlobalFilter(event.target.value)} className="pl-9" placeholder={searchPlaceholder} /></div>
+  const controls =
       <div className="flex items-center gap-2">
         {fillScreen && rowsKey && <div className="relative" ref={rowsMenuRef}>
           <button type="button" title="Rows shown" aria-label="Rows shown" aria-expanded={rowsMenuOpen} onClick={() => setRowsMenuOpen(!rowsMenuOpen)} className={iconButton}><ListOrdered className="h-4 w-4" /></button>
@@ -97,7 +96,11 @@ export function DataTable({ columns, data, searchPlaceholder = "Search records..
             {table.getAllLeafColumns().filter((column) => typeof column.columnDef.header === "string" && column.columnDef.header).map((column) => <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-slate-100"><input type="checkbox" checked={column.getIsVisible()} onChange={column.getToggleVisibilityHandler()} />{column.columnDef.header}</label>)}
           </div>}
         </div>}
-      </div>
+      </div>;
+  return <div className="space-y-3">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="relative w-full max-w-sm"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><Input value={globalFilter} onChange={(event) => setGlobalFilter(event.target.value)} className="pl-9" placeholder={searchPlaceholder} /></div>
+      {controlsTarget ? createPortal(controls, controlsTarget) : controls}
     </div>
     <Table wrapperRef={wrapperRef} wrapperStyle={fillHeight ? { height: fillHeight } : undefined}>
       <TableHeader>{table.getHeaderGroups().map((headerGroup) => <TableRow key={headerGroup.id}>{headerGroup.headers.map((header) => {

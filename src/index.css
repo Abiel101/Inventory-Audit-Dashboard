@@ -70,3 +70,15 @@ html[data-theme="tokyo-night"] {
 body { margin: 0; min-width: 320px; color: rgb(var(--slate-900)); background: rgb(var(--slate-50)); }
 button, input, select { font: inherit; }
 select { color: inherit; }
+
+/* Entrance animation: a 2px rise + fade. `.stagger` delays each direct child in turn. */
+@keyframes enter-up { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+.enter, .stagger > * { animation: enter-up 220ms ease-out both; animation-delay: var(--enter-delay, 0ms); }
+.stagger > :nth-child(1) { animation-delay: 0ms; }
+.stagger > :nth-child(2) { animation-delay: 40ms; }
+.stagger > :nth-child(3) { animation-delay: 80ms; }
+.stagger > :nth-child(4) { animation-delay: 120ms; }
+.stagger > :nth-child(5) { animation-delay: 160ms; }
+.stagger > :nth-child(6) { animation-delay: 200ms; }
+.stagger > :nth-child(n+7) { animation-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) { .enter, .stagger > * { animation: none; } }

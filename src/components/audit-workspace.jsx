@@ -10,7 +10,7 @@ import { AnimatedTabs } from "@/components/ui/animated-tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/toast";
 import { useTransition } from "@/components/ui/transition";
-import { DataTable } from "@/components/data-table";
+import { DataTable, useFillHeight } from "@/components/data-table";
 import { auditProgress, auditTally, cn, identifiersMatch, scanKey } from "@/lib/utils";
 import { ItemSheet, resizeImage } from "@/components/item-sheet";
 import { categoryOf, findKnownIssue } from "@/lib/inventory";
@@ -27,6 +27,11 @@ const rowTone = {
 const resultLabel = { extra: "Not in audit", match: "Matched", short: "Short", over: "Over" };
 const issueTone = "bg-indigo-100 text-indigo-900 hover:bg-indigo-100";
 const resultVariant = { extra: "destructive", match: "success", short: "warning", over: "warning" };
+
+function FitHeight({ className, children }) {
+  const [ref, height] = useFillHeight();
+  return <div ref={ref} style={height ? { height } : undefined} className={className}>{children}</div>;
+}
 
 function Empty({ title, detail }) {
   return <Card className="border-dashed"><CardContent className="p-8 text-center"><p className="font-semibold">{title}</p><p className="mt-1 text-sm text-slate-500">{detail}</p></CardContent></Card>;
@@ -198,7 +203,7 @@ export function AuditWorkspace({ state, update }) {
   const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 h-11 rounded-lg bg-slate-900 px-4 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
 
   const sidebar = <div>
-      <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle></CardHeader><CardContent className="stagger space-y-1 p-3 pt-0 text-[11px] leading-tight">
+      <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle></CardHeader><CardContent className="stagger space-y-1 p-3 pt-0 text-[11px] leading-tight lg:min-h-0 lg:overflow-y-auto">
         {locationSummary.length ? locationSummary.map(([name, units]) => <button key={name} type="button" disabled={phase !== "running"} onClick={() => reopenSection(name)} title="Select this section to add more scans" className={cn("flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left", phase === "running" && "hover:bg-slate-100", name === locationName && "bg-sky-50 ring-1 ring-sky-300")}><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant={doneVariant(name)}>Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></button>) : <p className="text-slate-500">No sections scanned yet.</p>}
       </CardContent></Card>
     </div>;
@@ -211,7 +216,7 @@ export function AuditWorkspace({ state, update }) {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2"><Button size="sm" className="h-8 text-xs" variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button><AnimatedTabs tabs={[["sku", "SKU"], ["style", "Style #"]]} value={inputMode} onChange={setInputMode} className="w-44" listClassName="border-slate-300" /></div>
       </CardContent></Card>}
-      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable fillScreen columns={columns} persistKey={`${audit.id}:scan`} columnsKey="scan-log" data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
+      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 lg:pb-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable fillScreen columns={columns} persistKey={`${audit.id}:scan`} columnsKey="scan-log" data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
     </div>;
 
   const stockByKey = audit.items.reduce((map, entry) => {
@@ -238,7 +243,7 @@ export function AuditWorkspace({ state, update }) {
     { accessorKey: "remaining", header: "Remaining", cell: ({ getValue }) => getValue() ? <Badge variant="warning">{getValue()} missing</Badge> : <Badge variant="success">Found</Badge> },
     { id: "note", header: "", enableSorting: false, cell: ({ row }) => <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`${row.original.note ? "Edit" : "Add"} note for ${row.original.sku}`} title={row.original.note || "Add note"} onClick={(event) => { event.stopPropagation(); openDetail(row.original); }}><StickyNote className={cn("h-4 w-4", row.original.note ? "text-indigo-600" : "text-slate-400")} /></Button> },
   ];
-  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable fillScreen columns={itemColumns} persistKey={`${audit.id}:items`} columnsKey="audit-items" data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => row.note ? "bg-indigo-100 hover:bg-indigo-200" : issueFor(row) ? issueTone : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
+  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 lg:pb-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable fillScreen columns={itemColumns} persistKey={`${audit.id}:items`} columnsKey="audit-items" data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => row.note ? "bg-indigo-100 hover:bg-indigo-200" : issueFor(row) ? issueTone : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
 
   const sectionGroups = [...audit.scans.reduce((map, scan) => {
     const section = map.get(scan.location) ?? new Map();
@@ -253,14 +258,14 @@ export function AuditWorkspace({ state, update }) {
   ];
   const sectionsByColumn = sectionColumns.map(([title]) => ({ title, groups: [] }));
   [...sectionGroups].sort((a, b) => a.name.localeCompare(b.name, "en", { numeric: true })).forEach((group) => sectionsByColumn[sectionColumns.findIndex(([, match]) => match(group.name))].groups.push(group));
-  const sectionsPanel = sectionGroups.length ? <div className="stagger grid items-start gap-4 md:grid-cols-3">
-    {sectionsByColumn.map(({ title, groups }) => <Card key={title}>
+  const sectionsPanel = sectionGroups.length ? <FitHeight className="stagger grid items-start gap-4 md:grid-cols-3 lg:items-stretch">
+    {sectionsByColumn.map(({ title, groups }) => <Card key={title} className="lg:flex lg:min-h-0 lg:flex-col">
       <CardHeader className="p-3 pb-1"><CardTitle className="text-sm">{title}</CardTitle></CardHeader>
       <CardContent className="stagger space-y-1 p-3 pt-0 text-[11px] leading-tight">
         {groups.length ? groups.map(({ name, units }) => <div key={name} className="flex w-full items-center justify-between gap-2 px-1 py-0.5"><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations?.includes(name) ? <Badge variant={doneVariant(name)}>Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></div>) : <p className="text-slate-500">Nothing scanned here.</p>}
       </CardContent>
     </Card>)}
-  </div> : <Empty title="No sections scanned" detail="This audit has no scanned sections." />;
+  </FitHeight> : <Empty title="No sections scanned" detail="This audit has no scanned sections." />;
 
   const saveFinal = () => { patch({ finalNote: noteDraft.trim() }); toast("Final note saved", { variant: "success" }); };
   const finalPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Final note</CardTitle><CardDescription className="text-xs">Add a closing note. It appears on the Audit Info sheet of the export; review and update it here first.</CardDescription></CardHeader><CardContent className="grid gap-3 p-3 pt-0 text-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
@@ -269,12 +274,12 @@ export function AuditWorkspace({ state, update }) {
   </CardContent></Card>;
 
 
-  const fullWidth = (panel, extra = null) => <div className="stagger flex min-w-0 flex-col gap-3 pb-6">{panel}{extra}</div>;
+  const fullWidth = (panel, extra = null) => <div className="stagger flex min-w-0 flex-col gap-3 pb-6 lg:pb-0">{panel}{extra}</div>;
   const baseContent = phase === "paused" ? fullWidth(itemsPanel)
     : closed ? (view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, finalPanel))
     : view === "items" ? fullWidth(itemsPanel)
     : view === "sections" ? fullWidth(sectionsPanel)
-    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="stagger flex flex-col gap-3">{sidebar}</div><div className="min-w-0 pb-24">{scanPanel}</div></div>;
+    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="stagger flex flex-col gap-3">{sidebar}</div><div className="min-w-0 pb-24 lg:pb-0">{scanPanel}</div></div>;
 
   const content = <>
     <div className={pinned && view === "items" ? "flex items-start gap-4" : ""}>
@@ -295,7 +300,7 @@ export function AuditWorkspace({ state, update }) {
         {confirming ? <div className="flex flex-wrap items-end gap-2">{initialsField("Associate initials")}<Button disabled={!cleanInitials} onClick={finish}><CheckCircle2 className="h-4 w-4" />Confirm complete</Button><Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button></div>
           : <div className="flex flex-wrap gap-2">{updateButton()}<Button variant="outline" onClick={saveAndClose}><Save className="h-4 w-4" />Close &amp; save progress</Button><Button onClick={() => setConfirming(true)}><CheckCircle2 className="h-4 w-4" />Complete audit</Button></div>}
       </div>
-      <div className="mx-auto w-full max-w-[110rem] p-4 md:p-6">{content}</div>
+      <div className="mx-auto w-full max-w-[110rem] p-4 md:p-6 lg:pb-0">{content}</div>
       </SheetContent>
     </Sheet>;
   }

@@ -12,21 +12,27 @@ const readHidden = (key, fallback) => {
   try { const saved = JSON.parse(localStorage.getItem(key)); return saved && typeof saved === "object" ? saved : fallback; } catch { return fallback; }
 };
 
-// columnsKey enables a "Columns" menu; the choice is remembered across audits and sessions.
-export function DataTable({ columns, data, searchPlaceholder = "Search records...", rowClassName, onRowClick, persistKey, columnsKey, defaultHidden = [], fillScreen = false }) {
-  const wrapperRef = useRef(null);
-  const [fillHeight, setFillHeight] = useState(null);
-  // On desktop the table gets a fixed height that ends 16px above the bottom of the screen; rows scroll under a sticky header.
+// On desktop returns a height that ends `gap`px above the bottom of the screen; null on smaller screens.
+export function useFillHeight(enabled = true, gap = 18) {
+  const ref = useRef(null);
+  const [height, setHeight] = useState(null);
   useEffect(() => {
-    if (!fillScreen) return;
+    if (!enabled) return;
     const measure = () => {
-      const top = wrapperRef.current?.getBoundingClientRect().top ?? 0;
-      setFillHeight(window.innerWidth >= 1024 ? Math.max(240, window.innerHeight - top - 16) : null);
+      const top = ref.current?.getBoundingClientRect().top ?? 0;
+      setHeight(window.innerWidth >= 1024 ? Math.max(240, window.innerHeight - top - gap) : null);
     };
     measure();
+    const timer = setTimeout(measure, 400);
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [fillScreen]);
+    return () => { clearTimeout(timer); window.removeEventListener("resize", measure); };
+  }, [enabled, gap]);
+  return [ref, height];
+}
+
+// columnsKey enables a "Columns" menu; the choice is remembered across audits and sessions.
+export function DataTable({ columns, data, searchPlaceholder = "Search records...", rowClassName, onRowClick, persistKey, columnsKey, defaultHidden = [], fillScreen = false }) {
+  const [wrapperRef, fillHeight] = useFillHeight(fillScreen);
   const storageKey = columnsKey ? `inventory-audit-columns:${columnsKey}` : null;
   const [columnVisibility, setColumnVisibilityState] = useState(() => storageKey ? readHidden(storageKey, Object.fromEntries(defaultHidden.map((id) => [id, false]))) : {});
   const setColumnVisibility = (updater) => setColumnVisibilityState((current) => {

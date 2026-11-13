@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, Download, FlaskConical, Pencil, Play, RefreshCw, Save, StickyNote, X } from "lucide-react";
+import { CheckCircle2, Download, FlaskConical, PanelLeftClose, PanelLeftOpen, Pencil, Play, RefreshCw, Save, StickyNote, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,7 @@ export function AuditWorkspace({ state, update }) {
   const toast = useToast();
   const transition = useTransition();
   const [tab, setTab] = useState("scan");
+  const [showSections, setShowSections] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const [notice, setNotice] = useState("");
   const [inputMode, setInputMode] = useState("sku");
@@ -211,7 +212,7 @@ export function AuditWorkspace({ state, update }) {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2"><Button size="sm" className="h-8 text-xs" variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button><AnimatedTabs tabs={[["sku", "SKU"], ["style", "Style #"]]} value={inputMode} onChange={setInputMode} className="w-44" listClassName="border-slate-300" /></div>
       </CardContent></Card>}
-      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable fillScreen columns={columns} persistKey={`${audit.id}:scan`} columnsKey="scan-log" data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
+      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" aria-expanded={showSections} onClick={() => setShowSections((value) => !value)}>{showSections ? <PanelLeftClose className="h-3.5 w-3.5" /> : <PanelLeftOpen className="h-3.5 w-3.5" />}{showSections ? "Hide" : "Show"} completed sections</Button><CardTitle className="text-sm">Scan log</CardTitle></div><div className="flex gap-3 text-xs text-slate-500"><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-rose-300" />Not in audit</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-indigo-300" />Known issue</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm border border-slate-300 bg-white" />Quantity differs</span><span className="flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-sm bg-emerald-300" />Quantity met</span></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable fillScreen columns={columns} persistKey={`${audit.id}:scan`} columnsKey="scan-log" data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
     </div>;
 
   const stockByKey = audit.items.reduce((map, entry) => {
@@ -274,7 +275,7 @@ export function AuditWorkspace({ state, update }) {
     : closed ? (view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, finalPanel))
     : view === "items" ? fullWidth(itemsPanel)
     : view === "sections" ? fullWidth(sectionsPanel)
-    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="stagger flex flex-col gap-3">{sidebar}</div><div className="min-w-0 pb-24">{scanPanel}</div></div>;
+    : <div className={cn("grid items-start gap-5", showSections && "lg:grid-cols-[18rem_minmax(0,1fr)]")}>{showSections && <div className="stagger flex flex-col gap-3">{sidebar}</div>}<div className="min-w-0 pb-24">{scanPanel}</div></div>;
 
   const content = <>
     <div className={pinned && view === "items" ? "flex items-start gap-4" : ""}>

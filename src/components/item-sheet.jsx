@@ -46,7 +46,9 @@ function ItemDetails({
 }) {
 	const fileRef = useRef(null);
 	const [noteDraft, setNoteDraft] = useState(item?.auditNote ?? "");
+	const [noteOpen, setNoteOpen] = useState(!!item?.auditNote);
 	useEffect(() => setNoteDraft(item?.auditNote ?? ""), [item?.sku, item?.auditNote]);
+	useEffect(() => setNoteOpen(!!item?.auditNote), [item?.sku]);
 	useEffect(() => {
 		if (!item || !onAddImages) return;
 		const paste = (event) => {
@@ -80,7 +82,7 @@ function ItemDetails({
 		["Locations", item.locations],
 	];
 	return (
-		<div className="flex flex-col gap-5">
+		<div className={pinned ? "flex flex-col gap-2" : "flex flex-col gap-5"}>
 			<div
 				className={
 					pinned
@@ -112,7 +114,7 @@ function ItemDetails({
 						<img
 							src={src}
 							alt={`${item.sku} ${index + 1}`}
-							className="max-h-72 w-full rounded-lg border border-slate-200 bg-white object-contain"
+							className={`${pinned ? "max-h-32" : "max-h-72"} w-full rounded-lg border border-slate-200 bg-white object-contain`}
 						/>
 						{onRemoveImage && (
 							<Button
@@ -170,7 +172,7 @@ function ItemDetails({
 			</div>
 			<dl className="divide-y divide-slate-200 text-right text-sm">
 				{fields.map(([label, value]) => (
-					<div key={label} className="grid grid-cols-[auto_1fr] gap-4 py-2">
+					<div key={label} className={`grid grid-cols-[auto_1fr] gap-4 ${pinned ? "py-1 text-xs" : "py-2"}`}>
 						<dt className="text-slate-500">{label}</dt>
 						<dd className="break-words font-medium">
 							{value === null || value === undefined || value === ""
@@ -188,7 +190,16 @@ function ItemDetails({
 					<p className="mt-1 whitespace-pre-wrap">{item.issue.note}</p>
 				</div>
 			)}
-			{onSaveNote ? (
+			{onSaveNote && !noteOpen ? (
+				<Button
+					size="sm"
+					className="self-end bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
+					onClick={() => setNoteOpen(true)}
+				>
+					<StickyNote className="h-4 w-4" />
+					Add note
+				</Button>
+			) : onSaveNote ? (
 				<div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-right text-sm">
 					<label className="grid gap-2">
 						<span className="flex items-center justify-end gap-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
@@ -196,7 +207,7 @@ function ItemDetails({
 							Audit note
 						</span>
 						<textarea
-							className="min-h-20 rounded-md border border-indigo-200 bg-white px-3 py-2 text-left text-sm"
+							className="min-h-16 rounded-md border border-indigo-200 bg-white px-3 py-2 text-left text-sm"
 							value={noteDraft}
 							onChange={(event) => setNoteDraft(event.target.value)}
 							placeholder="Add a note for this item..."
@@ -233,7 +244,7 @@ export function ItemSheet({ item, onClose, pinned, onPin, ...imageProps }) {
 		return (
 			<aside
 				aria-label="Pinned item"
-				className="sticky top-24 mt-11 max-h-[calc(100vh-7rem)] w-80 shrink-0 self-start overflow-y-auto rounded-lg border border-slate-200 bg-white p-4"
+				className="sticky top-24 mt-11 w-96 shrink-0 self-start rounded-lg border border-slate-200 bg-white p-3 xl:w-[26rem]"
 			>
 				{item ? (
 					<ItemDetails

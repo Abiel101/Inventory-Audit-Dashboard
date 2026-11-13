@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, Download, FlaskConical, PanelLeftClose, PanelLeftOpen, Pencil, Play, RefreshCw, Save, StickyNote, X } from "lucide-react";
+import { CheckCircle2, ChevronRight, Download, FlaskConical, Pencil, Play, RefreshCw, Save, StickyNote, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -201,10 +201,18 @@ export function AuditWorkspace({ state, update }) {
 
   const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 h-11 rounded-lg bg-slate-900 px-4 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
 
-  const sidebar = <div>
-      <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle></CardHeader><CardContent className="stagger space-y-1 p-3 pt-0 text-[11px] leading-tight">
-        {locationSummary.length ? locationSummary.map(([name, units]) => <button key={name} type="button" disabled={phase !== "running"} onClick={() => reopenSection(name)} title="Select this section to add more scans" className={cn("flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left", phase === "running" && "hover:bg-slate-100", name === locationName && "bg-sky-50 ring-1 ring-sky-300")}><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant={doneVariant(name)}>Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></button>) : <p className="text-slate-500">No sections scanned yet.</p>}
-      </CardContent></Card>
+  const sidebar = <div className="relative">
+      <Card className="relative min-h-[100px] overflow-hidden">
+        <div aria-hidden={showSections} className={cn("absolute inset-y-0 left-0 flex w-12 flex-col items-center gap-2.5 pt-4 transition-[opacity,visibility] duration-300 max-lg:hidden", showSections ? "invisible opacity-0" : "visible opacity-100")}>
+          {locationSummary.map(([name, units]) => <span key={name} title={`${name} · ${units} units · ${audit.completedLocations.includes(name) ? "Completed" : "Open"}`} className={cn("h-2.5 w-2.5 rounded-full", audit.completedLocations.includes(name) ? "bg-emerald-500" : "bg-red-500")} />)}
+        </div>
+        <div aria-hidden={!showSections} className={cn("w-full transition-[opacity,visibility] duration-300 max-lg:visible max-lg:opacity-100 lg:w-[18rem]", showSections ? "visible opacity-100" : "invisible opacity-0")}>
+      <CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle></CardHeader><CardContent className="stagger space-y-1 p-3 pt-0 text-[11px] leading-tight">
+        {locationSummary.length ? locationSummary.map(([name, units]) => <button key={name} type="button" disabled={phase !== "running"} onClick={() => reopenSection(name)} title="Select this section to add more scans" className={cn("flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left", phase === "running" && "hover:bg-slate-100", name === locationName && "bg-sky-50 ring-1 ring-sky-300")}><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant={doneVariant(name)}>Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></button>) : <p className="text-slate-400">No sections started</p>}
+      </CardContent>
+        </div>
+      </Card>
+      <button type="button" aria-expanded={showSections} aria-label={showSections ? "Hide completed sections" : "Show completed sections"} title={showSections ? "Hide completed sections" : "Show completed sections"} onClick={() => setShowSections((value) => !value)} className="absolute -right-3 top-1/2 z-10 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-sm hover:bg-slate-100 max-lg:hidden"><ChevronRight className={cn("h-4 w-4 transition-transform duration-300 motion-reduce:transition-none", showSections && "rotate-180")} /></button>
     </div>;
 
   const scanPanel = <div className="stagger space-y-5">
@@ -215,7 +223,7 @@ export function AuditWorkspace({ state, update }) {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2"><Button size="sm" className="h-8 text-xs" variant="outline" disabled={!locationName || !audit.scans.some((scan) => scan.location === locationName)} onClick={completeSection}>Complete section</Button><AnimatedTabs tabs={[["sku", "SKU"], ["style", "Style #"]]} value={inputMode} onChange={setInputMode} className="w-44" listClassName="border-slate-300" /></div>
       </CardContent></Card>}
-      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" aria-expanded={showSections} onClick={() => setShowSections((value) => !value)}>{showSections ? <PanelLeftClose className="h-3.5 w-3.5" /> : <PanelLeftOpen className="h-3.5 w-3.5" />}{showSections ? "Hide" : "Show"} completed sections</Button><CardTitle className="text-sm">Scan log</CardTitle></div></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable fillScreen controlsTarget={controlsEl} columns={columns} persistKey={`${audit.id}:scan`} columnsKey="scan-log" data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
+      <Card><CardHeader className="p-3 pb-1"><div className="flex flex-wrap items-center justify-between gap-2"><CardTitle className="text-sm">Scan log</CardTitle></div></CardHeader><CardContent className="p-3 pt-0 text-[11px] leading-tight [&_td]:px-1.5 [&_td]:py-0.5 [&_th]:h-6 [&_th]:px-1.5 [&_th]:text-[11px]"><TooltipProvider delayDuration={100}><DataTable fillScreen controlsTarget={controlsEl} columns={columns} persistKey={`${audit.id}:scan`} columnsKey="scan-log" data={[...audit.scans].reverse()} searchPlaceholder="Search scanned items..." rowClassName={(scan, previous) => cn(issueFor(scan) ? issueTone : rowTone[tally.status(scan)], previous && (previous.section ?? previous.location) !== (scan.section ?? scan.location) && "border-t-[6px] border-t-slate-400")} /></TooltipProvider></CardContent></Card>
     </div>;
 
   const stockByKey = audit.items.reduce((map, entry) => {
@@ -278,7 +286,7 @@ export function AuditWorkspace({ state, update }) {
     : closed ? (view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, finalPanel))
     : view === "items" ? fullWidth(itemsPanel)
     : view === "sections" ? fullWidth(sectionsPanel)
-    : <div className={cn("grid items-start transition-[grid-template-columns] duration-300 ease-out motion-reduce:transition-none", showSections ? "lg:grid-cols-[19.25rem_minmax(0,1fr)]" : "lg:grid-cols-[0rem_minmax(0,1fr)]")}><div className={cn("overflow-hidden transition-opacity duration-300 ease-out motion-reduce:transition-none max-lg:mb-5", showSections ? "opacity-100" : "pointer-events-none opacity-0 max-lg:hidden")} aria-hidden={!showSections} inert={!showSections}><div className="stagger flex w-full flex-col gap-3 lg:w-[18rem]">{sidebar}</div></div><div className="min-w-0 pb-24">{scanPanel}</div></div>;
+    : <div className={cn("grid items-start transition-[grid-template-columns] duration-300 ease-out max-lg:gap-5 motion-reduce:transition-none", showSections ? "lg:grid-cols-[19.25rem_minmax(0,1fr)]" : "lg:grid-cols-[4.25rem_minmax(0,1fr)]")}>{sidebar}<div className="min-w-0 pb-24">{scanPanel}</div></div>;
 
   const content = <>
     <div className={pinned && view === "items" ? "flex items-start gap-4" : ""}>

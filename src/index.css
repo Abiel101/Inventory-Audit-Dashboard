@@ -82,3 +82,7 @@ select { color: inherit; }
 .stagger > :nth-child(6) { animation-delay: 200ms; }
 .stagger > :nth-child(n+7) { animation-delay: 240ms; }
 @media (prefers-reduced-motion: reduce) { .enter, .stagger > * { animation: none; } }
+
+/* The Audit tab hides the main scrollbar so the table doesn't shift when it appears. */
+main:has([data-hide-scrollbar]) { scrollbar-width: none; }
+main:has([data-hide-scrollbar])::-webkit-scrollbar { display: none; }

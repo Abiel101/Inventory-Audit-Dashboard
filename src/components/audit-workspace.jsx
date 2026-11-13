@@ -278,7 +278,7 @@ export function AuditWorkspace({ state, update }) {
 
   const content = <>
     <div className={pinned && view === "items" ? "flex items-start gap-4" : ""}>
-    <div className="flex min-w-0 flex-1 flex-col gap-3"><div className="enter">{progressBar}</div>{!closed && phase === "paused" ? null : <div className="enter" style={{ "--enter-delay": "50ms" }}>{tabs}</div>}<div key={view} className="stagger">{baseContent}</div></div>
+    <div className="flex min-w-0 flex-1 flex-col gap-3"><div className="enter">{progressBar}</div>{!closed && phase === "paused" ? null : <div className="enter" style={{ "--enter-delay": "50ms" }}>{tabs}</div>}<div key={view} className="stagger" data-hide-scrollbar={view === "items" ? "" : undefined}>{baseContent}</div></div>
     {view === "items" && <ItemSheet item={detail} pinned={pinned} onPin={() => setPinned((value) => !value)} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImages : undefined} onRemoveImage={removeImage} onSaveNote={detail && !closed ? saveNote : undefined} />}
     </div>
   </>;

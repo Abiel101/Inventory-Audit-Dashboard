@@ -17,6 +17,7 @@ import { KnownIssues } from "@/components/known-issues";
 import { MonthStatus } from "@/components/month-status";
 import { AnimatedTabs } from "@/components/ui/animated-tabs";
 import { Research } from "@/components/research";
+import { ActiveAudits } from "@/components/active-audits";
 import { AuditWorkspace } from "@/components/audit-workspace";
 import { buildAudit, groupCodes, readInventoryFile, sourceAge } from "@/lib/inventory";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarRail, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
@@ -169,6 +170,8 @@ function AuditBuilder({ state, update }) {
 }
 
 function Workspace({ state, update }) {
+  const { id } = useParams();
+  if (!id) return <ActiveAudits state={state} />;
   return <AuditWorkspace state={state} update={update} />;
 }
 

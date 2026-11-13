@@ -184,6 +184,11 @@ export function AuditWorkspace({ state, update }) {
     ...(!closed ? [{ id: "remove", header: "", enableSorting: false, cell: ({ row }) => <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`Remove scan for ${row.original.sku}`} onClick={(event) => { event.stopPropagation(); removeScan(row.original); }}><X className="h-4 w-4 text-rose-600" /></Button> }] : []),
   ];
 
+  const doneVariant = (name) => {
+    const scans = audit.scans.filter((scan) => scan.location === name);
+    if (scans.some((scan) => tally.status(scan) === "extra" && !issueFor(scan))) return "destructive";
+    return scans.some((scan) => issueFor(scan)) ? "indigo" : "success";
+  };
   const locationSummary = [...audit.scans.reduce((map, scan) => map.set(scan.location, (map.get(scan.location) ?? 0) + (Number(scan.qty) || 0)), new Map())];
 
   const view = closed && tab === "scan" ? "items" : phase === "paused" ? "items" : tab;
@@ -193,12 +198,12 @@ export function AuditWorkspace({ state, update }) {
   const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 h-11 rounded-lg bg-slate-900 px-4 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
 
   const sidebar = <div>
-      <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle></CardHeader><CardContent className="space-y-1 p-3 pt-0 text-[11px] leading-tight">
-        {locationSummary.length ? locationSummary.map(([name, units]) => <button key={name} type="button" disabled={phase !== "running"} onClick={() => reopenSection(name)} title="Select this section to add more scans" className={cn("flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left", phase === "running" && "hover:bg-slate-100", name === locationName && "bg-sky-50 ring-1 ring-sky-300")}><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant="success">Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></button>) : <p className="text-slate-500">No sections scanned yet.</p>}
+      <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Completed sections</CardTitle></CardHeader><CardContent className="stagger space-y-1 p-3 pt-0 text-[11px] leading-tight">
+        {locationSummary.length ? locationSummary.map(([name, units]) => <button key={name} type="button" disabled={phase !== "running"} onClick={() => reopenSection(name)} title="Select this section to add more scans" className={cn("flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left", phase === "running" && "hover:bg-slate-100", name === locationName && "bg-sky-50 ring-1 ring-sky-300")}><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant={doneVariant(name)}>Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></button>) : <p className="text-slate-500">No sections scanned yet.</p>}
       </CardContent></Card>
     </div>;
 
-  const scanPanel = <div className="space-y-5">
+  const scanPanel = <div className="stagger space-y-5">
       {phase === "running" && <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Scan items</CardTitle><CardDescription className="text-[11px]">Scan each item individually; every scan counts as one unit.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs">
         <div className="grid gap-2 md:grid-cols-3">
           <select aria-label="Location" className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs" value={locationName} onChange={(event) => setLocationName(event.target.value)}><option value="">Select a location...</option>{state.locations.map((value) => <option key={value}>{value}</option>)}</select>
@@ -248,11 +253,11 @@ export function AuditWorkspace({ state, update }) {
   ];
   const sectionsByColumn = sectionColumns.map(([title]) => ({ title, groups: [] }));
   [...sectionGroups].sort((a, b) => a.name.localeCompare(b.name, "en", { numeric: true })).forEach((group) => sectionsByColumn[sectionColumns.findIndex(([, match]) => match(group.name))].groups.push(group));
-  const sectionsPanel = sectionGroups.length ? <div className="grid items-start gap-4 md:grid-cols-3">
+  const sectionsPanel = sectionGroups.length ? <div className="stagger grid items-start gap-4 md:grid-cols-3">
     {sectionsByColumn.map(({ title, groups }) => <Card key={title}>
       <CardHeader className="p-3 pb-1"><CardTitle className="text-sm">{title}</CardTitle></CardHeader>
-      <CardContent className="space-y-1 p-3 pt-0 text-[11px] leading-tight">
-        {groups.length ? groups.map(({ name, units }) => <div key={name} className="flex w-full items-center justify-between gap-2 px-1 py-0.5"><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations?.includes(name) ? <Badge variant="success">Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></div>) : <p className="text-slate-500">Nothing scanned here.</p>}
+      <CardContent className="stagger space-y-1 p-3 pt-0 text-[11px] leading-tight">
+        {groups.length ? groups.map(({ name, units }) => <div key={name} className="flex w-full items-center justify-between gap-2 px-1 py-0.5"><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations?.includes(name) ? <Badge variant={doneVariant(name)}>Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></div>) : <p className="text-slate-500">Nothing scanned here.</p>}
       </CardContent>
     </Card>)}
   </div> : <Empty title="No sections scanned" detail="This audit has no scanned sections." />;
@@ -264,16 +269,16 @@ export function AuditWorkspace({ state, update }) {
   </CardContent></Card>;
 
 
-  const fullWidth = (panel, extra = null) => <div className="flex min-w-0 flex-col gap-3 pb-6">{panel !== sectionsPanel && progressBar}{!closed && phase === "paused" ? null : tabs}{panel}{extra}</div>;
+  const fullWidth = (panel, extra = null) => <div className="stagger flex min-w-0 flex-col gap-3 pb-6">{panel}{extra}</div>;
   const baseContent = phase === "paused" ? fullWidth(itemsPanel)
     : closed ? (view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, finalPanel))
     : view === "items" ? fullWidth(itemsPanel)
     : view === "sections" ? fullWidth(sectionsPanel)
-    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="flex flex-col gap-3">{sidebar}</div><div className="flex min-w-0 flex-col gap-3 pb-24">{progressBar}{tabs}<div className="mt-2">{scanPanel}</div></div></div>;
+    : <div className="grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]"><div className="stagger flex flex-col gap-3">{sidebar}</div><div className="min-w-0 pb-24">{scanPanel}</div></div>;
 
   const content = <>
     <div className={pinned && view === "items" ? "flex items-start gap-4" : ""}>
-    <div className="min-w-0 flex-1">{baseContent}</div>
+    <div className="flex min-w-0 flex-1 flex-col gap-3"><div className="enter">{progressBar}</div>{!closed && phase === "paused" ? null : <div className="enter" style={{ "--enter-delay": "50ms" }}>{tabs}</div>}<div key={view} className="stagger">{baseContent}</div></div>
     {view === "items" && <ItemSheet item={detail} pinned={pinned} onPin={() => setPinned((value) => !value)} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImages : undefined} onRemoveImage={removeImage} onSaveNote={detail && !closed ? saveNote : undefined} />}
     </div>
   </>;

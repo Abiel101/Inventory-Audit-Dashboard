@@ -105,7 +105,7 @@ function AppShell({ state, update, storageError, children }) {
   return <SidebarProvider defaultOpen={false} className="h-svh overflow-hidden">
     <CollapseOnTablet />
     <AppSidebar state={state} update={update} />
-    <SidebarInset className="min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 [scrollbar-gutter:stable]">
+    <SidebarInset className="min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:px-6">
         <SidebarTrigger className="h-6 w-6 [&_svg]:size-3.5" />
         <div className="min-w-0 flex-1"><h1 id="page-title" tabIndex={-1} className="truncate text-xl font-bold">{pageTitle(pathname)}</h1></div>

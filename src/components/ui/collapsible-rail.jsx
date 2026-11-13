@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -8,31 +8,19 @@ const dotTone = { success: "bg-emerald-500", danger: "bg-red-500", warning: "bg-
 export const desktopDefaultOpen = () => typeof window === "undefined" || window.matchMedia("(min-width: 1024px)").matches;
 
 // A self-contained side panel: expanded it shows `children`; collapsed it shrinks to a narrow rail of status dots.
-// An edge arrow toggles it. Place it in a flex row beside a `min-w-0 flex-1` sibling, which absorbs the freed width.
+// Open width is fixed (`width`) so it never changes as content is added. An edge arrow toggles it. Place it in a flex row beside a `min-w-0 flex-1` sibling, which absorbs the freed width.
 // dots: [{ id, label, tone: "success" | "danger" | "warning" | "neutral" }]
-export function CollapsibleRail({ title, dots = [], emptyText = "Nothing yet", children, open: controlledOpen, onOpenChange, defaultOpen = desktopDefaultOpen, className, contentClassName }) {
+export function CollapsibleRail({ title, dots = [], emptyText = "Nothing yet", children, open: controlledOpen, onOpenChange, defaultOpen = desktopDefaultOpen, width = "15rem", className, contentClassName }) {
   const [innerOpen, setInnerOpen] = useState(defaultOpen);
   const open = controlledOpen ?? innerOpen;
-  const contentRef = useRef(null);
-  const [contentWidth, setContentWidth] = useState(null);
-  // Open width tracks the content's natural width so the panel only takes the room it needs.
-  useLayoutEffect(() => {
-    const node = contentRef.current;
-    if (!node) return;
-    const measure = () => setContentWidth(node.offsetWidth);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
   const toggle = () => { const next = !open; setInnerOpen(next); onOpenChange?.(next); };
   const label = `${open ? "Hide" : "Show"} ${title.toLowerCase()}`;
-  return <div style={{ width: open ? contentWidth ?? undefined : "3rem", maxWidth: open ? "70vw" : undefined }} className={cn("relative shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none", className)}>
+  return <div style={{ width: open ? width : "3rem", maxWidth: open ? "70vw" : undefined }} className={cn("relative shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none", className)}>
     <Card className="relative min-h-[100px] overflow-hidden">
       <div aria-hidden={open} className={cn("absolute inset-y-0 left-0 flex w-12 flex-col items-center gap-2.5 pt-4 transition-[opacity,visibility] duration-300", open ? "invisible opacity-0" : "visible opacity-100")}>
         {dots.map((dot) => <span key={dot.id} title={dot.label} className={cn("h-2.5 w-2.5 rounded-full", dotTone[dot.tone] ?? dotTone.neutral)} />)}
       </div>
-      <div ref={contentRef} aria-hidden={!open} className={cn("w-max min-w-36 transition-[opacity,visibility] duration-300", open ? "visible opacity-100" : "invisible opacity-0")}>
+      <div aria-hidden={!open} style={{ width }} className={cn("transition-[opacity,visibility] duration-300", open ? "visible opacity-100" : "invisible opacity-0")}>
         <CardHeader className="p-3 pb-1"><CardTitle className="text-sm">{title}</CardTitle></CardHeader>
         <CardContent className={cn("p-3 pt-0 text-[11px] leading-tight", contentClassName)}>{children ?? <p className="text-slate-400">{emptyText}</p>}</CardContent>
       </div>

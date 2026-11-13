@@ -13,7 +13,20 @@ const readHidden = (key, fallback) => {
 };
 
 // columnsKey enables a "Columns" menu; the choice is remembered across audits and sessions.
-export function DataTable({ columns, data, searchPlaceholder = "Search records...", rowClassName, onRowClick, persistKey, columnsKey, defaultHidden = [] }) {
+export function DataTable({ columns, data, searchPlaceholder = "Search records...", rowClassName, onRowClick, persistKey, columnsKey, defaultHidden = [], fillScreen = false }) {
+  const wrapperRef = useRef(null);
+  const [fillHeight, setFillHeight] = useState(null);
+  // On desktop the table gets a fixed height that ends 16px above the bottom of the screen; rows scroll under a sticky header.
+  useEffect(() => {
+    if (!fillScreen) return;
+    const measure = () => {
+      const top = wrapperRef.current?.getBoundingClientRect().top ?? 0;
+      setFillHeight(window.innerWidth >= 1024 ? Math.max(240, window.innerHeight - top - 16) : null);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [fillScreen]);
   const storageKey = columnsKey ? `inventory-audit-columns:${columnsKey}` : null;
   const [columnVisibility, setColumnVisibilityState] = useState(() => storageKey ? readHidden(storageKey, Object.fromEntries(defaultHidden.map((id) => [id, false]))) : {});
   const setColumnVisibility = (updater) => setColumnVisibilityState((current) => {
@@ -57,7 +70,7 @@ export function DataTable({ columns, data, searchPlaceholder = "Search records..
         </div>}
       </div>}
     </div>
-    <Table>
+    <Table wrapperRef={wrapperRef} wrapperStyle={fillHeight ? { height: fillHeight } : undefined}>
       <TableHeader>{table.getHeaderGroups().map((headerGroup) => <TableRow key={headerGroup.id}>{headerGroup.headers.map((header) => {
         const sorted = header.column.getIsSorted();
         return <TableHead key={header.id}>{header.isPlaceholder ? null : <button className="flex items-center gap-1 font-semibold" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}{sorted === "asc" ? <ArrowUp className="h-3 w-3" /> : sorted === "desc" ? <ArrowDown className="h-3 w-3" /> : header.column.getCanSort() ? <ChevronsUpDown className="h-3 w-3 text-slate-400" /> : null}</button>}</TableHead>;

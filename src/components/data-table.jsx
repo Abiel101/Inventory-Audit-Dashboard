@@ -1,5 +1,5 @@
 import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ChevronsUpDown, Columns3, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Columns3, ListOrdered, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 // Sorting is remembered per persistKey so it survives switching tabs (the table unmounts).
 const savedSorting = new Map();
+const ROW_OPTIONS = [10, 15, 20, 30, 50];
+const MIN_ROWS = 10;
+const iconButton = "inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white opacity-50 transition-opacity hover:opacity-100 aria-expanded:opacity-100";
 
 const readHidden = (key, fallback) => {
   try { const saved = JSON.parse(localStorage.getItem(key)); return saved && typeof saved === "object" ? saved : fallback; } catch { return fallback; }
@@ -16,17 +19,35 @@ const readHidden = (key, fallback) => {
 export function DataTable({ columns, data, searchPlaceholder = "Search records...", rowClassName, onRowClick, persistKey, columnsKey, defaultHidden = [], fillScreen = false }) {
   const wrapperRef = useRef(null);
   const [fillHeight, setFillHeight] = useState(null);
-  // On desktop the table gets a fixed height that ends 16px above the bottom of the screen; rows scroll under a sticky header.
+  const rowsKey = columnsKey ? `inventory-audit-rows:${columnsKey}` : null;
+  const [rowLimit, setRowLimitState] = useState(() => { try { const saved = localStorage.getItem(rowsKey); return saved === "auto" || ROW_OPTIONS.includes(Number(saved)) ? (saved === "auto" ? "auto" : Number(saved)) : "auto"; } catch { return "auto"; } });
+  const setRowLimit = (value) => { setRowLimitState(value); if (rowsKey) { try { localStorage.setItem(rowsKey, String(value)); } catch { /* applies for this session */ } } };
+  // Desktop height: "auto" fills the screen down to 16px from the bottom but always fits at least 10 rows; a number fixes the visible rows.
+  const dataLength = data.length;
   useEffect(() => {
     if (!fillScreen) return;
     const measure = () => {
-      const top = wrapperRef.current?.getBoundingClientRect().top ?? 0;
-      setFillHeight(window.innerWidth >= 1024 ? Math.max(240, window.innerHeight - top - 16) : null);
+      const wrapper = wrapperRef.current;
+      if (!wrapper) return;
+      const top = wrapper.getBoundingClientRect().top;
+      const headHeight = wrapper.querySelector("thead")?.offsetHeight ?? 32;
+      const rowHeight = wrapper.querySelector("tbody tr")?.offsetHeight ?? 30;
+      const rowsHeight = (rows) => Math.ceil(headHeight + rows * rowHeight);
+      if (rowLimit !== "auto") return setFillHeight(rowsHeight(rowLimit));
+      setFillHeight(window.innerWidth >= 1024 ? Math.max(rowsHeight(MIN_ROWS), window.innerHeight - top - 16) : rowsHeight(MIN_ROWS));
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [fillScreen]);
+  }, [fillScreen, rowLimit, dataLength]);
+  const [rowsMenuOpen, setRowsMenuOpen] = useState(false);
+  const rowsMenuRef = useRef(null);
+  useEffect(() => {
+    if (!rowsMenuOpen) return;
+    const close = (event) => { if (!rowsMenuRef.current?.contains(event.target)) setRowsMenuOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [rowsMenuOpen]);
   const storageKey = columnsKey ? `inventory-audit-columns:${columnsKey}` : null;
   const [columnVisibility, setColumnVisibilityState] = useState(() => storageKey ? readHidden(storageKey, Object.fromEntries(defaultHidden.map((id) => [id, false]))) : {});
   const setColumnVisibility = (updater) => setColumnVisibilityState((current) => {
@@ -63,12 +84,20 @@ export function DataTable({ columns, data, searchPlaceholder = "Search records..
   return <div className="space-y-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="relative w-full max-w-sm"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><Input value={globalFilter} onChange={(event) => setGlobalFilter(event.target.value)} className="pl-9" placeholder={searchPlaceholder} /></div>
-      {storageKey && <div className="relative" ref={menuRef}>
-        <button type="button" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-xs font-medium hover:bg-slate-50"><Columns3 className="h-4 w-4" />Columns</button>
-        {menuOpen && <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-slate-200 bg-white p-2 shadow-lg">
-          {table.getAllLeafColumns().filter((column) => typeof column.columnDef.header === "string" && column.columnDef.header).map((column) => <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-slate-100"><input type="checkbox" checked={column.getIsVisible()} onChange={column.getToggleVisibilityHandler()} />{column.columnDef.header}</label>)}
+      <div className="flex items-center gap-2">
+        {fillScreen && rowsKey && <div className="relative" ref={rowsMenuRef}>
+          <button type="button" title="Rows shown" aria-label="Rows shown" aria-expanded={rowsMenuOpen} onClick={() => setRowsMenuOpen(!rowsMenuOpen)} className={iconButton}><ListOrdered className="h-4 w-4" /></button>
+          {rowsMenuOpen && <div className="absolute right-0 z-20 mt-1 w-40 rounded-md border border-slate-200 bg-white p-2 shadow-lg">
+            {["auto", ...ROW_OPTIONS].map((option) => <label key={option} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-slate-100"><input type="radio" name={rowsKey} checked={rowLimit === option} onChange={() => setRowLimit(option)} />{option === "auto" ? "Auto (fit screen)" : `${option} rows`}</label>)}
+          </div>}
         </div>}
-      </div>}
+        {storageKey && <div className="relative" ref={menuRef}>
+          <button type="button" title="Columns" aria-label="Columns" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)} className={iconButton}><Columns3 className="h-4 w-4" /></button>
+          {menuOpen && <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-slate-200 bg-white p-2 shadow-lg">
+            {table.getAllLeafColumns().filter((column) => typeof column.columnDef.header === "string" && column.columnDef.header).map((column) => <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-slate-100"><input type="checkbox" checked={column.getIsVisible()} onChange={column.getToggleVisibilityHandler()} />{column.columnDef.header}</label>)}
+          </div>}
+        </div>}
+      </div>
     </div>
     <Table wrapperRef={wrapperRef} wrapperStyle={fillHeight ? { height: fillHeight } : undefined}>
       <TableHeader>{table.getHeaderGroups().map((headerGroup) => <TableRow key={headerGroup.id}>{headerGroup.headers.map((header) => {

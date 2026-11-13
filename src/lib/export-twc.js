@@ -123,8 +123,8 @@ export function createTwcWorkbook(ExcelJS, audit, { compareKey, caseFor }) {
   scanSheet.addConditionalFormatting({
     ref: `C2:C${lastScan}`,
     rules: [
-      { type: "expression", formulae: ['IFERROR(VALUE(LEFT($C2,FIND("/",$C2)-1))=VALUE(MID($C2,FIND("/",$C2)+1,10)),FALSE)'], style: { fill: { type: "pattern", pattern: "solid", fgColor: { theme: 9, tint: 0.3999450666829432 } } } },
-      { type: "expression", formulae: ['IFERROR(VALUE(LEFT($C2,FIND("/",$C2)-1))>VALUE(MID($C2,FIND("/",$C2)+1,10)),FALSE)'], style: { fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FFC00000" } } } },
+      { type: "expression", formulae: [`AND($A2<>"",COUNTIF($A$2:$A$${lastScan},$A2)=IFERROR(INDEX(Audit!$G$2:$G$${lastAudit},MATCH($A2&"",Audit!$B$2:$B$${lastAudit},0)),0))`], style: { fill: { type: "pattern", pattern: "solid", bgColor: { argb: "FF92D050" } } } },
+      { type: "expression", formulae: [`AND($A2<>"",COUNTIF($A$2:$A$${lastScan},$A2)>IFERROR(INDEX(Audit!$G$2:$G$${lastAudit},MATCH($A2&"",Audit!$B$2:$B$${lastAudit},0)),0))`], style: { fill: { type: "pattern", pattern: "solid", bgColor: { argb: "FFFF7C80" } } } },
     ],
   });
 

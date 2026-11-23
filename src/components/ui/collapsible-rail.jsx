@@ -10,10 +10,13 @@ export const desktopDefaultOpen = () => typeof window === "undefined" || window.
 // A self-contained side panel: expanded it shows `children`; collapsed it shrinks to a narrow rail of status dots.
 // Open width is fixed (`width`) so it never changes as content is added. An edge arrow toggles it. Place it in a flex row beside a `min-w-0 flex-1` sibling, which absorbs the freed width.
 // dots: [{ id, label, tone: "success" | "danger" | "warning" | "neutral" }]
-export function CollapsibleRail({ title, dots = [], emptyText = "Nothing yet", children, open: controlledOpen, onOpenChange, defaultOpen = desktopDefaultOpen, width = "15rem", className, contentClassName }) {
-  const [innerOpen, setInnerOpen] = useState(defaultOpen);
+export function CollapsibleRail({ title, dots = [], emptyText = "Nothing yet", children, open: controlledOpen, onOpenChange, defaultOpen = desktopDefaultOpen, width = "15rem", className, contentClassName, persistKey }) {
+  const [innerOpen, setInnerOpen] = useState(() => {
+    try { const saved = persistKey ? localStorage.getItem(persistKey) : null; if (saved === "open" || saved === "closed") return saved === "open"; } catch { /* fall back to the default */ }
+    return typeof defaultOpen === "function" ? defaultOpen() : defaultOpen;
+  });
   const open = controlledOpen ?? innerOpen;
-  const toggle = () => { const next = !open; setInnerOpen(next); onOpenChange?.(next); };
+  const toggle = () => { const next = !open; setInnerOpen(next); onOpenChange?.(next); if (persistKey) { try { localStorage.setItem(persistKey, next ? "open" : "closed"); } catch { /* applies for this session */ } } };
   const contentRef = useRef(null);
   const [openHeight, setOpenHeight] = useState();
   useEffect(() => {

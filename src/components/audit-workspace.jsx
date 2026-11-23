@@ -292,7 +292,7 @@ export function AuditWorkspace({ state, update }) {
       <SheetContent side="top" className="!inset-0 !h-screen !w-screen !max-w-none !translate-y-0 overflow-y-auto rounded-none border-0 bg-slate-50 p-0 [&>button]:hidden">
         <SheetTitle className="sr-only">Audit in progress</SheetTitle>
         <SheetDescription className="sr-only">Scan inventory in the active audit, then save progress or complete the audit.</SheetDescription>
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-5 py-3">
+      <div className="sticky top-0 z-40 flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-5 py-3">
         <div className="min-w-0 flex-1"><Badge variant="warning">Audit in progress</Badge><h2 className="mt-1 truncate text-xl font-bold uppercase">{displayName}</h2><p className="text-xs text-slate-500"><span className="uppercase">{caseAbbreviation(audit.category)}</span> · Associate {audit.initials}</p></div>
         {confirming ? <div className="flex flex-wrap items-end gap-2">{initialsField("Associate initials")}<Button disabled={!cleanInitials} onClick={finish}><CheckCircle2 className="h-4 w-4" />Confirm complete</Button><Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button></div>
           : <div className="flex flex-wrap gap-2">{updateButton()}<Button variant="outline" onClick={saveAndClose}><Save className="h-4 w-4" />Close &amp; save progress</Button><Button onClick={() => setConfirming(true)}><CheckCircle2 className="h-4 w-4" />Complete audit</Button></div>}

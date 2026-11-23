@@ -201,7 +201,7 @@ export function AuditWorkspace({ state, update }) {
 
   const progressBar = <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 h-11 rounded-lg bg-slate-900 px-4 text-sm text-white"><span className="text-xl font-bold">{progress}%</span><div className="h-2 min-w-32 flex-1 overflow-hidden rounded bg-slate-700"><div className="h-full bg-sky-400" style={{ width: `${progress}%` }} /></div><span>{expectedUnits} expected</span><span>{foundUnits} scanned</span><span>{audit.items.length} SKUs</span><span>{tally.extra.size} not in audit</span></div>;
 
-  const sidebar = <CollapsibleRail title="Completed sections" width="15rem" emptyText="No sections started" contentClassName="stagger space-y-1" dots={locationSummary.map(([name, units]) => ({ id: name, label: `${name} · ${units} units · ${audit.completedLocations.includes(name) ? "Completed" : "Open"}`, tone: audit.completedLocations.includes(name) ? "success" : "danger" }))}>
+  const sidebar = <CollapsibleRail title="Completed sections" width="18rem" emptyText="No sections started" contentClassName="stagger space-y-1" dots={locationSummary.map(([name, units]) => ({ id: name, label: `${name} · ${units} units · ${audit.completedLocations.includes(name) ? "Completed" : "Open"}`, tone: audit.completedLocations.includes(name) ? "success" : "danger" }))}>
         {locationSummary.length ? locationSummary.map(([name, units]) => <button key={name} type="button" disabled={phase !== "running"} onClick={() => reopenSection(name)} title="Select this section to add more scans" className={cn("flex w-full items-center justify-between gap-1 whitespace-nowrap rounded px-1 py-0.5 text-left", phase === "running" && "hover:bg-slate-100", name === locationName && "bg-sky-50 ring-1 ring-sky-300")}><span>{name}</span><span className="flex items-center gap-2 text-slate-500">{units} units{audit.completedLocations.includes(name) ? <Badge variant={doneVariant(name)}>Done</Badge> : <Badge variant="secondary">Open</Badge>}</span></button>) : null}
     </CollapsibleRail>;
 
@@ -280,7 +280,7 @@ export function AuditWorkspace({ state, update }) {
 
   const content = <>
     <div className={pinned && view === "items" ? "flex items-start gap-4" : ""}>
-    <div className="flex min-w-0 flex-1 flex-col gap-3"><div className="enter">{progressBar}</div>{!closed && phase === "paused" ? null : <div className="enter flex flex-wrap items-center justify-between gap-3" style={{ "--enter-delay": "50ms" }}>{tabs}{toolbar}</div>}<div key={view} className="stagger" data-hide-scrollbar="">{baseContent}</div></div>
+    <div className="flex min-w-0 flex-1 flex-col gap-3"><div className="enter">{progressBar}</div>{!closed && phase === "paused" ? null : <div className="enter relative z-30 flex flex-wrap items-center justify-between gap-3" style={{ "--enter-delay": "50ms" }}>{tabs}{toolbar}</div>}<div key={view} className="stagger" data-hide-scrollbar="">{baseContent}</div></div>
     {view === "items" && <ItemSheet item={detail} pinned={pinned} onPin={() => setPinned((value) => !value)} onClose={() => setDetail(null)} images={detail ? audit.itemImages?.[detailKey] ?? [] : []} onAddImages={detail ? addImages : undefined} onRemoveImage={removeImage} onSaveNote={detail && !closed ? saveNote : undefined} />}
     </div>
   </>;

@@ -23,11 +23,11 @@ const rowTone = {
   extra: "bg-rose-100 text-rose-900 hover:bg-rose-100",
   match: "bg-emerald-100 text-emerald-900 hover:bg-emerald-100",
   short: "",
-  over: "",
+  over: "bg-rose-100 text-rose-900 hover:bg-rose-100",
 };
 const resultLabel = { extra: "Not in audit", match: "Matched", short: "Short", over: "Over" };
 const issueTone = "bg-indigo-100 text-indigo-900 hover:bg-indigo-100";
-const resultVariant = { extra: "destructive", match: "success", short: "warning", over: "warning" };
+const resultVariant = { extra: "destructive", match: "success", short: "warning", over: "destructive" };
 
 function Empty({ title, detail }) {
   return <Card className="border-dashed"><CardContent className="p-8 text-center"><p className="font-semibold">{title}</p><p className="mt-1 text-sm text-slate-500">{detail}</p></CardContent></Card>;
@@ -161,13 +161,17 @@ export function AuditWorkspace({ state, update }) {
     const sku = entry.sku;
     const item = audit.items.find((candidate) => identifiersMatch(candidate.sku, sku)) ?? state.inventory.find((candidate) => identifiersMatch(candidate.sku, sku)) ?? {};
     const scans = audit.scans.filter((scan) => identifiersMatch(scan.sku, sku));
+    const expected = tally.expected.get(sku) ?? tally.expected.get(item.sku) ?? null;
+    const scanned = scans.reduce((sum, scan) => sum + (Number(scan.qty) || 0), 0);
     setDetail({
       ...item,
       sku,
       description: entry.description || item.description || "",
       style: entry.style || item.style || "",
-      expected: tally.expected.get(sku) ?? tally.expected.get(item.sku) ?? null,
-      scanned: scans.reduce((sum, scan) => sum + (Number(scan.qty) || 0), 0),
+      expected,
+      scanned,
+      over: expected !== null && scanned > expected ? scanned - expected : null,
+      result: scans.length || expected !== null ? resultLabel[expected === null ? "extra" : scanned === expected ? "match" : scanned > expected ? "over" : "short"] : null,
       locations: [...new Set(scans.map((scan) => scan.location))].join(", "),
       issue: issueFor({ sku, style: entry.style || item.style }),
       auditNote: audit.itemNotes?.[compareKey(sku)] ?? "",
@@ -227,7 +231,7 @@ export function AuditWorkspace({ state, update }) {
     const item = audit.items.find((entry) => entry.sku === sku);
     const stock = stockByKey.get(compareKey(sku));
     const scanned = tally.scanned.get(sku) ?? 0;
-    return { sku, note: audit.itemNotes?.[compareKey(sku)] ?? "", description: item?.description ?? "", style: item?.style ?? "", onHand: stock?.onHand ?? null, availableToSell: stock?.availableToSell ?? null, expected, scanned, remaining: Math.max(expected - scanned, 0) };
+    return { sku, note: audit.itemNotes?.[compareKey(sku)] ?? "", description: item?.description ?? "", style: item?.style ?? "", onHand: stock?.onHand ?? null, availableToSell: stock?.availableToSell ?? null, expected, scanned, remaining: Math.max(expected - scanned, 0), over: Math.max(scanned - expected, 0) };
   });
   const itemColumns = [
     { accessorKey: "sku", header: "SKU" },
@@ -237,10 +241,27 @@ export function AuditWorkspace({ state, update }) {
     { accessorKey: "availableToSell", header: "Available to sell", cell: ({ getValue }) => getValue() ?? "—" },
     { accessorKey: "expected", header: "Expected" },
     { accessorKey: "scanned", header: "Scanned" },
-    { accessorKey: "remaining", header: "Remaining", cell: ({ getValue }) => getValue() ? <Badge variant="warning">{getValue()} missing</Badge> : <Badge variant="success">Found</Badge> },
+    { accessorKey: "remaining", header: "Remaining", cell: ({ row, getValue }) => row.original.over ? <Badge variant="destructive">{row.original.over} over</Badge> : getValue() ? <Badge variant="warning">{getValue()} missing</Badge> : <Badge variant="success">Found</Badge> },
     { id: "note", header: "", enableSorting: false, cell: ({ row }) => <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`${row.original.note ? "Edit" : "Add"} note for ${row.original.sku}`} title={row.original.note || "Add note"} onClick={(event) => { event.stopPropagation(); openDetail(row.original); }}><StickyNote className={cn("h-4 w-4", row.original.note ? "text-indigo-600" : "text-slate-400")} /></Button> },
   ];
-  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable fillScreen controlsTarget={controlsEl} columns={itemColumns} persistKey={`${audit.id}:items`} columnsKey="audit-items" data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => row.note ? "bg-indigo-100 hover:bg-indigo-200" : issueFor(row) ? issueTone : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
+  const itemsPanel = <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Audit Items</CardTitle><CardDescription className="text-xs">Everything expected in this audit. Sort by Remaining to see what is still missing.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable fillScreen controlsTarget={controlsEl} columns={itemColumns} persistKey={`${audit.id}:items`} columnsKey="audit-items" data={itemRows} searchPlaceholder="Search audit items..." onRowClick={openDetail} rowClassName={(row) => row.note ? "bg-indigo-100 hover:bg-indigo-200" : issueFor(row) ? issueTone : row.over ? "bg-rose-100 hover:bg-rose-200" : row.remaining ? "" : "bg-emerald-50 hover:bg-emerald-50"} /></CardContent></Card>;
+  const extraRows = [...audit.scans.filter((scan) => tally.status(scan) === "extra").reduce((map, scan) => {
+    const key = compareKey(scan.sku);
+    const row = map.get(key) ?? { sku: scan.sku, description: scan.description ?? "", style: scan.style ?? "", scanned: 0, locations: new Set() };
+    row.scanned += Number(scan.qty) || 0;
+    row.locations.add(scan.location);
+    return map.set(key, row);
+  }, new Map()).values()].map((row) => ({ ...row, locations: [...row.locations].join(", "), note: audit.itemNotes?.[compareKey(row.sku)] ?? "" }));
+  const extraColumns = [
+    { accessorKey: "sku", header: "SKU" },
+    { accessorKey: "description", header: "Description", meta: "wide" },
+    { accessorKey: "style", header: "Style" },
+    { accessorKey: "locations", header: "Locations" },
+    { accessorKey: "scanned", header: "Scanned" },
+    { id: "result", header: "Result", enableSorting: false, cell: () => <Badge variant="destructive">Not in audit</Badge> },
+    { id: "note", header: "", enableSorting: false, cell: ({ row }) => <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`${row.original.note ? "Edit" : "Add"} note for ${row.original.sku}`} title={row.original.note || "Add note"} onClick={(event) => { event.stopPropagation(); openDetail(row.original); }}><StickyNote className={cn("h-4 w-4", row.original.note ? "text-indigo-600" : "text-slate-400")} /></Button> },
+  ];
+  const extraPanel = extraRows.length ? <Card><CardHeader className="p-3 pb-1"><CardTitle className="text-sm">Not in audit</CardTitle><CardDescription className="text-xs">Scanned items that are not part of this audit.</CardDescription></CardHeader><CardContent className="p-3 pt-0 text-xs [&_td]:px-2 [&_td]:py-1 [&_th]:h-7 [&_th]:px-2"><DataTable columns={extraColumns} persistKey={`${audit.id}:extra`} data={extraRows} searchPlaceholder="Search not in audit..." onRowClick={openDetail} rowClassName={(row) => row.note ? "bg-indigo-100 hover:bg-indigo-200" : "bg-rose-100 hover:bg-rose-200"} /></CardContent></Card> : null;
 
   const sectionGroups = [...audit.scans.reduce((map, scan) => {
     const section = map.get(scan.location) ?? new Map();
@@ -272,9 +293,9 @@ export function AuditWorkspace({ state, update }) {
 
 
   const fullWidth = (panel, extra = null) => <div className="stagger flex min-w-0 flex-col gap-3 pb-24">{panel}{extra}</div>;
-  const baseContent = phase === "paused" ? fullWidth(itemsPanel)
-    : closed ? (view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, finalPanel))
-    : view === "items" ? fullWidth(itemsPanel)
+  const baseContent = phase === "paused" ? fullWidth(itemsPanel, extraPanel)
+    : closed ? (view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, <>{extraPanel}{finalPanel}</>))
+    : view === "items" ? fullWidth(itemsPanel, extraPanel)
     : view === "sections" ? fullWidth(sectionsPanel)
     : <div className="flex items-start gap-5">{sidebar}<div className="min-w-0 flex-1 pb-24">{scanPanel}</div></div>;
 

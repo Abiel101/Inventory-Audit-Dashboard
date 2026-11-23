@@ -78,6 +78,8 @@ function ItemDetails({
 		],
 		["Expected", item.expected],
 		["Scanned", item.scanned],
+		["Over by", item.over],
+		["Result", item.result],
 		["Sales floor", item.salesFloor],
 		["Locations", item.locations],
 	];

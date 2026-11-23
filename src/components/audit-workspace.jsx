@@ -271,7 +271,7 @@ export function AuditWorkspace({ state, update }) {
   </CardContent></Card>;
 
 
-  const fullWidth = (panel, extra = null) => <div className="stagger flex min-w-0 flex-col gap-3 pb-6">{panel}{extra}</div>;
+  const fullWidth = (panel, extra = null) => <div className="stagger flex min-w-0 flex-col gap-3 pb-24">{panel}{extra}</div>;
   const baseContent = phase === "paused" ? fullWidth(itemsPanel)
     : closed ? (view === "sections" ? fullWidth(sectionsPanel) : fullWidth(itemsPanel, finalPanel))
     : view === "items" ? fullWidth(itemsPanel)

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -14,13 +14,26 @@ export function CollapsibleRail({ title, dots = [], emptyText = "Nothing yet", c
   const [innerOpen, setInnerOpen] = useState(defaultOpen);
   const open = controlledOpen ?? innerOpen;
   const toggle = () => { const next = !open; setInnerOpen(next); onOpenChange?.(next); };
+  const contentRef = useRef(null);
+  const [openHeight, setOpenHeight] = useState();
+  useEffect(() => {
+    const node = contentRef.current;
+    if (!node) return undefined;
+    const measure = () => setOpenHeight(node.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  // 8px dots, 6px gaps, 10px vertical padding; never shorter than the arrow button.
+  const closedHeight = Math.max(44, dots.length * 8 + Math.max(dots.length - 1, 0) * 6 + 20);
   const label = `${open ? "Hide" : "Show"} ${title.toLowerCase()}`;
-  return <div style={{ width: open ? width : "3rem", maxWidth: open ? "70vw" : undefined }} className={cn("relative shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none", className)}>
-    <Card className="relative min-h-[100px] overflow-hidden">
-      <div aria-hidden={open} className={cn("absolute inset-y-0 left-0 flex w-12 flex-col items-center gap-2.5 pt-4 transition-[opacity,visibility] duration-300", open ? "invisible opacity-0" : "visible opacity-100")}>
-        {dots.map((dot) => <span key={dot.id} title={dot.label} className={cn("h-2.5 w-2.5 rounded-full", dotTone[dot.tone] ?? dotTone.neutral)} />)}
+  return <div style={{ width: open ? width : "2rem", maxWidth: open ? "70vw" : undefined }} className={cn("relative shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none", className)}>
+    <Card style={{ height: open ? openHeight : closedHeight }} className={cn("relative overflow-hidden transition-[height] duration-300 ease-out motion-reduce:transition-none", open && openHeight === undefined && "min-h-[100px]")}>
+      <div aria-hidden={open} className={cn("absolute inset-0 flex flex-col items-center justify-center gap-[6px] transition-[opacity,visibility] duration-300", open ? "invisible opacity-0" : "visible opacity-100")}>
+        {dots.map((dot) => <span key={dot.id} title={dot.label} className={cn("h-2 w-2 rounded-full", dotTone[dot.tone] ?? dotTone.neutral)} />)}
       </div>
-      <div aria-hidden={!open} style={{ width }} className={cn("transition-[opacity,visibility] duration-300", open ? "visible opacity-100" : "invisible opacity-0")}>
+      <div ref={contentRef} aria-hidden={!open} style={{ width }} className={cn("transition-[opacity,visibility] duration-300", open ? "visible opacity-100" : "invisible opacity-0")}>
         <CardHeader className="p-3 pb-1"><CardTitle className="text-sm">{title}</CardTitle></CardHeader>
         <CardContent className={cn("p-3 pt-0 text-[11px] leading-tight", contentClassName)}>{children ?? <p className="text-slate-400">{emptyText}</p>}</CardContent>
       </div>

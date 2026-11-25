@@ -10,7 +10,23 @@
   body { margin:0; font:15px/1.55 system-ui,sans-serif; color:var(--ink); background:var(--bg); }
   header { background:var(--ink); color:#fff; padding:28px 32px; }
   header h1 { margin:0 0 4px; font-size:24px; } header p { margin:0; color:#cbd5e1; }
-  main { max-width:1050px; margin:0 auto; padding:24px 20px 60px; }
+  html { scroll-behavior:smooth; }
+  .layout { max-width:1250px; margin:0 auto; display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px; padding:0 20px; }
+  main { min-width:0; padding:4px 0 60px; }
+  h2 { scroll-margin-top:70px; }
+  nav.toc { position:sticky; top:16px; align-self:start; margin-top:24px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px; }
+  nav.toc strong { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 6px 6px; }
+  nav.toc a { display:block; padding:6px 8px; border-radius:6px; color:var(--ink); text-decoration:none; font-size:14px; }
+  nav.toc a:hover { background:#e0f2fe; color:#0369a1; }
+  .tablewrap { overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:10px; }
+  @media (max-width:860px) {
+    .layout { display:block; padding:0 14px; }
+    nav.toc { position:sticky; top:0; z-index:10; margin:0 -14px; border-radius:0; border-width:0 0 1px; padding:8px 10px; display:flex; gap:6px; overflow-x:auto; white-space:nowrap; -webkit-overflow-scrolling:touch; }
+    nav.toc strong { display:none; }
+    nav.toc a { flex:none; background:#f1f5f9; padding:7px 12px; }
+    header { padding:20px 16px; } header h1 { font-size:20px; }
+    h2 { scroll-margin-top:60px; }
+  }
   h2 { margin:36px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--sky); font-size:19px; }
   .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); }
   .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
@@ -35,9 +51,19 @@
   <h1>Inventory Audit Dashboard · Project Map</h1>
   <p>Where everything lives, what it's built with, and where to go to change things.</p>
 </header>
+<div class="layout">
+<nav class="toc" aria-label="Table of contents">
+  <strong>Contents</strong>
+  <a href="#build">1. How it's built</a>
+  <a href="#structure">2. Folder structure</a>
+  <a href="#guide">3. Where to change things</a>
+  <a href="#css">4. Tailwind or CSS?</a>
+  <a href="#connect">5. How it connects</a>
+  <a href="#routes">6. Routes</a>
+</nav>
 <main>
 
-<h2>1. How it's built</h2>
+<h2 id="build">1. How it's built</h2>
 <div class="grid">
   <div class="card"><h3>Framework</h3><p>React 19 single-page app (JSX, no TypeScript), bundled by <b>Vite 8</b>.</p></div>
   <div class="card"><h3>Routing</h3><p>React Router 7. All routes are declared at the bottom of <code>src/App.jsx</code>.</p></div>
@@ -50,7 +76,7 @@
 </div>
 <p><b>Commands:</b> <code>npm install</code> · <code>npm run dev</code> (local server) · <code>npm run build</code> · <code>npm run preview</code> · tests: <code>node --test tests/</code></p>
 
-<h2>2. Folder structure</h2>
+<h2 id="structure">2. Folder structure</h2>
 <pre><code><span class="d">Inventory-Audit-Dashboard/</span>
 ├── index.html              <span class="c"># page shell; loads src/main.jsx</span>
 ├── package.json            <span class="c"># dependencies &amp; scripts</span>
@@ -99,8 +125,8 @@
 │       └── table-defaults.js
 └── <span class="legacy">app.js, style.css, localStorage.json</span>  <span class="c"># LEGACY: old non-React version — not loaded by index.html</span></code></pre>
 
-<h2>3. "I want to change…" quick guide</h2>
-<table>
+<h2 id="guide">3. "I want to change…" quick guide</h2>
+<div class="tablewrap"><table>
 <tr><th>To change</th><th>Go to</th></tr>
 <tr><td>Dashboard layout, stats, schedule panel, recent activity tabs</td><td><code>src/components/dashboard.jsx</code></td></tr>
 <tr><td>Delete confirmation wording or manager code (<code>0808</code>)</td><td><code>src/components/slide-to-delete.jsx</code> (unlock code is also in <code>audit-workspace.jsx</code>)</td></tr>
@@ -115,20 +141,20 @@
 <tr><td>Calendar / scheduling</td><td><code>src/components/audit-calendar.jsx</code></td></tr>
 <tr><td>Monthly case-code status</td><td><code>src/components/month-status.jsx</code></td></tr>
 <tr><td>Deployment settings</td><td><code>wrangler.jsonc</code></td></tr>
-</table>
+</table></div>
 
-<h2>4. Tailwind or custom CSS?</h2>
+<h2 id="css">4. Tailwind or custom CSS?</h2>
 <p><span class="pill ok">Tailwind</span> Almost all styling is Tailwind utility classes written directly in the JSX (e.g. <code>className="rounded-xl border p-4"</code>). The only stylesheet the app loads is <code>src/index.css</code>: Tailwind's layers plus the <b>theme palettes</b> (default, tokyo-night, github-white, nord, emerald, sandstone, mist), each a set of CSS variables. <code>tailwind.config.js</code> maps <code>slate</code>, <code>sky</code>, <code>white</code> and the semantic colors to those variables, so switching theme in Settings recolors everything. To add a theme: add an <code>html[data-theme="…"]</code> block in <code>index.css</code> and register it in <code>themes</code> in <code>src/lib/utils.js</code>.</p>
 <p><span class="pill no">Not used</span> The root <code>style.css</code> is leftover custom CSS from the earlier version and isn't imported by the app.</p>
 
-<h2>5. How the pieces connect</h2>
+<h2 id="connect">5. How the pieces connect</h2>
 <div class="flow">
   <span class="b">index.html</span><span class="a">→</span><span class="b">main.jsx</span><span class="a">→</span><span class="b">App.jsx (state + routes)</span><span class="a">→</span><span class="b">components/*</span><span class="a">→</span><span class="b">lib/* (logic, Excel)</span>
 </div>
 <p><code>App.jsx</code> holds one shared <code>state</code> (inventory, audits, locations, notes…) and an <code>update()</code> function, passed to every screen. Changes are saved to localStorage automatically. Screens call helpers in <code>lib/</code> for calculations and Excel import/export. The calendar schedule and a few preferences are stored in their own localStorage keys.</p>
 
-<h2>6. Routes</h2>
-<table>
+<h2 id="routes">6. Routes</h2>
+<div class="tablewrap"><table>
 <tr><th>URL</th><th>Screen</th></tr>
 <tr><td><code>/dashboard</code></td><td>Dashboard (default)</td></tr>
 <tr><td><code>/audits/new</code></td><td>Audit builder (start a new audit)</td></tr>
@@ -137,8 +163,9 @@
 <tr><td><code>/status</code></td><td>Month status</td></tr>
 <tr><td><code>/research</code>, <code>/research/:id</code></td><td>Research queue</td></tr>
 <tr><td><code>/settings</code></td><td>Settings (theme, store locations, table defaults, known issues)</td></tr>
-</table>
+</table></div>
 
 </main>
+</div>
 </body>
 </html>

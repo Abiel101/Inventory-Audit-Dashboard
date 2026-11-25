@@ -7,12 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AuditPreview } from "@/components/audit-preview";
-import { DeleteGesture } from "@/components/slide-to-delete";
+import { AuditMenu } from "@/components/audit-menu";
 import { buildAudit, casingIssueCount, categoryOf, groupCodes } from "@/lib/inventory";
 import { auditProgress, auditTally, cn, dateKey } from "@/lib/utils";
 import { useTransition } from "@/components/ui/transition";
 
-const Plain = ({ children }) => children;
 const SCHEDULE_KEY = "inventory-audit-schedule";
 
 const statuses = {
@@ -111,9 +110,7 @@ export function MonthStatus({ state, update }) {
       <div className="space-y-6">{groups.length ? groups.map(([group, codes]) => <section key={group}>
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">{group} <span className="font-normal">({codes.length})</span></h3>
         <Card><CardContent className="divide-y divide-slate-200 p-0">{codes.map((code) => { const row = byCode.get(code); const meta = statuses[row.status]; const Icon = meta.icon; const closedRow = (row.status === "complete" || row.status === "casing" || row.status === "issues") && row.audit; const expanded = closedRow && open === code;
-          const Gesture = row.status === "progress" ? DeleteGesture : Plain;
           return <div key={code}>
-            <Gesture label={code} onDelete={() => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== row.audit.id) }))}>
             <div className={cn("flex flex-wrap items-center gap-3 p-3 md:px-4", row.status === "progress" && "cursor-pointer hover:bg-slate-50")} {...(row.status === "progress" ? { role: "button", tabIndex: 0, "aria-label": `Preview ${code} audit`, onClick: () => setPreviewId(row.audit.id), onKeyDown: (event) => event.target === event.currentTarget && (event.key === "Enter" || event.key === " ") && setPreviewId(row.audit.id) } : {})}>
               <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", meta.chip)}><Icon className={cn("h-4 w-4", row.status === "progress" && "animate-spin")} /></span>
               <div className="min-w-0 flex-1"><p className="truncate font-semibold uppercase">{code}</p><p className="text-xs text-slate-500">{[row.status === "scheduled" && row.scheduledOn && `Scheduled ${new Date(`${row.scheduledOn}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`, row.audit && `${row.progress}% scanned`, row.completedAt && row.status !== "progress" && `Closed ${new Date(row.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}${row.completedBy ? ` by ${row.completedBy}` : ""}`].filter(Boolean).join(" · ") || "No activity yet this month"}</p></div>
@@ -121,6 +118,7 @@ export function MonthStatus({ state, update }) {
               <div className="flex gap-2" onClick={(event) => event.stopPropagation()}>
                 {(row.status === "notStarted" || row.status === "scheduled") && <Button size="sm" onClick={() => startAudit(code)}><Play className="h-3.5 w-3.5" />Start</Button>}
                 {row.status === "progress" && <Button size="sm" onClick={() => navigate(`/workspace/${row.audit.id}`)}>Continue</Button>}
+                {row.audit && <AuditMenu label={code} onDelete={() => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== row.audit.id) }))} actions={[{ label: "Open audit", onSelect: () => navigate(`/workspace/${row.audit.id}`) }]} />}
                 {(row.status === "complete" || row.status === "casing" || row.status === "issues") && row.audit && <>
                   <Button size="sm" variant="outline" onClick={() => navigate(`/workspace/${row.audit.id}`)}>View</Button>
                   {row.audit.research ? <Button size="sm" variant="outline" onClick={() => navigate("/research")}><FlaskConical className="h-3.5 w-3.5" />In research</Button>
@@ -130,7 +128,6 @@ export function MonthStatus({ state, update }) {
                 <Button size="sm" variant={expanded ? "default" : "outline"} aria-expanded={expanded} disabled={!closedRow} title={closedRow ? undefined : "Available once the audit is completed"} onClick={() => setOpen(expanded ? null : code)}>Details<ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} /></Button>
               </div>
             </div>
-            </Gesture>
             {closedRow && (() => { const audit = row.audit; const result = resultsOf(audit); const cells = [["Audit", audit.name], ["Closed by", audit.completedBy || audit.initials || "—"], ["Started", stamp(audit.startedAt)], ["Completed", stamp(audit.completedAt)], ["Inventory source", audit.snapshot?.sourceName || "—"], ["Progress", `${row.progress}%`], ["SKUs in audit", result.skus.toLocaleString()], ["Units expected", result.need.toLocaleString()], ["Units scanned", result.found.toLocaleString()], ["Units missing", result.missing.toLocaleString()], ["Scans not in audit", result.extra.toLocaleString()]];
               return <div className={cn("grid transition-[grid-template-rows,opacity] duration-300 ease-in-out", expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")} aria-hidden={!expanded} inert={!expanded}><div className="overflow-hidden"><div className="space-y-3 border-t border-slate-200 bg-slate-50 p-4">
                 <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">{cells.map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-xs text-slate-500">{label}</dt><dd className="truncate font-medium" title={String(value)}>{value}</dd></div>)}</dl>

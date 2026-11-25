@@ -112,15 +112,15 @@ export function AuditCalendar({ state, update }) {
   };
   const move = (code, key) => { if (!key) return; saveSchedule({ ...schedule, [code]: key }); goTo(key); };
 
-  const openAudit = (code, sourceInventory, sourceMeta = state) => {
-    const related = auditsForMonth(code, selected);
+  const openAudit = (code, sourceInventory, sourceMeta = state, day = selected) => {
+    const related = auditsForMonth(code, day);
     const open = related.find((audit) => audit.status !== "completed");
     const closed = related.find((audit) => audit.status === "completed");
     const existing = open ?? closed;
     if (existing) return navigate(`/workspace/${existing.id}`);
     const audit = buildAudit(sourceInventory, code, undefined, 0, sourceMeta);
     if (!audit.items.length) return setNotice(`No inventory rows found for case code ${code.toUpperCase()}. Upload an inventory source that includes it.`);
-    audit.scheduledDate = selected;
+    audit.scheduledDate = day;
     update((current) => ({ ...current, audits: [audit, ...current.audits] }));
     navigate(`/workspace/${audit.id}`);
   };
@@ -148,7 +148,6 @@ export function AuditCalendar({ state, update }) {
   };
 
   const freshnessMessage = {
-    none: "No inventory source is loaded. Upload today's inventory file so audits can be started from the calendar.",
     unknown: `Couldn't find a date in "${sourceName}". Confirm the file is today's inventory, or upload an updated one.`,
     stale: `The inventory file "${sourceName}" is dated ${freshness.sourceDate && longDate(freshness.sourceDate)}, but today is ${longDate(todayKey)}. Upload today's file so inventory is updated daily.`,
   }[freshness.status];
@@ -156,17 +155,17 @@ export function AuditCalendar({ state, update }) {
   return <div className="space-y-6">
     <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={importFile} />
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="text-slate-500">{scheduling ? "Scheduling mode: click a day to assign case codes to it." : "Click a day to see what needs to be done and start an audit."}</p></div>
+      <div><p className="text-slate-500">{scheduling ? "Scheduling mode: click a day to assign case codes to it." : ""}</p></div>
       <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="h-4 w-4" />Upload/replace inventory</Button><Button variant={scheduling ? "default" : "outline"} onClick={() => { setScheduling((value) => !value); setPendingStart(null); }}>{scheduling ? <><Check className="h-4 w-4" />Done scheduling</> : <><CalendarPlus className="h-4 w-4" />Schedule</>}</Button></div>
     </div>
 
-    {needsUpdate && <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
+    {needsUpdate && freshnessMessage && <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
       <AlertTriangle className="h-5 w-5 shrink-0" /><p className="min-w-0 flex-1">{freshnessMessage}</p>
     </div>}
     {notice && <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm" role="status"><span>{notice}</span><Button variant="ghost" size="icon" aria-label="Dismiss" onClick={() => setNotice("")}><X className="h-4 w-4" /></Button></div>}
 
-    <div className="grid items-start gap-5">
-      <Card className={cn(scheduling && "ring-2 ring-sky-500")}><CardContent className="p-4 md:p-5">
+    <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <Card className={cn(scheduling && "ring-2 ring-sky-500")}><CardContent className="p-3 md:p-4">
         <div className="mb-4 flex items-center gap-2">
           <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => shiftMonth(-1)}><ChevronLeft className="h-4 w-4" /></Button>
           <h3 className="flex-1 text-center text-lg font-semibold">{month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h3>
@@ -178,7 +177,7 @@ export function AuditCalendar({ state, update }) {
           const key = dateKey(date); const codes = byDay[key] ?? []; const hasActivity = dayActivity(key).length > 0;
           const done = closedOn(key).filter((audit, index, list) => list.findIndex((other) => other.category === audit.category) === index);
           const shown = [...codes.map((code) => ({ code, status: codeStatus(code, key) })), ...done.filter((audit) => !codes.includes(audit.category)).map((audit) => ({ code: audit.category, status: auditProgress(audit) >= 100 ? "complete" : "research" }))];
-          return <button key={key} type="button" onClick={() => { setSelected(key); setDayOpen(true); setPendingStart(null); }} className={cn("flex min-h-[58px] flex-col items-stretch gap-0.5 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 text-left hover:border-sky-500 md:min-h-[96px] md:p-1.5", date.getMonth() !== month.getMonth() && "opacity-45", key === todayKey && "border-sky-600", key === selected && "outline outline-2 outline-sky-600")}>
+          return <button key={key} type="button" onClick={() => { setSelected(key); setDayOpen(true); setPendingStart(null); }} className={cn("flex min-h-[58px] flex-col items-stretch gap-0.5 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 text-left hover:border-sky-500 md:min-h-[72px] md:p-1.5", date.getMonth() !== month.getMonth() && "opacity-45", key === todayKey && "border-sky-600", key === selected && "outline outline-2 outline-sky-600")}>
             <b className={cn("text-xs", key === todayKey && "text-sky-700")}>{date.getDate()}</b>
             {shown.slice(0, 3).map(({ code, status }) => <Chip key={code} code={code} status={status} />)}
             {shown.length > 3 && <small className="text-[10px] text-slate-500">+{shown.length - 3} more</small>}
@@ -186,6 +185,24 @@ export function AuditCalendar({ state, update }) {
           </button>;
         })}</div>
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">{Object.entries(statusLabel).map(([status, label]) => <span key={status} className="flex items-center gap-1.5"><i className={cn("inline-block h-2.5 w-2.5 rounded-sm", statusStyle[status])} />{status === "complete" ? "Complete (100%)" : status === "research" ? "Closed · needs research (<100%)" : label}</span>)}</div>
+      </CardContent></Card>
+      <Card><CardContent className="p-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Today</h3>
+        <p className="text-xs text-slate-500">{longDate(todayKey)}</p>
+        <div className="mt-3 space-y-2">{(byDay[todayKey] ?? []).length ? byDay[todayKey].map((code) => {
+          const status = codeStatus(code, todayKey);
+          const existing = auditsForMonth(code, todayKey);
+          const found = existing.find((audit) => audit.status !== "completed") ?? existing[0];
+          const label = status === "progress" ? "Continue" : found ? "View" : "Start";
+          return <div key={code} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2">
+            <div className="min-w-0 flex-1"><Chip code={code} status={status} className="w-fit max-w-full text-xs" /><p className="mt-1 text-xs text-slate-500">{statusLabel[status]}</p></div>
+            <Button size="sm" variant={found && status !== "progress" ? "outline" : "default"} onClick={() => {
+              if (found) return navigate(`/workspace/${found.id}`);
+              if (needsUpdate) { setSelected(todayKey); setDayOpen(true); setPendingStart(code); return; }
+              openAudit(code, inventory, state, todayKey);
+            }}>{label}</Button>
+          </div>;
+        }) : <p className="text-sm text-slate-500">Nothing scheduled today.</p>}</div>
       </CardContent></Card>
     </div>
 

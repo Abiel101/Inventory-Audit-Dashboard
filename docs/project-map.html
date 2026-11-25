@@ -108,10 +108,10 @@
 │   │   ├── known-issues.jsx    <span class="c"># known-issue SKUs list</span>
 │   │   ├── research.jsx        <span class="c"># research queue</span>
 │   │   ├── research-sources.jsx<span class="c"># upload research source files</span>
-│   │   ├── slide-to-delete.jsx <span class="c"># DeleteGesture: right-click/long-press → warning → manager code</span>
+│   │   ├── audit-menu.jsx      <span class="c"># three-dot audit menu + delete warning → manager code</span>
 │   │   └── <span class="d">ui/</span>                <span class="c"># shared building blocks (shadcn style)</span>
 │   │       ├── button, badge, card, input, table, tabs, tooltip, separator, skeleton
-│   │       ├── dialog.jsx  sheet.jsx  <span class="c"># popups and slide-in panels</span>
+│   │       ├── dialog.jsx  sheet.jsx  dropdown-menu.jsx  <span class="c"># popups and slide-in panels</span>
 │   │       ├── sidebar.jsx collapsible-rail.jsx animated-tabs.jsx
 │   │       └── toast.jsx transition.jsx
 │   ├── <span class="d">hooks/</span>use-mobile.jsx   <span class="c"># screen-size hook</span>
@@ -129,7 +129,7 @@
 <div class="tablewrap"><table>
 <tr><th>To change</th><th>Go to</th></tr>
 <tr><td>Dashboard layout, stats, schedule panel, recent activity tabs</td><td><code>src/components/dashboard.jsx</code></td></tr>
-<tr><td>Delete confirmation wording or manager code (<code>0808</code>)</td><td><code>src/components/slide-to-delete.jsx</code> (unlock code is also in <code>audit-workspace.jsx</code>)</td></tr>
+<tr><td>Delete confirmation wording or manager code (<code>0808</code>)</td><td><code>src/components/audit-menu.jsx</code> (unlock code is also in <code>audit-workspace.jsx</code>)</td></tr>
 <tr><td>Scanning screen behavior</td><td><code>src/components/audit-workspace.jsx</code></td></tr>
 <tr><td>Sidebar links, page routes, new pages</td><td><code>src/App.jsx</code> (<code>AppSidebar</code> + <code>&lt;Routes&gt;</code>)</td></tr>
 <tr><td>Excel export (new format): columns, colors, notes</td><td><code>src/lib/export.js</code></td></tr>

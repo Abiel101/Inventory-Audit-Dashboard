@@ -4,6 +4,7 @@ import { AlertTriangle, CalendarDays, CheckCircle2, CircleDashed, ClipboardList,
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuditPreview } from "@/components/audit-preview";
 import { DeleteGesture } from "@/components/slide-to-delete";
 import { buildAudit, categoryOf } from "@/lib/inventory";
@@ -30,25 +31,19 @@ const chips = {
 
 function Stat({ label, value, detail, icon: Icon, tone }) {
   const color = tones[tone];
-  return <Card className={color.card}><CardContent className="flex items-center justify-between p-5"><div><p className={`text-sm font-medium ${color.label}`}>{label}</p><p className={`mt-1 text-2xl font-bold ${color.value}`}>{value}</p>{detail && <p className={`mt-0.5 text-xs ${color.label}`}>{detail}</p>}</div><span className={`grid h-11 w-11 place-items-center rounded-lg ${color.icon}`}><Icon className="h-6 w-6" /></span></CardContent></Card>;
-}
-
-function Section({ title, description, count, empty, children }) {
-  return <section>
-    <div className="mb-2 flex items-baseline gap-2"><h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">{title}</h3><span className="text-sm text-slate-500">({count})</span>{description && <span className="ml-2 hidden text-xs text-slate-500 sm:inline">{description}</span>}</div>
-    {count ? <Card><CardContent className="divide-y divide-slate-200 p-0">{children}</CardContent></Card> : <Card className="border-dashed"><CardContent className="p-4 text-center text-sm text-slate-500">{empty}</CardContent></Card>}
-  </section>;
+  return <Card className={cn("aspect-square", color.card)}><CardContent className="flex h-full flex-col justify-between p-3 sm:p-4"><span className={`grid h-9 w-9 place-items-center rounded-lg ${color.icon}`}><Icon className="h-5 w-5" /></span><div><p className={`text-2xl font-bold leading-none ${color.value}`}>{value}</p><p className={`mt-1 text-xs font-medium leading-tight ${color.label}`}>{label}</p>{detail && <p className={`text-[11px] leading-tight ${color.label}`}>{detail}</p>}</div></CardContent></Card>;
 }
 
 function Row({ kind, title, detail, action, onPreview }) {
   const meta = chips[kind]; const Icon = meta.icon;
   return <div className={cn("flex flex-wrap items-center gap-3 p-3 md:px-4", onPreview && "cursor-pointer hover:bg-slate-50")} {...(onPreview ? { role: "button", tabIndex: 0, "aria-label": `Preview ${title} audit`, onClick: onPreview, onKeyDown: (event) => event.target === event.currentTarget && (event.key === "Enter" || event.key === " ") && onPreview() } : {})}>
-    <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", meta.chip)}><Icon className={cn("h-4 w-4", kind === "progress" && "animate-spin")} /></span>
+    <Badge className={cn("w-32 shrink-0 justify-center gap-1 border-transparent", meta.chip)}><Icon className={cn("h-3.5 w-3.5", kind === "progress" && "animate-spin")} />{meta.label}</Badge>
     <div className="min-w-0 flex-1"><p className="truncate font-semibold uppercase">{title}</p><p className="text-xs text-slate-500">{detail}</p></div>
-    <Badge className={cn("border-transparent", meta.chip)}>{meta.label}</Badge>
     <div onClick={(event) => event.stopPropagation()}>{action}</div>
   </div>;
 }
+
+const FILTERS = [["all", "All"], ["issues", "Not completed"], ["progress", "In progress"], ["complete", "Completed"]];
 
 export function Dashboard({ state, update }) {
   const navigate = useNavigate();
@@ -83,34 +78,50 @@ export function Dashboard({ state, update }) {
   const deleteAudit = (id) => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== id) }));
   const open = (audit, label, outline) => <Button size="sm" variant={outline ? "outline" : "default"} onClick={() => navigate(`/workspace/${audit.id}`)}>{label}</Button>;
 
+  const activity = [
+    ...inProgress.map((audit) => ({ audit, kind: "progress", at: audit.startedAt || audit.createdAt, detail: `${auditProgress(audit)}% scanned · started ${shortDate(audit.startedAt || audit.createdAt)}${audit.initials ? ` by ${audit.initials}` : ""}`, action: open(audit, "Continue"), preview: true })),
+    ...notCompleted.map((audit) => ({ audit, kind: "issues", at: audit.completedAt, detail: `Closed at ${auditProgress(audit)}%${audit.completedAt ? ` · ${shortDate(audit.completedAt)}` : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""}`, action: open(audit, "View", true) })),
+    ...recentlyCompleted.map((audit) => ({ audit, kind: "complete", at: audit.completedAt, detail: `Completed ${audit.completedAt ? shortDate(audit.completedAt) : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""} · 100% scanned`, action: open(audit, "View", true) })),
+  ].sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+  const counts = { all: activity.length, issues: notCompleted.length, progress: inProgress.length, complete: recentlyCompleted.length };
+
   return <div className="space-y-6">
     <p className="text-slate-500">What's scheduled today, what's still open, and what was finished recently.</p>
-    <div className="grid grid-cols-1 gap-3 min-[560px]:grid-cols-2 lg:gap-4 xl:grid-cols-4">
-      <Stat label="Completed this month" value={`${completedThisMonth.size} / ${codes.size}`} detail={`${remaining} not completed`} icon={CheckCircle2} tone="green" />
-      <Stat label="In progress" value={inProgress.length} icon={ClipboardList} tone="yellow" />
-      <Stat label="Reference SKUs" value={state.inventory.length.toLocaleString()} icon={PackageSearch} tone="cyan" />
-      <Stat label="Today" value={todayCodes.length} detail="audits scheduled" icon={CalendarDays} tone="indigo" />
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,20rem)_1fr]">
+      <div className="grid grid-cols-2 gap-3">
+        <Stat label="Completed this month" value={`${completedThisMonth.size} / ${codes.size}`} detail={`${remaining} not completed`} icon={CheckCircle2} tone="green" />
+        <Stat label="In progress" value={inProgress.length} icon={ClipboardList} tone="yellow" />
+        <Stat label="Reference SKUs" value={state.inventory.length.toLocaleString()} icon={PackageSearch} tone="cyan" />
+        <Stat label="Today" value={todayCodes.length} detail="audits scheduled" icon={CalendarDays} tone="indigo" />
+      </div>
+      <Card className="flex max-h-[26rem] min-h-[12rem] flex-col md:max-h-none">
+        <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+          <div className="flex items-baseline gap-2 border-b border-slate-200 px-4 py-3"><h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Scheduled today</h3><span className="text-sm text-slate-500">({todayCodes.length})</span><span className="ml-auto text-xs text-slate-500">{now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span></div>
+          {todayCodes.length ? <div className="min-h-0 flex-1 divide-y divide-slate-200 overflow-y-auto">{todayCodes.map((code) => {
+            const audit = auditFor(code); const done = audit?.status === "completed"; const running = audit && !done;
+            return <Row key={code} onPreview={running ? () => setPreviewId(audit.id) : undefined} kind={done ? "complete" : running ? "progress" : "todo"} title={code} detail={audit ? `${auditProgress(audit)}% scanned` : "No activity yet"}
+              action={done ? open(audit, "View", true) : running ? open(audit, "Continue") : <Button size="sm" onClick={() => start(code)}><Play className="h-3.5 w-3.5" />Start</Button>} />;
+          })}</div> : <p className="p-6 text-center text-sm text-slate-500">Nothing scheduled for today. Use Schedule on the calendar.</p>}
+        </CardContent>
+      </Card>
     </div>
 
-    <Section title="Scheduled today" description={now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} count={todayCodes.length} empty="Nothing scheduled for today. Use Schedule on the calendar.">
-      {todayCodes.map((code) => {
-        const audit = auditFor(code); const done = audit?.status === "completed"; const running = audit && !done;
-        return <Row key={code} onPreview={running ? () => setPreviewId(audit.id) : undefined} kind={done ? "complete" : running ? "progress" : "todo"} title={code} detail={audit ? `${auditProgress(audit)}% scanned` : "No activity yet"}
-          action={done ? open(audit, "View", true) : running ? open(audit, "Continue") : <Button size="sm" onClick={() => start(code)}><Play className="h-3.5 w-3.5" />Start</Button>} />;
-      })}
-    </Section>
-
-    <Section title="In progress" description="Right-click or swipe left to delete" count={inProgress.length} empty="No audits running right now.">
-      {inProgress.map((audit) => <DeleteGesture key={audit.id} label={audit.category || audit.name} onDelete={() => deleteAudit(audit.id)}><Row onPreview={() => setPreviewId(audit.id)} kind="progress" title={audit.category || audit.name} detail={`${auditProgress(audit)}% scanned · started ${shortDate(audit.startedAt || audit.createdAt)}${audit.initials ? ` by ${audit.initials}` : ""}`} action={open(audit, "Continue")} /></DeleteGesture>)}
-    </Section>
-
-    <Section title="Not completed" description="Closed before every item was found" count={notCompleted.length} empty="Nothing left unfinished.">
-      {notCompleted.map((audit) => <Row key={audit.id} kind="issues" title={audit.category || audit.name} detail={`Closed at ${auditProgress(audit)}%${audit.completedAt ? ` · ${shortDate(audit.completedAt)}` : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""}`} action={open(audit, "View", true)} />)}
-    </Section>
-
-    <Section title="Recently completed" count={recentlyCompleted.length} empty="No completed audits yet.">
-      {recentlyCompleted.map((audit) => <Row key={audit.id} kind="complete" title={audit.category || audit.name} detail={`Completed ${audit.completedAt ? shortDate(audit.completedAt) : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""} · 100% scanned`} action={open(audit, "View", true)} />)}
-    </Section>
+    <Card>
+      <Tabs defaultValue="all">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-4 py-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Recent activity</h3>
+          <span className="hidden text-xs text-slate-500 sm:inline">Right-click or press and hold to delete</span>
+          <TabsList className="ml-auto h-auto flex-wrap">{FILTERS.map(([value, label]) => <TabsTrigger key={value} value={value}>{label} ({counts[value]})</TabsTrigger>)}</TabsList>
+        </div>
+        {FILTERS.map(([value]) => {
+          const rows = activity.filter((entry) => value === "all" || entry.kind === value).slice(0, 20);
+          return <TabsContent key={value} value={value} className="mt-0">
+            {rows.length ? <div className="divide-y divide-slate-200">{rows.map(({ audit, kind, detail, action, preview }) => <DeleteGesture key={audit.id} label={audit.category || audit.name} onDelete={() => deleteAudit(audit.id)}><Row onPreview={preview ? () => setPreviewId(audit.id) : undefined} kind={kind} title={audit.category || audit.name} detail={detail} action={action} /></DeleteGesture>)}</div>
+              : <p className="p-6 text-center text-sm text-slate-500">No audits here yet.</p>}
+          </TabsContent>;
+        })}
+      </Tabs>
+    </Card>
     <AuditPreview audit={state.audits.find((audit) => audit.id === previewId)} onClose={() => setPreviewId(null)} />
   </div>;
 }

@@ -37,8 +37,8 @@ function Stat({ label, value, detail, icon: Icon, tone }) {
 function Row({ kind, title, detail, action, onPreview }) {
   const meta = chips[kind]; const Icon = meta.icon;
   return <div className={cn("flex flex-wrap items-center gap-3 p-3 md:px-4", onPreview && "cursor-pointer hover:bg-slate-50")} {...(onPreview ? { role: "button", tabIndex: 0, "aria-label": `Preview ${title} audit`, onClick: onPreview, onKeyDown: (event) => event.target === event.currentTarget && (event.key === "Enter" || event.key === " ") && onPreview() } : {})}>
-    <Badge className={cn("w-32 shrink-0 justify-center gap-1 border-transparent", meta.chip)}><Icon className={cn("h-3.5 w-3.5", kind === "progress" && "animate-spin")} />{meta.label}</Badge>
-    <div className="min-w-0 flex-1"><p className="truncate font-semibold uppercase">{title}</p><p className="text-xs text-slate-500">{detail}</p></div>
+    <div className="flex min-w-0 flex-1 flex-col items-start gap-1"><p className="w-full truncate font-semibold uppercase">{title}</p><p className="text-xs text-slate-500">{detail}</p>
+      <Badge className={cn("gap-1 border-transparent", meta.chip)}><Icon className={cn("h-3.5 w-3.5", kind === "progress" && "animate-spin")} />{meta.label}</Badge></div>
     <div onClick={(event) => event.stopPropagation()}>{action}</div>
   </div>;
 }

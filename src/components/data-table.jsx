@@ -1,6 +1,6 @@
 import { flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
 import { createPortal } from "react-dom";
-import { ArrowDown, ArrowUp, ChevronsUpDown, Columns3, ListOrdered, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Columns3, ListOrdered, Search, WrapText } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { defaultVisibilityFor } from "@/lib/table-defaults";
@@ -18,7 +18,20 @@ const readHidden = (key, fallback) => {
 };
 
 // columnsKey enables a "Columns" menu; the choice is remembered across audits and sessions.
-export function DataTable({ columns, data, searchPlaceholder = "Search records...", rowClassName, onRowClick, persistKey, columnsKey, defaultHidden = [], fillScreen = false, controlsTarget = null }) {
+export function DataTable({ columns, data, searchPlaceholder = "Search records...", rowClassName, onRowClick, persistKey, columnsKey, defaultHidden = [], fillScreen = false, controlsTarget = null, filters = [] }) {
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [wrapText, setWrapText] = useState(false);
+  const [widths, setWidths] = useState({});
+  const startResize = (event, id) => {
+    event.preventDefault(); event.stopPropagation();
+    const startX = event.clientX;
+    const startWidth = event.currentTarget.parentElement.offsetWidth;
+    const move = (e) => setWidths((current) => ({ ...current, [id]: Math.max(60, startWidth + e.clientX - startX) }));
+    const stop = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", stop); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", stop);
+  };
+  const cellStyle = (column) => widths[column.id] ? { width: widths[column.id], minWidth: widths[column.id], maxWidth: widths[column.id] } : column.columnDef.meta === "wide" && !wrapText ? { maxWidth: "16rem" } : undefined;
+  const cellClass = (column) => column.columnDef.meta === "wide" || widths[column.id] ? (wrapText ? "whitespace-normal break-words" : "truncate") : undefined;
   const wrapperRef = useRef(null);
   const [fillHeight, setFillHeight] = useState(null);
   const rowsKey = columnsKey ? `inventory-audit-rows:${columnsKey}` : null;
@@ -72,8 +85,10 @@ export function DataTable({ columns, data, searchPlaceholder = "Search records..
     return next;
   });
   const [globalFilter, setGlobalFilter] = useState("");
+  const filterTest = filters.find((filter) => filter.id === activeFilter)?.test;
+  const filteredData = filterTest ? data.filter(filterTest) : data;
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     state: { sorting, globalFilter, columnVisibility },
     onColumnVisibilityChange: setColumnVisibility,
@@ -85,6 +100,7 @@ export function DataTable({ columns, data, searchPlaceholder = "Search records..
   });
   const controls =
       <div className="flex items-center gap-2">
+        <button type="button" title={wrapText ? "Truncate long text" : "Show full text"} aria-label="Toggle full text" aria-pressed={wrapText} onClick={() => setWrapText(!wrapText)} className={cn(iconButton, wrapText && "bg-slate-100 opacity-100")}><WrapText className="h-4 w-4" /></button>
         {fillScreen && rowsKey && <div className="relative" ref={rowsMenuRef}>
           <button type="button" title="Rows shown" aria-label="Rows shown" aria-expanded={rowsMenuOpen} onClick={() => setRowsMenuOpen(!rowsMenuOpen)} className={iconButton}><ListOrdered className="h-4 w-4" /></button>
           {rowsMenuOpen && <div className="absolute right-0 z-20 mt-1 w-40 rounded-md border border-slate-200 bg-white p-2 shadow-lg">
@@ -101,14 +117,15 @@ export function DataTable({ columns, data, searchPlaceholder = "Search records..
   return <div className="space-y-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="relative w-full max-w-sm"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><Input value={globalFilter} onChange={(event) => setGlobalFilter(event.target.value)} className="pl-9" placeholder={searchPlaceholder} /></div>
+      {filters.length > 0 && <div className="flex flex-wrap gap-1">{[{ id: "all", label: "All" }, ...filters].map((filter) => <button key={filter.id} type="button" aria-pressed={activeFilter === filter.id} onClick={() => setActiveFilter(filter.id)} className={cn("rounded-full border px-3 py-1 text-xs font-medium", activeFilter === filter.id ? "border-slate-800 bg-slate-800 text-white" : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100")}>{filter.label}{filter.id !== "all" && ` (${data.filter(filter.test).length})`}</button>)}</div>}
       {controlsTarget ? createPortal(controls, controlsTarget) : controls}
     </div>
     <Table wrapperRef={wrapperRef} wrapperStyle={fillHeight ? { height: fillHeight } : undefined}>
       <TableHeader>{table.getHeaderGroups().map((headerGroup) => <TableRow key={headerGroup.id}>{headerGroup.headers.map((header) => {
         const sorted = header.column.getIsSorted();
-        return <TableHead key={header.id}>{header.isPlaceholder ? null : <button className="flex items-center gap-1 font-semibold" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}{sorted === "asc" ? <ArrowUp className="h-3 w-3" /> : sorted === "desc" ? <ArrowDown className="h-3 w-3" /> : header.column.getCanSort() ? <ChevronsUpDown className="h-3 w-3 text-slate-400" /> : null}</button>}</TableHead>;
+        return <TableHead key={header.id} style={widths[header.column.id] ? { width: widths[header.column.id], minWidth: widths[header.column.id], maxWidth: widths[header.column.id] } : undefined} className="relative">{header.isPlaceholder ? null : <button className="flex items-center gap-1 font-semibold" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}{sorted === "asc" ? <ArrowUp className="h-3 w-3" /> : sorted === "desc" ? <ArrowDown className="h-3 w-3" /> : header.column.getCanSort() ? <ChevronsUpDown className="h-3 w-3 text-slate-400" /> : null}</button>}{header.column.columnDef.meta === "wide" && <span role="separator" onMouseDown={(event) => startResize(event, header.column.id)} onClick={(event) => event.stopPropagation()} className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-slate-300" />}</TableHead>;
       })}</TableRow>)}</TableHeader>
-      <TableBody>{table.getRowModel().rows.length ? table.getRowModel().rows.map((row, index, rows) => <TableRow key={row.id} className={cn(rowClassName?.(row.original, rows[index - 1]?.original), onRowClick && "cursor-pointer")} onClick={onRowClick && (() => onRowClick(row.original))}>{row.getVisibleCells().map((cell) => <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>)}</TableRow>) : <TableRow><TableCell colSpan={table.getVisibleLeafColumns().length || 1} className="h-24 text-center text-slate-500">No results found.</TableCell></TableRow>}</TableBody>
+      <TableBody>{table.getRowModel().rows.length ? table.getRowModel().rows.map((row, index, rows) => <TableRow key={row.id} className={cn(rowClassName?.(row.original, rows[index - 1]?.original), onRowClick && "cursor-pointer")} onClick={onRowClick && (() => onRowClick(row.original))}>{row.getVisibleCells().map((cell) => <TableCell key={cell.id} style={cellStyle(cell.column)} className={cellClass(cell.column)} title={cell.column.columnDef.meta === "wide" ? String(cell.getValue() ?? "") : undefined}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>)}</TableRow>) : <TableRow><TableCell colSpan={table.getVisibleLeafColumns().length || 1} className="h-24 text-center text-slate-500">No results found.</TableCell></TableRow>}</TableBody>
     </Table>
   </div>;
 }

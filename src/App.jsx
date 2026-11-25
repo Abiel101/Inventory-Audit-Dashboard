@@ -80,7 +80,7 @@ function useAuditState() {
 function SourceBadge({ state }) {
   const [, tick] = useState(0);
   useEffect(() => { const timer = setInterval(() => tick((value) => value + 1), 60000); return () => clearInterval(timer); }, []);
-  if (!state.sourceName) return <Badge variant="secondary">No source loaded</Badge>;
+  if (!state.sourceName) return <div className="flex min-w-0 items-center gap-2"><Badge variant="warning" className="hidden truncate md:inline-flex" title="Upload today's inventory file so audits can be started from the calendar.">No inventory source is loaded</Badge><Badge variant="secondary">No source loaded</Badge></div>;
   const age = sourceAge(state);
   const variant = { fresh: "success", aging: "warning", stale: "destructive", unknown: "secondary" }[age.tone];
   const when = age.days === 0 ? "today" : age.days === 1 ? "1 day old" : age.days > 1 ? `${age.days} days old` : "";

@@ -31,7 +31,7 @@ const chips = {
 
 function Stat({ label, value, detail, icon: Icon, tone }) {
   const color = tones[tone];
-  return <Card className={cn("aspect-square", color.card)}><CardContent className="flex h-full flex-col justify-between p-3 sm:p-4"><span className={`grid h-9 w-9 place-items-center rounded-lg ${color.icon}`}><Icon className="h-5 w-5" /></span><div><p className={`text-2xl font-bold leading-none ${color.value}`}>{value}</p><p className={`mt-1 text-xs font-medium leading-tight ${color.label}`}>{label}</p>{detail && <p className={`text-[11px] leading-tight ${color.label}`}>{detail}</p>}</div></CardContent></Card>;
+  return <Card className={color.card}><CardContent className="flex h-full items-center gap-3 p-3"><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${color.icon}`}><Icon className="h-5 w-5" /></span><div className="min-w-0"><p className={`text-xl font-bold leading-none ${color.value}`}>{value}</p><p className={`mt-1 truncate text-xs font-medium leading-tight ${color.label}`}>{label}</p>{detail && <p className={`truncate text-[11px] leading-tight ${color.label}`}>{detail}</p>}</div></CardContent></Card>;
 }
 
 function Row({ kind, title, detail, action, onPreview }) {
@@ -89,13 +89,13 @@ export function Dashboard({ state, update }) {
   return <div className="space-y-6">
     <p className="text-slate-500">What's scheduled today, what's still open, and what was finished recently.</p>
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid auto-rows-fr grid-cols-2 gap-3">
         <Stat label="Completed this month" value={`${completedThisMonth.size} / ${codes.size}`} detail={`${remaining} not completed`} icon={CheckCircle2} tone="green" />
         <Stat label="In progress" value={inProgress.length} icon={ClipboardList} tone="yellow" />
         <Stat label="Reference SKUs" value={state.inventory.length.toLocaleString()} icon={PackageSearch} tone="cyan" />
         <Stat label="Today" value={todayCodes.length} detail="audits scheduled" icon={CalendarDays} tone="indigo" />
       </div>
-      <Card className="flex max-h-[26rem] min-h-[12rem] flex-col md:max-h-none md:min-h-0">
+      <Card className="flex max-h-60 flex-col">
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
           <div className="flex items-baseline gap-2 border-b border-slate-200 px-4 py-3"><h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Scheduled today</h3><span className="text-sm text-slate-500">({todayCodes.length})</span><span className="ml-auto text-xs text-slate-500">{now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span></div>
           {todayCodes.length ? <div className="min-h-0 flex-1 divide-y divide-slate-200 overflow-y-auto">{todayCodes.map((code) => {
@@ -116,7 +116,7 @@ export function Dashboard({ state, update }) {
         {FILTERS.map(([value]) => {
           const rows = activity.filter((entry) => value === "all" || entry.kind === value).slice(0, 20);
           return <TabsContent key={value} value={value} className="mt-0">
-            {rows.length ? <div className="divide-y divide-slate-200">{rows.map(({ audit, kind, detail, action, preview }) => <Row key={audit.id} onPreview={preview ? () => setPreviewId(audit.id) : undefined} kind={kind} title={audit.category || audit.name} detail={detail} action={action} />)}</div>
+            {rows.length ? <div className="max-h-[min(24rem,45vh)] divide-y divide-slate-200 overflow-y-auto">{rows.map(({ audit, kind, detail, action, preview }) => <Row key={audit.id} onPreview={preview ? () => setPreviewId(audit.id) : undefined} kind={kind} title={audit.category || audit.name} detail={detail} action={action} />)}</div>
               : <p className="p-6 text-center text-sm text-slate-500">No audits here yet.</p>}
           </TabsContent>;
         })}

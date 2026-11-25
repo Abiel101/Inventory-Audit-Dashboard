@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Columns3, ListOrdered, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { defaultVisibilityFor } from "@/lib/table-defaults";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -50,7 +51,7 @@ export function DataTable({ columns, data, searchPlaceholder = "Search records..
     return () => document.removeEventListener("mousedown", close);
   }, [rowsMenuOpen]);
   const storageKey = columnsKey ? `inventory-audit-columns:${columnsKey}` : null;
-  const [columnVisibility, setColumnVisibilityState] = useState(() => storageKey ? readHidden(storageKey, Object.fromEntries(defaultHidden.map((id) => [id, false]))) : {});
+  const [columnVisibility, setColumnVisibilityState] = useState(() => storageKey ? readHidden(storageKey, defaultVisibilityFor(columnsKey) ?? Object.fromEntries(defaultHidden.map((id) => [id, false]))) : {});
   const setColumnVisibility = (updater) => setColumnVisibilityState((current) => {
     const next = typeof updater === "function" ? updater(current) : updater;
     if (storageKey) { try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* choice still applies for this session */ } }

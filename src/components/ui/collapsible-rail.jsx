@@ -31,7 +31,7 @@ export function CollapsibleRail({ title, dots = [], emptyText = "Nothing yet", c
   // 8px dots, 6px gaps, 10px vertical padding; never shorter than the arrow button.
   const closedHeight = Math.max(44, dots.length * 8 + Math.max(dots.length - 1, 0) * 6 + 20);
   const label = `${open ? "Hide" : "Show"} ${title.toLowerCase()}`;
-  return <div style={{ width: open ? width : "2rem", maxWidth: open ? "70vw" : undefined }} className={cn("relative shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none", className)}>
+  return <div style={{ width: open ? width : "2.25rem", maxWidth: open ? "70vw" : undefined }} className={cn("relative shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none", className)}>
     <Card style={{ height: open ? openHeight : closedHeight }} className={cn("relative overflow-hidden transition-[height] duration-300 ease-out motion-reduce:transition-none", open && openHeight === undefined && "min-h-[100px]")}>
       <div aria-hidden={open} className={cn("absolute inset-0 flex flex-col items-center justify-center gap-[6px]", open && "pointer-events-none")}>
         {dots.map((dot, index) => <span key={dot.id} title={dot.label} style={{ transitionDelay: open ? "0ms" : `${150 + Math.min(index, 12) * 35}ms` }} className={cn("h-2 w-2 rounded-full transition-[opacity,transform] ease-out motion-reduce:transition-none", open ? "translate-y-2 opacity-0 duration-150" : "translate-y-0 opacity-100 duration-300", dotTone[dot.tone] ?? dotTone.neutral)} />)}

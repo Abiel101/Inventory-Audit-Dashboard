@@ -324,7 +324,7 @@ export function AuditWorkspace({ state, update }) {
         {confirming ? <div className="flex flex-wrap items-end gap-2">{initialsField("Associate initials")}<Button disabled={!cleanInitials} onClick={finish}><CheckCircle2 className="h-4 w-4" />Confirm complete</Button><Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button></div>
           : <div className="flex flex-wrap gap-2">{updateButton()}<Button variant="outline" onClick={saveAndClose}><Save className="h-4 w-4" />Close &amp; save progress</Button><Button onClick={() => setConfirming(true)}><CheckCircle2 className="h-4 w-4" />Complete audit</Button></div>}
       </div>
-      <div className="mx-auto w-full max-w-[110rem] p-4 md:p-6">{content}</div>
+      <div className="w-full p-4 md:p-6">{content}</div>
       </SheetContent>
     </Sheet>;
   }

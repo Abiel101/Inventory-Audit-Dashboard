@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, CalendarDays, CheckCircle2, CircleDashed, ClipboardList, Loader2, PackageSearch, Play } from "lucide-react";
+import { Eye, ExternalLink, AlertTriangle, CalendarDays, CheckCircle2, CircleDashed, ClipboardList, Loader2, PackageSearch, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuditPreview } from "@/components/audit-preview";
-import { DeleteGesture } from "@/components/slide-to-delete";
+import { AuditMenu } from "@/components/audit-menu";
 import { buildAudit, categoryOf } from "@/lib/inventory";
 import { auditProgress, cn, dateKey } from "@/lib/utils";
 import { useTransition } from "@/components/ui/transition";
@@ -77,24 +77,25 @@ export function Dashboard({ state, update }) {
   };
   const deleteAudit = (id) => update((current) => ({ ...current, audits: current.audits.filter((audit) => audit.id !== id) }));
   const open = (audit, label, outline) => <Button size="sm" variant={outline ? "outline" : "default"} onClick={() => navigate(`/workspace/${audit.id}`)}>{label}</Button>;
+  const withMenu = (audit, label, outline, preview) => <div className="flex items-center gap-1">{open(audit, label, outline)}<AuditMenu label={audit.category || audit.name} onDelete={() => deleteAudit(audit.id)} actions={[{ label: "Open audit", icon: ExternalLink, onSelect: () => navigate(`/workspace/${audit.id}`) }, ...(preview ? [{ label: "Preview", icon: Eye, onSelect: () => setPreviewId(audit.id) }] : [])]} /></div>;
 
   const activity = [
-    ...inProgress.map((audit) => ({ audit, kind: "progress", at: audit.startedAt || audit.createdAt, detail: `${auditProgress(audit)}% scanned · started ${shortDate(audit.startedAt || audit.createdAt)}${audit.initials ? ` by ${audit.initials}` : ""}`, action: open(audit, "Continue"), preview: true })),
-    ...notCompleted.map((audit) => ({ audit, kind: "issues", at: audit.completedAt, detail: `Closed at ${auditProgress(audit)}%${audit.completedAt ? ` · ${shortDate(audit.completedAt)}` : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""}`, action: open(audit, "View", true) })),
-    ...recentlyCompleted.map((audit) => ({ audit, kind: "complete", at: audit.completedAt, detail: `Completed ${audit.completedAt ? shortDate(audit.completedAt) : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""} · 100% scanned`, action: open(audit, "View", true) })),
+    ...inProgress.map((audit) => ({ audit, kind: "progress", at: audit.startedAt || audit.createdAt, detail: `${auditProgress(audit)}% scanned · started ${shortDate(audit.startedAt || audit.createdAt)}${audit.initials ? ` by ${audit.initials}` : ""}`, action: withMenu(audit, "Continue", false, true), preview: true })),
+    ...notCompleted.map((audit) => ({ audit, kind: "issues", at: audit.completedAt, detail: `Closed at ${auditProgress(audit)}%${audit.completedAt ? ` · ${shortDate(audit.completedAt)}` : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""}`, action: withMenu(audit, "View", true) })),
+    ...recentlyCompleted.map((audit) => ({ audit, kind: "complete", at: audit.completedAt, detail: `Completed ${audit.completedAt ? shortDate(audit.completedAt) : ""}${audit.completedBy ? ` by ${audit.completedBy}` : ""} · 100% scanned`, action: withMenu(audit, "View", true) })),
   ].sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
   const counts = { all: activity.length, issues: notCompleted.length, progress: inProgress.length, complete: recentlyCompleted.length };
 
   return <div className="space-y-6">
     <p className="text-slate-500">What's scheduled today, what's still open, and what was finished recently.</p>
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,20rem)_1fr]">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div className="grid grid-cols-2 gap-3">
         <Stat label="Completed this month" value={`${completedThisMonth.size} / ${codes.size}`} detail={`${remaining} not completed`} icon={CheckCircle2} tone="green" />
         <Stat label="In progress" value={inProgress.length} icon={ClipboardList} tone="yellow" />
         <Stat label="Reference SKUs" value={state.inventory.length.toLocaleString()} icon={PackageSearch} tone="cyan" />
         <Stat label="Today" value={todayCodes.length} detail="audits scheduled" icon={CalendarDays} tone="indigo" />
       </div>
-      <Card className="flex max-h-[26rem] min-h-[12rem] flex-col md:max-h-none">
+      <Card className="flex max-h-[26rem] min-h-[12rem] flex-col md:max-h-none md:min-h-0">
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
           <div className="flex items-baseline gap-2 border-b border-slate-200 px-4 py-3"><h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Scheduled today</h3><span className="text-sm text-slate-500">({todayCodes.length})</span><span className="ml-auto text-xs text-slate-500">{now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span></div>
           {todayCodes.length ? <div className="min-h-0 flex-1 divide-y divide-slate-200 overflow-y-auto">{todayCodes.map((code) => {
@@ -110,13 +111,12 @@ export function Dashboard({ state, update }) {
       <Tabs defaultValue="all">
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-4 py-3">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Recent activity</h3>
-          <span className="hidden text-xs text-slate-500 sm:inline">Right-click or press and hold to delete</span>
           <TabsList className="ml-auto h-auto flex-wrap">{FILTERS.map(([value, label]) => <TabsTrigger key={value} value={value}>{label} ({counts[value]})</TabsTrigger>)}</TabsList>
         </div>
         {FILTERS.map(([value]) => {
           const rows = activity.filter((entry) => value === "all" || entry.kind === value).slice(0, 20);
           return <TabsContent key={value} value={value} className="mt-0">
-            {rows.length ? <div className="divide-y divide-slate-200">{rows.map(({ audit, kind, detail, action, preview }) => <DeleteGesture key={audit.id} label={audit.category || audit.name} onDelete={() => deleteAudit(audit.id)}><Row onPreview={preview ? () => setPreviewId(audit.id) : undefined} kind={kind} title={audit.category || audit.name} detail={detail} action={action} /></DeleteGesture>)}</div>
+            {rows.length ? <div className="divide-y divide-slate-200">{rows.map(({ audit, kind, detail, action, preview }) => <Row key={audit.id} onPreview={preview ? () => setPreviewId(audit.id) : undefined} kind={kind} title={audit.category || audit.name} detail={detail} action={action} />)}</div>
               : <p className="p-6 text-center text-sm text-slate-500">No audits here yet.</p>}
           </TabsContent>;
         })}

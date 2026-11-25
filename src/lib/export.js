@@ -45,7 +45,7 @@ export async function exportAuditWorkbook(audit, { compareKey, format = "new", c
   const ExcelJS = (await import("exceljs")).default;
   const when = new Date(audit.completedAt || Date.now());
   if (format === "twc") {
-    await downloadWorkbook(createTwcWorkbook(ExcelJS, audit, { compareKey, caseFor }), audit, when);
+    await downloadWorkbook(createTwcWorkbook(ExcelJS, audit, { compareKey, caseFor, inventoryFor }), audit, when);
     return;
   }
   if (format !== "new") throw new Error("Unknown export format.");

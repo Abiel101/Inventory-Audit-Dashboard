@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inventory Audit Dashboard · Project Map</title>
+<style>
+  :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --sky:#0284c7; --bg:#f8fafc; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.55 system-ui,sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:var(--ink); color:#fff; padding:28px 32px; }
+  header h1 { margin:0 0 4px; font-size:24px; } header p { margin:0; color:#cbd5e1; }
+  main { max-width:1050px; margin:0 auto; padding:24px 20px 60px; }
+  h2 { margin:36px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--sky); font-size:19px; }
+  .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .card h3 { margin:0 0 4px; font-size:14px; color:var(--sky); text-transform:uppercase; letter-spacing:.04em; }
+  .card p { margin:0; color:var(--muted); font-size:13.5px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); }
+  th,td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px; }
+  th { background:#f1f5f9; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:#475569; }
+  code { background:#eef2f7; padding:1px 5px; border-radius:4px; font-size:13px; }
+  pre { background:#0f172a; color:#e2e8f0; padding:18px 20px; border-radius:10px; overflow-x:auto; font-size:13px; line-height:1.6; }
+  pre code { background:none; padding:0; }
+  .d { color:#7dd3fc; } .c { color:#94a3b8; } .legacy { color:#fca5a5; }
+  .pill { display:inline-block; padding:1px 9px; border-radius:99px; font-size:12px; font-weight:600; }
+  .ok { background:#d1fae5; color:#047857; } .no { background:#fee2e2; color:#b91c1c; }
+  .flow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .flow span.b { background:#fff; border:1px solid var(--line); border-radius:8px; padding:6px 12px; font-weight:600; }
+  .flow span.a { color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Inventory Audit Dashboard · Project Map</h1>
+  <p>Where everything lives, what it's built with, and where to go to change things.</p>
+</header>
+<main>
+
+<h2>1. How it's built</h2>
+<div class="grid">
+  <div class="card"><h3>Framework</h3><p>React 19 single-page app (JSX, no TypeScript), bundled by <b>Vite 8</b>.</p></div>
+  <div class="card"><h3>Routing</h3><p>React Router 7. All routes are declared at the bottom of <code>src/App.jsx</code>.</p></div>
+  <div class="card"><h3>Styling</h3><p><b>Tailwind CSS 3</b> utility classes (+ <code>tailwindcss-animate</code>). Not custom CSS — see section 4.</p></div>
+  <div class="card"><h3>UI kit</h3><p>shadcn/ui-style components (<code>new-york</code> style) on <b>Radix UI</b> primitives, icons from <b>lucide-react</b>.</p></div>
+  <div class="card"><h3>Tables</h3><p>TanStack Table v8 (<code>data-table.jsx</code>).</p></div>
+  <div class="card"><h3>Excel</h3><p><b>ExcelJS</b> writes exports; <b>xlsx</b> (SheetJS) reads uploaded inventory files.</p></div>
+  <div class="card"><h3>Data storage</h3><p>No backend or database. State is saved in the browser's <b>localStorage</b> (key <code>inventory-audit-react-state</code>).</p></div>
+  <div class="card"><h3>Hosting</h3><p>Cloudflare static assets: <code>npm run build</code> → <code>dist/</code>, deployed with Wrangler (<code>wrangler.jsonc</code>, SPA fallback).</p></div>
+</div>
+<p><b>Commands:</b> <code>npm install</code> · <code>npm run dev</code> (local server) · <code>npm run build</code> · <code>npm run preview</code> · tests: <code>node --test tests/</code></p>
+
+<h2>2. Folder structure</h2>
+<pre><code><span class="d">Inventory-Audit-Dashboard/</span>
+├── index.html              <span class="c"># page shell; loads src/main.jsx</span>
+├── package.json            <span class="c"># dependencies &amp; scripts</span>
+├── vite.config.mjs         <span class="c"># Vite + React plugin, "@" = src/ alias</span>
+├── tailwind.config.js      <span class="c"># Tailwind colors → theme CSS variables</span>
+├── postcss.config.js       <span class="c"># Tailwind + autoprefixer</span>
+├── components.json         <span class="c"># shadcn/ui settings</span>
+├── wrangler.jsonc          <span class="c"># Cloudflare deploy config</span>
+├── README.md               <span class="c"># export + deployment notes</span>
+├── <span class="d">docs/</span>
+│   └── project-map.html    <span class="c"># this file</span>
+├── <span class="d">tests/</span>
+│   └── export-twc.test.cjs <span class="c"># checks the TWC Excel export layout</span>
+├── <span class="d">src/</span>
+│   ├── main.jsx            <span class="c"># app entry (mounts React + router)</span>
+│   ├── App.jsx             <span class="c"># shell, sidebar, ALL routes, global state, New Audit / Settings / Calendar wrappers</span>
+│   ├── index.css           <span class="c"># Tailwind layers + color themes (CSS variables)</span>
+│   ├── <span class="d">components/</span>         <span class="c"># one file per screen/feature</span>
+│   │   ├── dashboard.jsx       <span class="c"># stats, scheduled today, recent activity</span>
+│   │   ├── audit-workspace.jsx <span class="c"># live scanning/counting screen for one audit</span>
+│   │   ├── audit-calendar.jsx  <span class="c"># calendar &amp; scheduling</span>
+│   │   ├── month-status.jsx    <span class="c"># monthly status of every case code</span>
+│   │   ├── active-audits.jsx   <span class="c"># list of open audits</span>
+│   │   ├── audit-preview.jsx   <span class="c"># side panel preview of an in-progress audit</span>
+│   │   ├── audit-import.jsx    <span class="c"># import past audit .xlsx files</span>
+│   │   ├── item-sheet.jsx      <span class="c"># item side panel (notes, images, pinning)</span>
+│   │   ├── data-table.jsx      <span class="c"># reusable TanStack table</span>
+│   │   ├── table-defaults.jsx  <span class="c"># choose default visible columns</span>
+│   │   ├── known-issues.jsx    <span class="c"># known-issue SKUs list</span>
+│   │   ├── research.jsx        <span class="c"># research queue</span>
+│   │   ├── research-sources.jsx<span class="c"># upload research source files</span>
+│   │   ├── slide-to-delete.jsx <span class="c"># DeleteGesture: right-click/long-press → warning → manager code</span>
+│   │   └── <span class="d">ui/</span>                <span class="c"># shared building blocks (shadcn style)</span>
+│   │       ├── button, badge, card, input, table, tabs, tooltip, separator, skeleton
+│   │       ├── dialog.jsx  sheet.jsx  <span class="c"># popups and slide-in panels</span>
+│   │       ├── sidebar.jsx collapsible-rail.jsx animated-tabs.jsx
+│   │       └── toast.jsx transition.jsx
+│   ├── <span class="d">hooks/</span>use-mobile.jsx   <span class="c"># screen-size hook</span>
+│   └── <span class="d">lib/</span>                 <span class="c"># logic with no UI</span>
+│       ├── utils.js          <span class="c"># cn(), themes, audit tally/progress, date + SKU matching, locations</span>
+│       ├── inventory.js      <span class="c"># read inventory file, case codes, buildAudit()</span>
+│       ├── export.js         <span class="c"># Excel export ("new" format) + filename</span>
+│       ├── export-twc.js     <span class="c"># Excel export (TWC / old format)</span>
+│       ├── import-audit.js   <span class="c"># parse past audit workbooks</span>
+│       ├── research-sources.js
+│       └── table-defaults.js
+└── <span class="legacy">app.js, style.css, localStorage.json</span>  <span class="c"># LEGACY: old non-React version — not loaded by index.html</span></code></pre>
+
+<h2>3. "I want to change…" quick guide</h2>
+<table>
+<tr><th>To change</th><th>Go to</th></tr>
+<tr><td>Dashboard layout, stats, schedule panel, recent activity tabs</td><td><code>src/components/dashboard.jsx</code></td></tr>
+<tr><td>Delete confirmation wording or manager code (<code>0808</code>)</td><td><code>src/components/slide-to-delete.jsx</code> (unlock code is also in <code>audit-workspace.jsx</code>)</td></tr>
+<tr><td>Scanning screen behavior</td><td><code>src/components/audit-workspace.jsx</code></td></tr>
+<tr><td>Sidebar links, page routes, new pages</td><td><code>src/App.jsx</code> (<code>AppSidebar</code> + <code>&lt;Routes&gt;</code>)</td></tr>
+<tr><td>Excel export (new format): columns, colors, notes</td><td><code>src/lib/export.js</code></td></tr>
+<tr><td>Excel export (TWC format): Scan/Audit sheets, red "not in audit" rows</td><td><code>src/lib/export-twc.js</code></td></tr>
+<tr><td>How inventory files are read, case codes, audit creation</td><td><code>src/lib/inventory.js</code></td></tr>
+<tr><td>Progress %, SKU matching, "not in audit" logic, default store locations</td><td><code>src/lib/utils.js</code></td></tr>
+<tr><td>Colors &amp; themes</td><td><code>src/index.css</code> (palettes) + <code>tailwind.config.js</code></td></tr>
+<tr><td>Buttons, cards, popups look</td><td><code>src/components/ui/*</code></td></tr>
+<tr><td>Calendar / scheduling</td><td><code>src/components/audit-calendar.jsx</code></td></tr>
+<tr><td>Monthly case-code status</td><td><code>src/components/month-status.jsx</code></td></tr>
+<tr><td>Deployment settings</td><td><code>wrangler.jsonc</code></td></tr>
+</table>
+
+<h2>4. Tailwind or custom CSS?</h2>
+<p><span class="pill ok">Tailwind</span> Almost all styling is Tailwind utility classes written directly in the JSX (e.g. <code>className="rounded-xl border p-4"</code>). The only stylesheet the app loads is <code>src/index.css</code>: Tailwind's layers plus the <b>theme palettes</b> (default, tokyo-night, github-white, nord, emerald, sandstone, mist), each a set of CSS variables. <code>tailwind.config.js</code> maps <code>slate</code>, <code>sky</code>, <code>white</code> and the semantic colors to those variables, so switching theme in Settings recolors everything. To add a theme: add an <code>html[data-theme="…"]</code> block in <code>index.css</code> and register it in <code>themes</code> in <code>src/lib/utils.js</code>.</p>
+<p><span class="pill no">Not used</span> The root <code>style.css</code> is leftover custom CSS from the earlier version and isn't imported by the app.</p>
+
+<h2>5. How the pieces connect</h2>
+<div class="flow">
+  <span class="b">index.html</span><span class="a">→</span><span class="b">main.jsx</span><span class="a">→</span><span class="b">App.jsx (state + routes)</span><span class="a">→</span><span class="b">components/*</span><span class="a">→</span><span class="b">lib/* (logic, Excel)</span>
+</div>
+<p><code>App.jsx</code> holds one shared <code>state</code> (inventory, audits, locations, notes…) and an <code>update()</code> function, passed to every screen. Changes are saved to localStorage automatically. Screens call helpers in <code>lib/</code> for calculations and Excel import/export. The calendar schedule and a few preferences are stored in their own localStorage keys.</p>
+
+<h2>6. Routes</h2>
+<table>
+<tr><th>URL</th><th>Screen</th></tr>
+<tr><td><code>/dashboard</code></td><td>Dashboard (default)</td></tr>
+<tr><td><code>/audits/new</code></td><td>Audit builder (start a new audit)</td></tr>
+<tr><td><code>/workspace</code>, <code>/workspace/:id</code></td><td>Audit workspace (scanning)</td></tr>
+<tr><td><code>/calendar</code></td><td>Audit calendar</td></tr>
+<tr><td><code>/status</code></td><td>Month status</td></tr>
+<tr><td><code>/research</code>, <code>/research/:id</code></td><td>Research queue</td></tr>
+<tr><td><code>/settings</code></td><td>Settings (theme, store locations, table defaults, known issues)</td></tr>
+</table>
+
+</main>
+</body>
+</html>

@@ -89,21 +89,21 @@ function SourceBadge({ state }) {
   return <Badge variant={variant} className="max-w-[55vw] truncate" title={hover}>Source: {state.sourceName}{detail ? ` · ${detail}` : ""}</Badge>;
 }
 
-// Keeps the sidebar closed on tablet-sized and portrait screens (e.g. iPad) so content gets the full width.
+// Sidebar is open on desktop widths and closed on smaller screens, following the viewport as it resizes.
 function CollapseOnTablet() {
   const { setOpen } = useSidebar();
   useEffect(() => {
-    const query = window.matchMedia("(max-width: 1023px)");
-    const collapse = () => query.matches && setOpen(false);
-    query.addEventListener("change", collapse);
-    return () => query.removeEventListener("change", collapse);
+    const query = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setOpen(query.matches);
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
   }, []);
   return null;
 }
 
 function AppShell({ state, update, storageError, children }) {
   const { pathname } = useLocation();
-  return <SidebarProvider defaultOpen={false} className="h-svh overflow-hidden">
+  return <SidebarProvider defaultOpen={typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches} className="h-svh overflow-hidden">
     <CollapseOnTablet />
     <AppSidebar state={state} update={update} />
     <SidebarInset className="min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 [scrollbar-gutter:stable]">
@@ -113,7 +113,7 @@ function AppShell({ state, update, storageError, children }) {
         <SourceBadge state={state} />
       </header>
       {storageError && <p role="alert" className="border-b border-amber-300 bg-amber-50 px-5 py-3 text-sm text-amber-900">The latest changes could not be saved in this browser (storage may be full). They will be lost when this tab closes; export any needed audits and free browser storage before continuing.</p>}
-      <div key={pathname} className="mx-auto w-full min-w-0 max-w-7xl p-3 sm:p-4 lg:p-8">{children}</div>
+      <div key={pathname} className="w-full min-w-0 p-3 sm:p-4 lg:p-8">{children}</div>
     </SidebarInset>
   </SidebarProvider>;
 }
